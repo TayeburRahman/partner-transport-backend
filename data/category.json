@@ -1,0 +1,192 @@
+[
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "perishable foods"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "nonperishable foods"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "furniture"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "electronic goods"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "textile and clothing goods"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "raw materials"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "machinery"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "construction materials"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "fragile items"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Goods",
+    "category": "animals"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Waste",
+    "category": "Urban waste"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Waste",
+    "category": "Industrial waste"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Waste",
+    "category": "Electronic waste"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Waste",
+    "category": "Construction waste"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Waste",
+    "category": "Agricultural waste"
+  },
+  {
+    "serviceType": "move",
+    "subServiceType": "Waste",
+    "category": "Mining waste"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Clothing and Accessories"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Furniture and Decoration"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Electronics"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Vehicles and Accessories"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Toys and Children's Items"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Tools and Gardening/Home Equipment"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Industrial"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Construction equipment"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Sports Equipment"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Musical Instruments"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Second-hand items",
+    "category": "Office Equipment"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Clothing and Accessories"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Furniture and Decoration"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Electronics"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Vehicles and Accessories"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Toys and Children's Items"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Tools and Gardening/Home Equipment"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Industrial"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Construction equipment"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Sports Equipment"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Musical Instruments"
+  },
+  {
+    "serviceType": "sell",
+    "subServiceType": "Recyclable materials",
+    "category": "Office Equipment"
+  }
+]
