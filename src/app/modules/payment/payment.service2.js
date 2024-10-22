@@ -78,18 +78,28 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (!session) {
-      return { status: "failed", message: "Payment execution failed"};
+      return {
+        status: "failed",
+        message: "Payment execution failed",
+      };
     }
 
     if (session.payment_status !== 'paid') {
-      return { status: "failed", message: "Payment not approved" };
+      return {
+        status: "failed",
+        message: "Payment not approved",
+      };
     }
 
     const serviceId = session.client_reference_id;
     const service = await Services.findById(serviceId);
 
     if (!service) {
-      return { status: "failed", message: "Service not found!" }
+      return {
+        status: "failed",
+        message: "Service not found!",
+        text: 'Payment is Success! but the service you are could not be found. Please contact support.'
+      }
     }
 
     if (service.paymentStatus === 'paid') {
@@ -98,7 +108,9 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     }
 
     // Update payment status for the service
-    await Services.findByIdAndUpdate(serviceId, { paymentStatus: 'paid' }, { new: true });
+    service.paymentStatus = 'paid';
+    service.transactionId = session.payment_intent;
+    await service.save();
 
     const transactionData = {
       serviceId,
@@ -123,15 +135,14 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     console.error('Error processing payment:', error);
     return { status: "failed", message: "Payment execution failed" }
   }
-}; 
-
+};
 // Paypal Payment ------------
 const createCheckoutSessionPaypal = async (req, res) => {
   const { serviceId } = req.body;
   const { userId, role } = req.user;
 
   try {
- 
+
 
     let user;
     if (role === ENUM_USER_ROLE.USER) {
@@ -191,7 +202,7 @@ const createCheckoutSessionPaypal = async (req, res) => {
 
     // Find the approval URL
     const approvalUrl = payment.links.find(link => link.rel === 'approval_url');
-    if (approvalUrl) {  
+    if (approvalUrl) {
       return approvalUrl.href;
     } else {
       throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'No approval URL found');
@@ -204,17 +215,16 @@ const createCheckoutSessionPaypal = async (req, res) => {
 const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
   const { paymentId, PayerID, serviceId, userId } = req.query;
 
-  try { 
-      
+  try {
     const execute_payment_json = {
       "payer_id": PayerID,
     };
- 
+
     const paymentResult = await new Promise((resolve, reject) => {
-         paypal.payment.execute(paymentId, execute_payment_json, async (error, payment) => {
-        if (error) { 
+      paypal.payment.execute(paymentId, execute_payment_json, async (error, payment) => {
+        if (error) {
           return reject({ status: "failed", message: "Payment execution failed" });
-        } 
+        }
 
         // Verify payment status
         if (payment.state !== 'approved') {
@@ -223,26 +233,30 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
 
         const service = await Services.findById(serviceId);
         if (!service) {
-          return reject({ status: "failed", message: "Service not found!" });
+          return reject({
+            status: "failed",
+            message: "Service not found!",
+            text: "Payment is Success! but the service you are could not be found. Please contact support"
+          });
         }
 
         if (service.paymentStatus === 'paid') {
           const existingTransaction = await Transaction.findOne({ serviceId: service._id });
           return resolve({ status: "success", result: existingTransaction });
-        } 
+        }
 
-        const saleId = payment.transactions[0].related_resources[0].sale.id; 
+        const saleId = payment.transactions[0].related_resources[0].sale.id;
 
-           // Update payment status for the service
-           service.paymentStatus = 'paid';
-           service.transactionId = saleId;
-           await service.save();
+        // Update payment status for the service
+        service.paymentStatus = 'paid';
+        service.transactionId = saleId;
+        await service.save();
 
         const transactionData = {
           serviceId,
           userId: service.user,
           partnerId: service.confirmedPartner,
-          paymentMethod: 'PayPal', 
+          paymentMethod: 'PayPal',
           amount: Number(payment.transactions[0].amount.total),
           paymentStatus: "Completed",
           transactionId: saleId,
@@ -256,7 +270,7 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
         const newTransaction = await Transaction.create(transactionData);
         resolve({ status: "success", result: newTransaction });
       });
-    }); 
+    });
     return paymentResult
 
   } catch (error) {
@@ -273,40 +287,44 @@ const paymentStatusCancel = async (req, res) => {
 // Paypal Refund Payment ------------
 const paypalRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
+  try {
 
-  try { 
+    if (!paymentIntentId || !amount || !serviceId) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Missing required parameters!");
+    }
+
     const service = await Services.findById(serviceId);
+
     if (!service) {
-       throw new ApiError(httpStatus.BAD_REQUEST ,"Service not found!" );
-    } 
-    if (service.paymentStatus=== 'refunded' ) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Service not found!");
+    }
+    if (service.paymentStatus === 'refunded') {
       throw new ApiError(httpStatus.BAD_REQUEST, "Service is already refunded!");
     }
-    if (service.paymentStatus!== 'paid' ) {
+    if (service.paymentStatus !== 'paid') {
       throw new ApiError(httpStatus.BAD_REQUEST, "Service is not paid!");
     }
- 
+
+    const takeFee = (4 / 100) * Number(amount)
     const refundData = {
       amount: {
-        total: Number(amount),  
-        currency: "USD",       
+        total: Number(takeFee),
+        currency: "USD",
       }
-    }; 
+    };
     const refund = await new Promise((resolve, reject) => {
       paypal.sale.refund(saleId, refundData, (error, refund) => {
-        if (error) { 
-           reject(error.response?.message)
-           return;
+        if (error) {
+          reject(error.response?.message)
+          return;
         }
         resolve(refund);
       });
     });
-  
-    service.paymentStatus = 'refunded'; 
+
+    service.paymentStatus = 'refunded';
     await service.save();
 
-    console.log("refund",  refund?.payer)
- 
     const transactionData = {
       serviceId,
       userId: service.user,
@@ -326,16 +344,66 @@ const paypalRefundPayment = async (req, res) => {
     const newTransaction = await Transaction.create(transactionData);
 
     // Return success response
-    return  { success: true, transaction: newTransaction };
+    return { success: true, transaction: newTransaction };
 
   } catch (error) {
-    console.error("Refund error:", error); 
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR,  error);
+    console.error("Refund error:", error);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
+  }
+};
+// Stripe Refund Payment ------------
+const stripeRefundPayment = async (req, res) => {
+  const { paymentIntentId, amount, serviceId } = req.body;
+
+  try {
+    if (!paymentIntentId || !amount || !serviceId) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Missing required parameters!");
+    }
+    const service = await Services.findById(serviceId);
+    if (!service) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Service not found!");
+    }
+    if (service.paymentStatus === 'refunded') {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Service is already refunded!");
+    }
+    if (service.paymentStatus !== 'paid') {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Service is not paid!");
+    }
+    const takeFee = (4 / 100) * Number(amount)
+
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      amount: Math.round(takeFee * 100),
+      currency: 'usd',
+    });
+
+    service.paymentStatus = 'refunded';
+    await service.save();
+
+    const transactionData = {
+      serviceId,
+      userId: service.user,
+      partnerId: service.confirmedPartner,
+      paymentMethod: 'Stripe',
+      amount: Number(refund.amount) / 100,
+      paymentStatus: "Refunded",
+      transactionId: refund.id,
+      paymentDetails: {
+        chargeId: refund.charge,
+        currency: refund.currency,
+      },
+    };
+
+    const newTransaction = await Transaction.create(transactionData);
+
+    return res.status(200).json({ success: true, transaction: newTransaction });
+
+  } catch (error) {
+    console.error("Refund error:", error);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message || "Failed to process refund.");
   }
 };
 
- 
-// Stripe Refund Payment ------------
 // Bank Transfer Payment ------------
 const PaymentService = {
   // createConnectedAccountWithBank,
@@ -344,9 +412,9 @@ const PaymentService = {
   paymentStatusCancel,
   createCheckoutSessionPaypal,
   stripeCheckAndUpdateStatusSuccess,
-  paypalRefundPayment
+  paypalRefundPayment,
+  stripeRefundPayment
 }
 
 module.exports = PaymentService;
- 
- 
+

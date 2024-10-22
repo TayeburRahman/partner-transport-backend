@@ -17,7 +17,7 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
     if (data.status === "success") {
         return res.render("success", { amount: data.result?.amount });
       }
-      return  res.render("failed", { message: data.message });
+      return res.render("failed", { message: data.message, text: data.text });
   });
 
   // Cancel page ------------
@@ -41,7 +41,7 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
      if (data.status === "success") {
         return res.render("success", { amount: data.result?.amount });
       }
-      return res.render("failed", { message: data.message });
+      return res.render("failed", { message: data.message, text: data.text });
   });
 
   // Paypal Refund Payment ------------
@@ -58,14 +58,14 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
 
     // Stripe Refund Payment ------------
     const stripeRefundPayment  = catchAsync(async (req, res) => {
-      // const result = await PaymentService.stripeRefundPayment(req);
-      //  console.log(result);
-      //  sendResponse(res, {
-      //   statusCode: 200,
-      //   success: true,
-      //   message: "Refund payment successfully",
-      //   data: result,
-      // });
+      const result = await PaymentService.stripeRefundPayment(req);
+       console.log(result);
+       sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Refund payment successfully",
+        data: result,
+      });
     });
 
  

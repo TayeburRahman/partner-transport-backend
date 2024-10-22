@@ -209,7 +209,6 @@ const conformPartner = async (req) => {
     throw new ApiError(404, "Service not found");
   }
   const partner = await Partner.findOne({ _id: partnerId });
-
   console.log("=================", partner);
 
   if (!partner) {
