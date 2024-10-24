@@ -68,6 +68,21 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
       });
     });
 
+     // Stripe Refund Payment ------------
+     const stripeTransferPayment  = catchAsync(async (req, res) => {
+      const result = await PaymentService.stripeTransferPayment(req);
+       console.log(result);
+       sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Refund payment successfully",
+        data: result,
+      });
+    });
+
+
+     
+
  
 
   const PaymentController = { 
@@ -77,7 +92,8 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
     createCheckoutSessionPaypal,
     paypalCheckAndUpdateStatusSuccess,
     paypalRefundPayment,
-    stripeRefundPayment
+    stripeRefundPayment,
+    stripeTransferPayment
      
   };
   

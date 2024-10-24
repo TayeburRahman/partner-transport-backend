@@ -209,7 +209,6 @@ const conformPartner = async (req) => {
     throw new ApiError(404, "Service not found");
   }
   const partner = await Partner.findOne({ _id: partnerId });
-  console.log("=================", partner);
 
   if (!partner) {
     throw new ApiError(
@@ -456,7 +455,6 @@ const updateServicesStatus = async (req) => {
   return result;
 };
 // -----------------------------------------
-
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const now = new Date();
