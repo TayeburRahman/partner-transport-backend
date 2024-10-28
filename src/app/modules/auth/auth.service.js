@@ -75,9 +75,12 @@ const registrationAccount = async (payload) => {
       }),
     }).catch((error) => console.error("Failed to send email:", error.message));
   }
-
+  
   let createAuth;
-  if (role !== ENUM_USER_ROLE.SUPER_ADMIN) {
+  if (role === ENUM_USER_ROLE.ADMIN) {
+    auth.isActive =true
+    createAuth = await Auth.create(auth);
+  }else {
     createAuth = await Auth.create(auth);
   }
   if (!createAuth) {
@@ -103,7 +106,7 @@ const registrationAccount = async (payload) => {
       throw new ApiError(400, "Invalid role provided!");
   }
 
-  return { result, role, message: "Account created successfully!" }; // Adding a success message
+  return { result, role, message: "Account created successfully!" };  
 };
 
 const activateAccount = async (payload) => {

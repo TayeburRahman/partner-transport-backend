@@ -22,8 +22,7 @@ const AdminSchema = new Schema(
       default: null,
     },
     phone_number: {
-      type: String,
-      required: true,
+      type: String, 
     },
     address: {
       type: String,
@@ -36,6 +35,42 @@ const AdminSchema = new Schema(
     date_of_birth: {
       type: String,
       default: null,
+    },
+    accTo_auction_manage:{
+      type: Boolean,
+      default: false,
+    },
+    accTo_user_manage:{
+      type: Boolean,
+      default: false,
+    },
+    accTo_partner_manage:{
+      type: Boolean,
+      default: false,
+    },
+    accTo_transaction:{
+      type: Boolean,
+      default: false,
+    },
+    accTo_category_manage:{
+      type: Boolean,
+      default: false,
+    }, 
+    accTo_review_conversation:{
+      type: Boolean,
+      default: false,
+    },
+    accTo_bank_transfer:{
+      type: Boolean,
+      default: false,
+    },
+    accTo_support:{
+      type: Boolean,
+      default: false,
+    },
+    accTo_settings:{
+      type: Boolean,
+      default: false,
     },
   },
   {
