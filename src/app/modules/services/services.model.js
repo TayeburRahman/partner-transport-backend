@@ -52,6 +52,10 @@ const ServicesSchema = new Schema(
     rescheduledTime: {
       type: String,
     },
+    doYouDestinationLocation:{
+      type: Boolean,
+      // required: [true, "Do you have a destination location? is required"],
+    },
     rescheduledReason: {
       type: String,
     },
@@ -64,12 +68,12 @@ const ServicesSchema = new Schema(
       required: [true, "Number of items is required"],
     },
     weightMTS: {
-      type: Number,
+      type: String,
       required: [true, "weight in MTS is required"],
-    },
+    }, 
     weightKG: {
       type: Number,
-      required: [true, "weight in KG is required"], 
+      required: [true, "weight in KG is required"],
     },
     description: {
       type: String,
@@ -83,18 +87,16 @@ const ServicesSchema = new Schema(
       type: String,
       required: [true, "Deadline Time is required"],
     },
-    minPrice: {
+    price: {
       type: Number,
-    },
-    maxPrice: {
-      type: Number,
+      default: 1,
     },
     isLoaderNeeded: {
       type: Boolean,
       required: [true, "Loader needed status is required"],
     },
     loadFloorNo: {
-      type: String,
+      type: Number,
       required: [true, "Loading floor number is required"],
     },
     loadingAddress: {
@@ -113,7 +115,8 @@ const ServicesSchema = new Schema(
       type: Boolean,
     },
     unloadFloorNo: {
-      type: String,
+      type: Number,
+      default: 1,
     },
     unloadingAddress: {
       type: String,
@@ -153,14 +156,18 @@ const ServicesSchema = new Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "failed","refunded"],
+      enum: ["pending", "paid", "failed", "refunded"],
       default: "pending",
     },
     transactionId: {
       type: String,
       trim: true,
-      unique: true, 
-  }
+      // unique: true,
+    },
+    distance: {
+      type: Number,
+      default: 0.1,
+    }
   },
   {
     timestamps: true,

@@ -28,11 +28,23 @@ const PartnerSchema = new Schema(
     email: {
       type: String,
       required: true,
-    },
-    address: {
+    }, 
+    city: {
       type: String,
       default: null,
     },
+    state: {
+      type: String,
+      default: null,
+    },
+    country: {
+      type: String,
+      default: null,
+    },
+    neighborhood: {
+      type: String,
+      default: null,
+    }, 
     phone_number: {
       type: String,
       default: null,

@@ -124,7 +124,17 @@ const rescheduledAction = catchAsync(async (req, res) => {
      data: result,
    })
 })
- 
+
+const filterUserByHistory = catchAsync(async (req, res) => {
+  const result = await ServicesService.filterUserByHistory(req);
+   
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Action requested successfully!",
+    data: result,
+  })
+}) 
  
 
 const ServicesController = {
@@ -139,7 +149,8 @@ const ServicesController = {
   getUserServicesWithinOneHour,
   rescheduledPostUser,
   rescheduledAction,
-  updateServicesStatus
+  updateServicesStatus,
+  filterUserByHistory
 };
 
 module.exports = { ServicesController };

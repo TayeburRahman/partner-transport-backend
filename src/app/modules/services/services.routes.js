@@ -24,6 +24,13 @@ router
     auth(ENUM_USER_ROLE.USER),
     ServicesController.getUserPostHistory
   )
+  // ---------------
+  .get(
+    "/history/filter",
+    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
+    ServicesController.filterUserByHistory
+  )
+  // ---------------
   .delete(
     "/delete/:serviceId",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),

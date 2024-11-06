@@ -223,16 +223,6 @@ const getMonthlyRegistrations = catchAsync(async (req, res) => {
   });
 });
 
-const updateVariable = catchAsync(async (req, res) => {
-  const result = await DashboardService.updateVariable(req.body);
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Variable updated successfully",
-    data: result,
-  });
-});
-
 const DashboardController = {
   getAllUsers,
   getUserDetails,
@@ -255,8 +245,7 @@ const DashboardController = {
   getAllAuctions,
   editMinMaxBidAmount,
   totalOverview,
-  getMonthlyRegistrations,
-  updateVariable,
+  getMonthlyRegistrations, 
 };
 
 module.exports = { DashboardController };

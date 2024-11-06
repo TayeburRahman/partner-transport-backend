@@ -34,10 +34,8 @@ const validateScheduleInputs = (scheduleDate, scheduleTime) => {
       "Invalid scheduleTime format. Please use hh:mm AM/PM."
     );
   }
-
   return true;
 };
-
 // Integrate validation into the createPostDB function
 const createPostDB = async (req) => {
   try {
@@ -61,8 +59,8 @@ const createPostDB = async (req) => {
       "loadingAddress",
       "loadLongitude",
       "loadLatitude",
-      "minPrice",
-      "maxPrice",
+      // "price",
+      "distance",
     ];
 
     // Validate required fields
@@ -76,6 +74,18 @@ const createPostDB = async (req) => {
     if (!image || !image.length) {
       throw new ApiError(400, "At least one image is required.");
     }
+
+    let images = []; 
+  
+
+    if (image && Array.isArray(image)) { 
+      images = image.map(file => `/images/services/${file.filename}`);
+    }
+
+
+    console.log("frdrgfgher", images)
+    
+ 
 
     // Validate scheduleDate and scheduleTime formats
     validateScheduleInputs(data.scheduleDate, data.scheduleTime);
@@ -99,7 +109,7 @@ const createPostDB = async (req) => {
       unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
-      image: image.map((img) => img.path),
+      image: images,
       doYouForWaste: data.doYouForWaste === "true",
       bids: [],
       confirmedPartner: null,
@@ -112,8 +122,8 @@ const createPostDB = async (req) => {
           Number(data.unloadLatitude || 0),
         ],
       },
-      minPrice: data.minPrice,
-      maxPrice: data.maxPrice,
+      price: data.price,
+      distance: data.distance,
     };
 
     const newService = new Services(serviceData);
@@ -149,7 +159,6 @@ const updatePostDB = async (req) => {
     throw new ApiError(400, error.message);
   }
 };
-
 const getDetails = async (req) => {
   const { serviceId } = req.params;
 
@@ -321,8 +330,8 @@ const rescheduledPostUser = async (req) => {
 
   return result;
 };
+
 // ----------------PARTNER---------------------------------
-// edit
 const searchNearby = async (req) => {
   const { longitude, latitude } = req.query;
   const { userId } = req.user;
@@ -461,9 +470,8 @@ const getUserServicesWithinOneHour = async (req) => {
 
   const currentTime = now.getTime();
   const oneHourLater = new Date(currentTime + 60 * 60 * 1000);
-  const formattedDate = `${
-    now.getMonth() + 1
-  }/${now.getDate()}/${now.getFullYear()}`;
+  const formattedDate = `${now.getMonth() + 1
+    }/${now.getDate()}/${now.getFullYear()}`;
 
   const currentHours = now.getHours();
   const currentMinutes = now.getMinutes();
@@ -511,6 +519,33 @@ const getUserServicesWithinOneHour = async (req) => {
   return services;
 };
 
+const filterUserByHistory = async (req) => {
+  const { categories, serviceType, serviceStatus } = req.query;
+  const { userId } = req.user;
+  let service;
+  if (serviceType === "move") {
+    service = ["Goods", "Waste"];
+  }
+  if (serviceType === "sell") {
+    service = ["Second-hand items", "Recyclable materials"];
+  }
+
+ const query = req.query;
+ 
+  const filtered = new QueryBuilder(Services.find({
+    user: userId,
+    service,
+    status: serviceStatus,
+  }), query)  
+    .sort()
+    .paginate() 
+
+  const result = await filtered.modelQuery;
+  const meta = await filtered.countTotal();
+
+  return { result, meta };
+};
+
 const ServicesService = {
   createPostDB,
   updatePostDB,
@@ -524,6 +559,7 @@ const ServicesService = {
   rescheduledPostUser,
   rescheduledAction,
   updateServicesStatus,
+  filterUserByHistory
 };
 
 module.exports = { ServicesService };

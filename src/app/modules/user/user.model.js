@@ -56,7 +56,7 @@ const UserSchema = new Schema(
       type: Number,
       default: 0,
     },
-    status:{
+    status: {
       type: String,
       enum: ["active", "deactivate"],
       default: "active"

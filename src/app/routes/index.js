@@ -10,6 +10,7 @@ const BidsRoutes = require("../modules/bid/bid.routes");
 const CategoryRoutes = require("../modules/category/category.routes");
 const MessageRoutes = require("../modules/message/message.routes");
 const PaymentRoutes = require("../modules/payment/payment.routes");
+const VariableRoutes = require("../modules/variable/variable.route");
 
 const moduleRoutes = [
   {
@@ -35,6 +36,10 @@ const moduleRoutes = [
   {
     path: "/services",
     route: ServicesRoutes,
+  },
+  {
+    path: "/variables",
+    route: VariableRoutes,
   },
   {
     path: "/bids",

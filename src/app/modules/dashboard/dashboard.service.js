@@ -605,26 +605,7 @@ const totalOverview = async () => {
   };
 };
 
-// variable ========================
-const updateVariable = async (payload) => {
-  const { surcharge, coverageRadius } = payload;
-
-  const existingVariable = await Variable.findOne({});
-  if (!existingVariable) {
-    return await Variable.create(payload);
-  }
-
-  const update = {
-    ...(surcharge && { surcharge }),
-    ...(coverageRadius && { coverageRadius }),
-  };
-
-  return await Variable.findOneAndUpdate(
-    {},
-    { $set: update },
-    { new: true, runValidators: true }
-  );
-};
+ 
 
 const DashboardService = {
   getAllUsers,
@@ -648,8 +629,7 @@ const DashboardService = {
   getAllAuctions,
   editMinMaxBidAmount,
   totalOverview,
-  getMonthlyRegistrations,
-  updateVariable,
+  getMonthlyRegistrations, 
 };
 
 module.exports = { DashboardService };

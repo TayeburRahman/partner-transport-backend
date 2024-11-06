@@ -2,7 +2,7 @@ class QueryBuilder {
   constructor(modelQuery, query) {
     this.modelQuery = modelQuery;
     this.query = query;
-  }
+  } 
 
   search(searchableFields) {
     const searchTerm = this.query?.searchTerm;
@@ -17,10 +17,11 @@ class QueryBuilder {
     }
     return this;
   }
+ 
 
   filter() {
     const queryObj = { ...this.query }; // copy
-
+   
     // Filtering
     const excludeFields = ["searchTerm", "sort", "limit", "page", "fields"];
 
@@ -60,6 +61,8 @@ class QueryBuilder {
     const page = Number(this.query?.page) || 1;
     const limit = Number(this.query?.limit) || 10;
     const totalPage = Math.ceil(total / limit);
+
+ 
 
     return {
       page,

@@ -3,8 +3,7 @@ const ApiError = require("../../../errors/ApiError");
 const { ENUM_SOCKET_EVENT, ENUM_USER_ROLE } = require("../../../utils/enums");
 const Services = require("../services/services.model");
 // const Order = require("../order/order.model");
-const Partner = require("./partner.model");
-// const Driver = require("./driver.model"); 
+const Partner = require("./partner.model"); 
 
 
 

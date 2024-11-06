@@ -43,24 +43,25 @@ const updateProfile = async (req) => {
       fileUploads.vehicleSideImage = `/images/vehicle-image/${files.vehicleSideImage[0].filename}`;
     }
   }
+  
+  const updatedUserData = { ...data, ...fileUploads }; 
 
-  const updatedUserData = { ...data, ...fileUploads };
-
-  const [, result] = await Promise.all([
+  const [auth, result] = await Promise.all([
     Auth.findByIdAndUpdate(
       authId,
       { name: updatedUserData.name },
       {
         new: true,
+        runValidators: true,
       }
     ),
     Partner.findByIdAndUpdate(userId, updatedUserData, {
       new: true,
       runValidators: true,
     }),
-  ]);
+  ]); 
 
-  return result;
+  return {auth, result};
 };
 
 const getProfile = async (user) => {

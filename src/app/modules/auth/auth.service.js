@@ -46,11 +46,11 @@ const registrationAccount = async (payload) => {
   if (existingAuth && !existingAuth.isActive) {
     await Promise.all([
       existingAuth.role === "USER" &&
-        User.deleteOne({ authId: existingAuth._id }),
+      User.deleteOne({ authId: existingAuth._id }),
       existingAuth.role === "PARTNER" &&
-        Partner.deleteOne({ authId: existingAuth._id }),
+      Partner.deleteOne({ authId: existingAuth._id }),
       existingAuth.role === "ADMIN" &&
-        Admin.deleteOne({ authId: existingAuth._id }),
+      Admin.deleteOne({ authId: existingAuth._id }),
       Auth.deleteOne({ email }),
     ]);
   }
@@ -75,12 +75,12 @@ const registrationAccount = async (payload) => {
       }),
     }).catch((error) => console.error("Failed to send email:", error.message));
   }
-  
+
   let createAuth;
   if (role === ENUM_USER_ROLE.ADMIN) {
-    auth.isActive =true
+    auth.isActive = true
     createAuth = await Auth.create(auth);
-  }else {
+  } else {
     createAuth = await Auth.create(auth);
   }
   if (!createAuth) {
@@ -106,7 +106,7 @@ const registrationAccount = async (payload) => {
       throw new ApiError(400, "Invalid role provided!");
   }
 
-  return { result, role, message: "Account created successfully!" };  
+  return { result, role, message: "Account created successfully!" };
 };
 
 const activateAccount = async (payload) => {
@@ -119,7 +119,7 @@ const activateAccount = async (payload) => {
   if (existAuth.activationCode !== activation_code) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Code didn't match!");
   }
-  const user = await Auth.findOneAndUpdate(
+  const auth = await Auth.findOneAndUpdate(
     { email: userEmail },
     { isActive: true },
     {
@@ -127,12 +127,9 @@ const activateAccount = async (payload) => {
       runValidators: true,
     }
   );
-
   let result = {};
 
   if (existAuth.role === ENUM_USER_ROLE.USER) {
-    console.log("hit1");
-
     result = await User.findOne({ authId: existAuth._id });
   } else if (
     existAuth.role === ENUM_USER_ROLE.ADMIN ||
@@ -154,16 +151,20 @@ const activateAccount = async (payload) => {
     config.jwt.secret,
     config.jwt.expires_in
   );
+
   const refreshToken = jwtHelpers.createToken(
     { authId: existAuth._id, userId: result._id, role: existAuth.role },
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
   );
 
+
   return {
+    id: auth._id,
+    role: auth.role,
     accessToken,
     refreshToken,
-    user,
+    user: result,
   };
 };
 
@@ -191,30 +192,21 @@ const loginAccount = async (payload) => {
   const { _id: authId } = isAuth;
   let userDetails;
   let role;
-
   switch (isAuth.role) {
     case ENUM_USER_ROLE.USER:
-      userDetails = await User.findOne({ authId: isAuth._id }).populate(
-        "authId"
-      );
+      userDetails = await User.findOne({ authId: isAuth._id })
       role = ENUM_USER_ROLE.USER;
       break;
     case ENUM_USER_ROLE.PARTNER:
-      userDetails = await Partner.findOne({ authId: isAuth._id }).populate(
-        "authId"
-      );
+      userDetails = await Partner.findOne({ authId: isAuth._id })
       role = ENUM_USER_ROLE.PARTNER;
       break;
     case ENUM_USER_ROLE.ADMIN:
-      userDetails = await Admin.findOne({ authId: isAuth._id }).populate(
-        "authId"
-      );
+      userDetails = await Admin.findOne({ authId: isAuth._id })
       role = ENUM_USER_ROLE.ADMIN;
       break;
     case ENUM_USER_ROLE.SUPER_ADMIN:
-      userDetails = await Admin.findOne({ authId: isAuth._id }).populate(
-        "authId"
-      );
+      userDetails = await Admin.findOne({ authId: isAuth._id })
       role = ENUM_USER_ROLE.SUPER_ADMIN;
       break;
     default:
@@ -232,11 +224,9 @@ const loginAccount = async (payload) => {
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
   );
-
   return {
     id: isAuth._id,
-    conversationId: isAuth.conversationId,
-    isPaid: isAuth.isPaid,
+    role: isAuth.role,
     accessToken,
     refreshToken,
     user: userDetails,
@@ -332,8 +322,10 @@ const resetPassword = async (req) => {
 
 const changePassword = async (user, payload) => {
   const { authId } = user;
-
   const { oldPassword, newPassword, confirmPassword } = payload;
+
+  // console.log("Change password", oldPassword, newPassword, confirmPassword)
+
   if (newPassword !== confirmPassword) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,

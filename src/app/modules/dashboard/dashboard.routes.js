@@ -123,10 +123,6 @@ router
   )
 
   // variable ========================
-  .patch(
-    "/update-variable",
-    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    DashboardController.updateVariable
-  );
+ 
 
 module.exports = router;

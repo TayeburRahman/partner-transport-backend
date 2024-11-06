@@ -5,11 +5,10 @@ const routes = require("./app/routes");
 const NotFoundHandler = require("./errors/NotFoundHandler");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const path = require("path"); 
-const config = require("./config"); 
+const path = require("path");
+const config = require("./config");
 
 const app = express();
-
 // CORS configuration
 app.use(
   cors({
@@ -21,16 +20,23 @@ app.use(
       "https://103.161.9.133:3003",
       "http://localhost:3003",
       "http://localhost:5173",
-      "http://localhost:3005",
+      "http://localhost:3005", 
+      //-Sukumar Bhai-------
+      "http://192.168.10.26:3000", 
+      "http://192.168.10.26:3001",
+      "http://192.168.10.26:3002",
+      "http://192.168.10.26:3003",
+      "http://192.168.10.26:3004",
+      "http://192.168.10.26:3005"
     ],
     credentials: true,
   })
 );
 
 // Set views directory and view engine
-app.set("views", path.join(__dirname, "./app/views"));  
+app.set("views", path.join(__dirname, "./app/views"));
 app.set("view engine", "ejs");
-  
+
 
 // Middleware setup
 app.use(express.json());
@@ -49,8 +55,8 @@ app.use("/", routes);
 // });
 
 // Home route to render index.ejs
-app.get("/", async (req, res) => { 
-    res.json("Welcome to Partner Transport");
+app.get("/", async (req, res) => {
+  res.json("Welcome to Partner Transport");
 });
 
 // Global Error Handler

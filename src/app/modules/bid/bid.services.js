@@ -1,5 +1,7 @@
 const ApiError = require("../../../errors/ApiError");
 const Services = require("../services/services.model");
+const VariableCount = require("../variable/variable.count");
+const calculateBedCosts  = require("../variable/variable.count");
 const Bids = require("./bid.model");
 
 const partnerBidPost = async (req) => {
@@ -12,13 +14,23 @@ const partnerBidPost = async (req) => {
   }
 
   const foundService = await Services.findById(serviceId);
-  if (price > foundService.maxPrice || price < foundService.minPrice) {
-    throw new ApiError(400, "Price must less than maxPrice and more");
-  }
 
   if (!foundService) {
     throw new ApiError(404, "Service not found");
   }
+ 
+const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
+//  console.log("llllllllllllll", minimumBed, maximumBed)
+ 
+ if (price < minimumBed) {
+  throw new ApiError(400, `Price must be greater than or equal to ${minimumBed}`);
+}
+
+if (price > maximumBed) {
+  throw new ApiError(400, `Price must be less than or equal to ${maximumBed}`);
+}
+
+  
 
   const existingBid = await Bids.findOne({
     service: serviceId,
