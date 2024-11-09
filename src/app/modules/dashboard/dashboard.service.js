@@ -630,7 +630,7 @@ const filterAndSortServices = async (req, res) => {
   } = req.query;
 
   const categories = req.body.categories || [];  
- 
+  
   const filterQuery = {};
 
   if (service) {
