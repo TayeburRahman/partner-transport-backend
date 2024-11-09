@@ -269,9 +269,7 @@ const approveDeclinePartner = async (payload) => {
   }
 
   return active;
-};
-
-// Manage ========================
+}; 
 
 const addTermsConditions = async (payload) => {
   const checkIsExist = await TermsConditions.findOne();
@@ -604,6 +602,77 @@ const totalOverview = async () => {
     totalAuction,
   };
 };
+ 
+const parseDateTime = (date, time) => {
+  const [month, day, year] = date.split('/').map(Number);
+  const [hours, minutes] = time.split(':').map((part, index) => {
+    if (index === 0) {
+      return parseInt(part, 10);  
+    }
+    return parseInt(part, 10); 
+  });
+
+  let adjustedHours = hours;
+  if (time.includes("PM") && hours < 12) {
+    adjustedHours += 12;   
+  } else if (time.includes("AM") && hours === 12) {
+    adjustedHours = 0;  
+  }
+
+  return new Date(year, month - 1, day, adjustedHours, minutes);
+};
+ 
+const filterAndSortServices = async (req, res) => {
+  const {
+    service,      
+    sortBy ,
+    sortOrder,
+  } = req.query;
+
+  const categories = req.body.categories || [];  
+ 
+  const filterQuery = {};
+
+  if (service) {
+    filterQuery.service = { $regex: service, $options: "i" };  
+  }
+
+  if (categories.length > 0) {
+    filterQuery.category = { $in: categories };  
+  }
+ 
+  const services = await Services.find(filterQuery);
+ 
+  const getRelevantDate = (service) => {
+    if (sortBy === 'deadline' && service.deadlineDate && service.deadlineTime) {
+      return parseDateTime(service.deadlineDate, service.deadlineTime);
+    } else if (sortBy === 'schedule' && service.scheduleDate && service.scheduleTime) {
+      return parseDateTime(service.scheduleDate, service.scheduleTime);
+    }
+    return null;
+  };
+ 
+  const sortedServices = services.sort((a, b) => {
+    const dateA = getRelevantDate(a);
+    const dateB = getRelevantDate(b);
+
+    if (!dateA || !dateB) return 0;  
+ 
+    if (sortOrder === "endSoon") {
+      return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
+    }
+ 
+    if (sortOrder === "laterFast") {
+      return dateA > dateB ? -1 : dateA < dateB ? 1 : 0;
+    }
+
+    return 0;  
+  });
+ 
+  return sortedServices;
+};
+
+
 
  
 
@@ -630,6 +699,7 @@ const DashboardService = {
   editMinMaxBidAmount,
   totalOverview,
   getMonthlyRegistrations, 
+  filterAndSortServices
 };
 
 module.exports = { DashboardService };

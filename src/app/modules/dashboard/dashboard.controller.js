@@ -223,6 +223,19 @@ const getMonthlyRegistrations = catchAsync(async (req, res) => {
   });
 });
 
+const filterAndSortServices = catchAsync(async (req, res) => {
+  const result = await DashboardService.filterAndSortServices(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Retrieved successfully",
+    data: result,
+  });
+});
+
+
+ 
+
 const DashboardController = {
   getAllUsers,
   getUserDetails,
@@ -246,6 +259,7 @@ const DashboardController = {
   editMinMaxBidAmount,
   totalOverview,
   getMonthlyRegistrations, 
+  filterAndSortServices
 };
 
 module.exports = { DashboardController };

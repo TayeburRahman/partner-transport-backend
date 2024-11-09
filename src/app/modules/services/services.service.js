@@ -60,7 +60,7 @@ const createPostDB = async (req) => {
       "loadLongitude",
       "loadLatitude",
       // "price",
-      "distance",
+      // "distance",
     ];
 
     // Validate required fields
@@ -81,11 +81,6 @@ const createPostDB = async (req) => {
     if (image && Array.isArray(image)) { 
       images = image.map(file => `/images/services/${file.filename}`);
     }
-
-
-    console.log("frdrgfgher", images)
-    
- 
 
     // Validate scheduleDate and scheduleTime formats
     validateScheduleInputs(data.scheduleDate, data.scheduleTime);
@@ -159,6 +154,17 @@ const updatePostDB = async (req) => {
     throw new ApiError(400, error.message);
   }
 };
+
+// const getPaddingService = async (req) => { 
+
+//   const result = await Services.find({}).sort({ createdAt: -1 })
+//   if (!result) {
+//     throw new ApiError(404, "Service not found");
+//   }
+//   return result;
+// };
+
+
 const getDetails = async (req) => {
   const { serviceId } = req.params;
 
@@ -559,7 +565,7 @@ const ServicesService = {
   rescheduledPostUser,
   rescheduledAction,
   updateServicesStatus,
-  filterUserByHistory
+  filterUserByHistory, 
 };
 
 module.exports = { ServicesService };

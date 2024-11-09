@@ -54,6 +54,9 @@ const deletePostDB = catchAsync(async (req, res) => {
 });
 
 // ----------Partner--------------------------------
+ 
+ 
+
 const searchNearby = catchAsync(async (req, res) => {
   const result = await ServicesService.searchNearby(req);
   sendResponse(res, {
@@ -150,7 +153,8 @@ const ServicesController = {
   rescheduledPostUser,
   rescheduledAction,
   updateServicesStatus,
-  filterUserByHistory
+  filterUserByHistory,
+   
 };
 
 module.exports = { ServicesController };

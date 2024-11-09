@@ -53,6 +53,7 @@ router
   )  
   
   // ------Partner action--------------
+   
   .get(
     "/search_nearby",
     auth(ENUM_USER_ROLE.PARTNER),
