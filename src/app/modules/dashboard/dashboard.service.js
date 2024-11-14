@@ -273,7 +273,6 @@ const approveDeclinePartner = async (payload) => {
 
 const addTermsConditions = async (payload) => {
   const checkIsExist = await TermsConditions.findOne();
-
   if (checkIsExist) {
     const result = await TermsConditions.findOneAndUpdate({}, payload, {
       new: true,
@@ -464,24 +463,23 @@ const calculateYearlyRevenue = async (query) => {
         createdAt: {
           $gte: startDate,
           $lt: endDate,
-        },
-        // paymentStatus: "succeeded", // Only include successful payments
+        }, 
       },
     },
     {
       $project: {
-        price: 1, // Only keep the price field
-        month: { $month: "$createdAt" }, // Extract the month from createdAt
+        price: 1,  
+        month: { $month: "$createdAt" }, 
       },
     },
     {
       $group: {
-        _id: "$month", // Group by the month
-        totalRevenue: { $sum: "$price" }, // Sum up the price for each month
+        _id: "$month", 
+        totalRevenue: { $sum: "$price" },  
       },
     },
     {
-      $sort: { _id: 1 }, // Sort the result by month (ascending)
+      $sort: { _id: 1 }, 
     },
   ]);
 
@@ -630,7 +628,7 @@ const filterAndSortServices = async (req, res) => {
   } = req.query;
 
   const categories = req.body.categories || [];  
-  
+
   const filterQuery = {};
 
   if (service) {
@@ -642,7 +640,6 @@ const filterAndSortServices = async (req, res) => {
   }
  
   const services = await Services.find(filterQuery);
- 
   const getRelevantDate = (service) => {
     if (sortBy === 'deadline' && service.deadlineDate && service.deadlineTime) {
       return parseDateTime(service.deadlineDate, service.deadlineTime);
