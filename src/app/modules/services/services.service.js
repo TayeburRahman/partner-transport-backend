@@ -164,7 +164,6 @@ const updatePostDB = async (req) => {
 //   return result;
 // };
 
-
 const getDetails = async (req) => {
   const { serviceId } = req.params;
 
@@ -440,35 +439,8 @@ const rescheduledAction = async (req) => {
   );
 
   return result;
-};
+}; 
 
-const updateServicesStatus = async (req) => {
-  const { serviceId, status } = req.query;
-
-  if (!serviceId || !status) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "serviceId and status are required in the query!"
-    );
-  }
-
-  const service = await Services.findById(serviceId);
-  if (!service) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Service not found!");
-  }
-
-  if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status value!");
-  }
-
-  const result = await Services.findOneAndUpdate(
-    { _id: serviceId },
-    { status: status },
-    { new: true }
-  );
-
-  return result;
-};
 // -----------------------------------------
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
@@ -552,6 +524,111 @@ const filterUserByHistory = async (req) => {
   return { result, meta };
 };
 
+// ----------------------------
+const updateServicesStatusPartner = async (req) => {
+  const { serviceId, status } = req.query;
+
+  if (!serviceId || !status) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Service ID and status are required in the query parameters."
+    );
+  }
+
+  const service = await Services.findById(serviceId);
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
+  }
+
+  if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
+  }
+
+  // Validation of status transitions for partner
+  if (status === "arrived" && service.status !== "accepted") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
+  }
+
+  if (status === "start-trip" && service.user_status !== "goods-loaded") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm goods are loaded before starting the trip.");
+  }
+
+  if (status === "arrive-at-destination" && (service.partner_status !== "start-trip" || service.user_status !== "goods-loaded")) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Trip must be started and goods must be loaded before arriving at the destination.");
+  }
+
+  if (status === "delivered" && service.user_status !== "partner-at-destination") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm partner is at the destination before marking as delivered.");
+  }
+
+  // Determine service status based on partner action
+  let service_status = service.status;
+  if (status === "start-trip") {
+    service_status = "in-progress";
+  }
+
+  const result = await Services.findOneAndUpdate(
+    { _id: serviceId },
+    { partner_status: status, status: service_status },
+    { new: true }
+  );
+
+  return result;
+};
+
+const updateServicesStatusUser = async (req) => {
+  const { serviceId, status } = req.query;
+
+  if (!serviceId || !status) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Service ID and status are required in the query parameters."
+    );
+  }
+
+  const service = await Services.findById(serviceId);
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
+  }
+
+  if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
+  }
+
+  // Validation of status transitions for user
+  if (status === "confirm-arrived" && service.partner_status !== "arrived") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
+  }
+
+  if (status === "goods-loaded" && (service.user_status !== "confirm-arrived" || service.partner_status !== "arrived")) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive and user must confirm arrival before loading goods.");
+  }
+
+  if (status === "partner-at-destination" && service.partner_status !== "arrive-at-destination") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive at destination before confirming destination.");
+  }
+
+  if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark delivery before confirming delivery.");
+  }
+
+  // Determine service status based on user action
+  let service_status = service.status;
+  if (status === "goods-loaded") {
+    service_status = "pick-up";
+  } else if (status === "delivery-confirmed") {
+    service_status = "completed";
+  }
+
+  const result = await Services.findOneAndUpdate(
+    { _id: serviceId },
+    { user_status: status, status: service_status },
+    { new: true }
+  );
+
+  return result;
+};
+
 const ServicesService = {
   createPostDB,
   updatePostDB,
@@ -564,8 +641,9 @@ const ServicesService = {
   getUserServicesWithinOneHour,
   rescheduledPostUser,
   rescheduledAction,
-  updateServicesStatus,
+  updateServicesStatusPartner,
   filterUserByHistory, 
+  updateServicesStatusUser,
 };
 
 module.exports = { ServicesService };

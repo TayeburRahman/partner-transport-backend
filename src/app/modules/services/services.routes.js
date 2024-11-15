@@ -53,7 +53,6 @@ router
   )  
   
   // ------Partner action--------------
-   
   .get(
     "/search_nearby",
     auth(ENUM_USER_ROLE.PARTNER),
@@ -65,9 +64,15 @@ router
     ServicesController.rescheduledAction
   ) 
   .patch(
-    "/update_status",
+    "/update-status-users",
+    auth(ENUM_USER_ROLE.USER),
+    ServicesController.updateServicesStatusUser
+  )  
+
+  .patch(
+    "/update-status-partner",
     auth(ENUM_USER_ROLE.PARTNER),
-    ServicesController.updateServicesStatus
+    ServicesController.updateServicesStatusPartner
   )  
 
   // ------------------------------

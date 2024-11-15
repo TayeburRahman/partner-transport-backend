@@ -12,14 +12,14 @@ const socket = async (io) => {
   io.on(ENUM_SOCKET_EVENT.CONNECT, async (socket) => {
     const currentUserId = socket.handshake.query.id;
     const role = socket.handshake.query.role;
- 
 
-    socket.join(currentUserId);
-    console.log("A user connected", currentUserId);
+    socket.join(currentUserId); 
 
     // Add the user to the online users set
     onlineUsers.add(currentUserId);
     io.emit("onlineUser", Array.from(onlineUsers));
+
+    // console.log("A user connected======", onlineUsers);
 
     // Handle massage events
     await handleMessageData(currentUserId, role, socket, io)
@@ -29,9 +29,6 @@ const socket = async (io) => {
 
     // Handle partner events
     await handlePartnerData(currentUserId, role, socket, io)
-
-    // Handle chat functionality (uncomment if needed)
-    // handleChat(io, socket, currentUserId, onlineUsers);
 
     // Handle user disconnection
     socket.on("disconnect", () => {

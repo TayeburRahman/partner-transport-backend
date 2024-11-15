@@ -31,6 +31,14 @@ const ENUM_SERVICE_STATUS = {
   IN_PROGRESS: "in-progress",
   COMPLETED: "completed",
   CANCEL: "cancel",
+  CONFIRM_ARRIVED:"confirm-arrived",
+  GOODS_LOADED:"goods-loaded",
+  PARTNER_AT_DESTINATION:"partner-at-destination",
+  DELIVERY_CONFIRMED:"delivery-confirmed",
+  ARRIVED:"arrived",
+  START_TRIP:"start-trip",
+  ARRIVE_AT_DESTINATION:"arrive-at-destination",
+  DELIVERED:"delivered", 
 };
 
 const ENUM_SERVICE_TYPE = {

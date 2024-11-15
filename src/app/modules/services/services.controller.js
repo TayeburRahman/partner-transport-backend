@@ -97,8 +97,8 @@ const getUserServicesWithinOneHour = catchAsync(async (req, res) => {
   });
 });
 
-const updateServicesStatus = catchAsync(async (req, res) => {
-  const result = await ServicesService.updateServicesStatus(req);
+const updateServicesStatusPartner = catchAsync(async (req, res) => {
+  const result = await ServicesService.updateServicesStatusPartner(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -106,6 +106,18 @@ const updateServicesStatus = catchAsync(async (req, res) => {
     data: result,
   });
 }); 
+
+const updateServicesStatusUser = catchAsync(async (req, res) => {
+  const result = await ServicesService.updateServicesStatusUser(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Status update successfully",
+    data: result,
+  });
+}); 
+
+ 
 
 const rescheduledPostUser = catchAsync(async (req, res) => {
   const result = await ServicesService.rescheduledPostUser(req);
@@ -118,8 +130,7 @@ const rescheduledPostUser = catchAsync(async (req, res) => {
 });
 
 const rescheduledAction = catchAsync(async (req, res) => {
-   const result = await ServicesService.rescheduledAction(req);
-    
+   const result = await ServicesService.rescheduledAction(req); 
    sendResponse(res, {
      statusCode: 200,
      success: true,
@@ -152,8 +163,9 @@ const ServicesController = {
   getUserServicesWithinOneHour,
   rescheduledPostUser,
   rescheduledAction,
-  updateServicesStatus,
+  updateServicesStatusPartner,
   filterUserByHistory,
+  updateServicesStatusUser,
    
 };
 

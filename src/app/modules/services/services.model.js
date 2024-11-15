@@ -144,6 +144,28 @@ const ServicesSchema = new Schema(
       ],
       default: "pending",
     },
+    user_status: {
+      type: String,
+      enum: [
+        "pending",
+        "confirm-arrived",
+        "goods-loaded",
+        "partner-at-destination",
+        "delivery-confirmed" 
+      ],
+      default: "pending",
+    },
+    partner_status: {
+      type: String,
+      enum: [
+        "pending",
+        "arrived",
+        "start-trip",
+        "arrive-at-destination",
+        "delivered", 
+      ],
+      default: "pending",
+    },
     bids: [
       {
         type: mongoose.Schema.ObjectId,

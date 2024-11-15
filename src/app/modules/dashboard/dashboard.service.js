@@ -455,7 +455,7 @@ const calculateYearlyRevenue = async (query) => {
     },
   ]);
 
-  const totalYears = distinctYears.map((item) => item.year);
+  const totalYears = distinctYears.map((item)  => item.year);
 
   const revenue = await Subscription.aggregate([
     {
