@@ -49,7 +49,7 @@ const registrationAccount = async (payload) => {
       User.deleteOne({ authId: existingAuth._id }),
       existingAuth.role === "PARTNER" &&
       Partner.deleteOne({ authId: existingAuth._id }),
-      existingAuth.role === "ADMIN" &&
+      existingAuth.role === "ADMIN" || existingAuth.role === "SUPER_ADMIN" &&
       Admin.deleteOne({ authId: existingAuth._id }),
       Auth.deleteOne({ email }),
     ]);
@@ -77,7 +77,7 @@ const registrationAccount = async (payload) => {
   }
 
   let createAuth;
-  if (role === ENUM_USER_ROLE.ADMIN) {
+  if (role === ENUM_USER_ROLE.ADMIN || role === ENUM_USER_ROLE.SUPER_ADMIN) {
     auth.isActive = true
     createAuth = await Auth.create(auth);
   } else {
@@ -97,6 +97,9 @@ const registrationAccount = async (payload) => {
       result = await User.create(other);
       break;
     case ENUM_USER_ROLE.ADMIN:
+      result = await Admin.create(other);
+      break;
+    case ENUM_USER_ROLE.SUPER_ADMIN:
       result = await Admin.create(other);
       break;
     case ENUM_USER_ROLE.PARTNER:

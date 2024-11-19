@@ -33,8 +33,9 @@ const socket = async (io) => {
     // Handle user disconnection
     socket.on("disconnect", () => {
       console.log("A user disconnected", currentUserId);
-      onlineUsers.delete(currentUserId); // Remove user from online users
-      io.emit("onlineUser", Array.from(onlineUsers)); // Update online user list
+      // Remove user from online users
+      onlineUsers.delete(currentUserId);  
+      io.emit("onlineUser", Array.from(onlineUsers)); 
     });
   });
 };

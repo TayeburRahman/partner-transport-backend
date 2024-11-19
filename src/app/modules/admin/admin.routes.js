@@ -9,7 +9,7 @@ const router = express.Router();
 router
   .get(
     "/profile",
-    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
     AdminController.myProfile
   )
   .patch(

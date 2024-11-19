@@ -8,7 +8,7 @@ const registrationAccount = catchAsync(async (req, res) => {
   let message;
       message=  role === "USER" && "Please check your email for the activation OTP code." 
       message=  role === "PARTNER" && "Your account is awaiting admin approval." 
-      message=  role === "ADMIN" && "Create a new admin successfully."  
+      message=  role === "ADMIN" || "SUPER_ADMIN" && "Create a new admin successfully."  
 
   sendResponse(res, {
     statusCode: 200,

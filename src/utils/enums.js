@@ -48,6 +48,22 @@ const ENUM_SERVICE_TYPE = {
   RECYCLABLE_MATERIALS: "Recyclable materials",
 };
 
+const ENUM_ADMIN_ACCESS = {
+  ACC_TO_AUCTION_MANAGE: "accTo_auction_manage",
+  ACC_TO_USER_MANAGE: "accTo_user_manage",
+  ACC_TO_PARTNER_MANAGE: "accTo_partner_manage",
+  ACC_TO_TRANSACTION: "accTo_transaction",
+  ACC_TO_CATEGORY_MANAGE: "accTo_category_manage",
+  ACC_TO_REVIEW_CONVERSATION: "accTo_review_conversation",
+  ACC_TO_BANK_TRANSFER: "accTo_bank_transfer",
+  ACC_TO_VARIABLE_MANAGE: "accTo_variable_manage", //
+  ACC_TO_SUPPORT: "accTo_support",
+  ACC_TO_SETTINGS: "accTo_settings",
+  ACC_TO_EDIT: "accTo_editor",//
+  ACC_TO_ADMIN_MANAGE: "accTo_admin_manage",//
+  ACC_TO_NOTIFICATION_MANAGE: "accTo_notifications_manage",//
+};
+
 const ENUM_PAYMENT_STATUS = {};
 
  
@@ -58,4 +74,5 @@ module.exports = {
   ENUM_SERVICE_STATUS,
   ENUM_SERVICE_TYPE,
   ENUM_PAYMENT_STATUS,
+  ENUM_ADMIN_ACCESS
 };

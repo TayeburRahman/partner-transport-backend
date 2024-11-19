@@ -14,7 +14,7 @@
   "lint-staged": {
     "src/**/*.js": "yarn lint-prettier"
   },
-  "author": "thakur-saad",
+  "author": "tayebrayhan101@gmail.com",
   "license": "ISC",
   "description": "mobile app for a single vendor business",
   "dependencies": {

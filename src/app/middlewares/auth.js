@@ -45,6 +45,7 @@ const auth =
             "Access Forbidden: You do not have permission to perform this action"
           );
         }
+        
         next();
       }
     } catch (error) {
