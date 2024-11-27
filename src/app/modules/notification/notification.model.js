@@ -20,6 +20,10 @@ const notificationSchema = new Schema(
       type: String,
       required: true,
     },
+    admin_ms: {
+      type: Boolean,
+      required: false,
+    },
     message: {
       type: String,
       required: true,

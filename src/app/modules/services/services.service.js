@@ -35,8 +35,7 @@ const validateScheduleInputs = (scheduleDate, scheduleTime) => {
     );
   }
   return true;
-};
-// Integrate validation into the createPostDB function
+}; 
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
@@ -59,6 +58,7 @@ const createPostDB = async (req) => {
       "loadingAddress",
       "loadLongitude",
       "loadLatitude",
+      "mainService"
       // "price",
       // "distance",
     ];
@@ -154,16 +154,7 @@ const updatePostDB = async (req) => {
     throw new ApiError(400, error.message);
   }
 };
-
-// const getPaddingService = async (req) => { 
-
-//   const result = await Services.find({}).sort({ createdAt: -1 })
-//   if (!result) {
-//     throw new ApiError(404, "Service not found");
-//   }
-//   return result;
-// };
-
+ 
 const getDetails = async (req) => {
   const { serviceId } = req.params;
 
@@ -353,6 +344,7 @@ const searchNearby = async (req) => {
   }
 
   const { coverageRadius } = await Variable.findOne({});
+  console.log("=======", lng, lat, coverageRadius);
 
   const nearbyServices = await Services.aggregate([
     {
@@ -363,7 +355,7 @@ const searchNearby = async (req) => {
         },
         distanceField: "distance",
         spherical: true,
-        maxDistance: coverageRadius ? coverageRadius : 10000,
+        maxDistance: coverageRadius ? Number(coverageRadius * 1000)  :  Number(10000 * 1000) ,
       },
     },
     {
@@ -439,7 +431,7 @@ const rescheduledAction = async (req) => {
   );
 
   return result;
-}; 
+};  
 
 // -----------------------------------------
 const getUserServicesWithinOneHour = async (req) => {
@@ -543,6 +535,8 @@ const updateServicesStatusPartner = async (req) => {
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
+
+  console.log("service", service.status)
 
   // Validation of status transitions for partner
   if (status === "arrived" && service.status !== "accepted") {

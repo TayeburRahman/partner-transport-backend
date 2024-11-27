@@ -4,7 +4,6 @@ const Notification = require("./notification.model");
  
 
 const handleNotification = async (receiverId, role, socket, io) => {
- 
     // get all notifications 
     socket.on(ENUM_SOCKET_EVENT.NOTIFICATION, async (data) => { 
       console.log("get all notification:", role , receiverId);

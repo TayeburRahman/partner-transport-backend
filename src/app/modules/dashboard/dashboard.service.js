@@ -14,9 +14,17 @@ const { resetEmailTemplate } = require("../../../mails/reset.email");
 const disapprovedBody = require("../../../mails/disapprovedBody");
 const Services = require("../services/services.model");
 const Variable = require("../variable/variable.model");
+const { Transaction } = require("../payment/payment.model");
+const Notification = require("../notification/notification.model");
 
-// User Partner Admin Management ========================
 
+const getYearRange = (year) => {
+  const startDate = new Date(`${year}-01-01`);
+  const endDate = new Date(`${year}-12-31`);
+  return { startDate, endDate };
+};
+
+// =User Partner Admin Management ========================
 const getAllUsers = async (query) => {
   const userQuery = new QueryBuilder(User.find().populate("authId"), query)
     .search(["name", "email"])
@@ -337,9 +345,7 @@ const deletePrivacyPolicy = async (query) => {
 
   return result;
 };
-
-// Auction Management ========================
-
+//=Auction Management ========================
 const getAllAuctions = async (query) => {
   const servicesQuery = new QueryBuilder(Services.find({}), query)
     .search([])
@@ -396,7 +402,6 @@ const getAllAuctions = async (query) => {
   //   data: result,
   // };
 };
-
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
 
@@ -424,96 +429,7 @@ const editMinMaxBidAmount = async (payload) => {
 
   return result;
 };
-
-// overview ========================
-
-const calculateYearlyRevenue = async (query) => {
-  const { year: strYear } = query;
-  const year = Number(strYear);
-
-  if (!year) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Missing year");
-  }
-
-  const startDate = new Date(year, 0, 1);
-  const endDate = new Date(year + 1, 0, 1);
-
-  const distinctYears = await Transaction.aggregate([
-    {
-      $group: {
-        _id: { $year: "$createdAt" },
-      },
-    },
-    {
-      $sort: { _id: -1 },
-    },
-    {
-      $project: {
-        year: "$_id",
-        _id: 0,
-      },
-    },
-  ]);
-
-  const totalYears = distinctYears.map((item)  => item.year);
-
-  const revenue = await Subscription.aggregate([
-    {
-      $match: {
-        createdAt: {
-          $gte: startDate,
-          $lt: endDate,
-        }, 
-      },
-    },
-    {
-      $project: {
-        price: 1,  
-        month: { $month: "$createdAt" }, 
-      },
-    },
-    {
-      $group: {
-        _id: "$month", 
-        totalRevenue: { $sum: "$price" },  
-      },
-    },
-    {
-      $sort: { _id: 1 }, 
-    },
-  ]);
-
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const monthlyRevenue = monthNames.reduce((acc, month) => {
-    acc[month] = 0;
-    return acc;
-  }, {});
-
-  revenue.forEach((r) => {
-    const monthName = monthNames[r._id - 1];
-    monthlyRevenue[monthName] = r.totalRevenue;
-  });
-
-  return {
-    total_years: totalYears,
-    monthlyRevenue,
-  };
-};
-
+//=Overview ========================
 const getMonthlyRegistrations = async (query) => {
   const year = Number(query.year);
   const startOfYear = new Date(year, 0, 1); // January 1st of the year
@@ -581,7 +497,6 @@ const getMonthlyRegistrations = async (query) => {
     monthlyRegistration: result,
   };
 };
-
 const totalOverview = async () => {
   const [totalAuth, totalUser, totalPartner, totalAdmin, totalAuction] =
     await Promise.all([
@@ -600,7 +515,6 @@ const totalOverview = async () => {
     totalAuction,
   };
 };
- 
 const parseDateTime = (date, time) => {
   const [month, day, year] = date.split('/').map(Number);
   const [hours, minutes] = time.split(':').map((part, index) => {
@@ -619,27 +533,38 @@ const parseDateTime = (date, time) => {
 
   return new Date(year, month - 1, day, adjustedHours, minutes);
 };
- 
 const filterAndSortServices = async (req, res) => {
   const {
     service,      
     sortBy ,
     sortOrder,
+    page,
+    limit
   } = req.query;
 
   const categories = req.body.categories || [];  
 
-  const filterQuery = {};
+  const filterQuery = {}; 
+    if (service) {
+      filterQuery.service = { $regex: service, $options: "i" };
+    }
+    if (categories.length > 0) {
+      filterQuery.category = { $in: categories };
+    } 
 
-  if (service) {
-    filterQuery.service = { $regex: service, $options: "i" };  
-  }
+    filterQuery.page = page
+    filterQuery.limit = limit
 
-  if (categories.length > 0) {
-    filterQuery.category = { $in: categories };  
-  }
+  const result = new QueryBuilder(Services.find({}), filterQuery)
+  .search(["service"])
+  .filter()
+  .sort()
+  .paginate()
+  .fields();
  
-  const services = await Services.find(filterQuery);
+  const services  = await result.modelQuery;
+  const meta = await result.countTotal();
+  
   const getRelevantDate = (service) => {
     if (sortBy === 'deadline' && service.deadlineDate && service.deadlineTime) {
       return parseDateTime(service.deadlineDate, service.deadlineTime);
@@ -666,13 +591,318 @@ const filterAndSortServices = async (req, res) => {
     return 0;  
   });
  
-  return sortedServices;
+  return {sortedServices,meta};
+};
+//=Total Income/User/Auction ========================
+const getTotalIncomeUserAuction = async (req, res) => {
+ 
+      const resultIncome = await Transaction.aggregate([
+          {
+              $match: {
+                  paymentStatus: "Completed",  
+              },
+          },
+          {
+              $group: {
+                  _id: null, 
+                  totalIncome: { $sum: "$amount" },  
+              },
+          },
+      ]);
+
+      const usersResult = await User.find({})
+      const servicesResult = await Services.find({})
+
+      // Check if resultIncome is empty
+      const income = resultIncome.length > 0 ? resultIncome[0].totalIncome : 0;
+      const users = usersResult.length ? usersResult.length : 0;
+      const services = servicesResult.length ? servicesResult.length : 0;
+
+      return { income, users, services };
+ 
 };
 
+//=Overview ==========================  
+const incomeOverview = async (year) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const selectedYear = year || currentYear; 
+    const startDate = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
+    const endDate = new Date(`${selectedYear + 1}-01-01T00:00:00.000Z`);
 
+    const incomeOverview = await Transaction.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate, $lt: endDate },
+          paymentStatus: "Completed", 
+        },
+      },
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" } }, 
+          totalIncome: { $sum: "$amount" }, 
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          month: "$_id.month",
+          totalIncome: 1,
+        },
+      },
+      {
+        $sort: { month: 1 }, 
+      },
+    ]);
+    
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const result = Array.from({ length: 12 }, (_, i) => {
+      const monthData = incomeOverview.find((data) => data.month === i + 1) || {
+        month: i + 1,
+        totalIncome: 0,
+      };
+      return {
+        month: months[i],
+        totalIncome: monthData.totalIncome,
+      };
+    });
+
+    console.log(result);
+
+    return {
+      year: selectedYear,
+      data: result,
+    };
+  } catch (error) {
+    console.error("Error in getIncomeOverviewByYear function:", error);
+ 
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service not found:", error.message);
+  }
+}; 
+
+const getUserGrowth = async (year) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const selectedYear = year || currentYear;
+
+    const { startDate, endDate } = getYearRange(selectedYear);
+
+    const monthlyUserGrowth = await Auth.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startDate,
+            $lt: endDate,
+          },
+          role: { $in: ['USER', 'PARTNER'] }, 
+        },
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: '$createdAt' },
+            year: { $year: '$createdAt' },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          month: '$_id.month',
+          year: '$_id.year',
+          count: 1,
+        },
+      },
+      {
+        $sort: { month: 1 },
+      },
+    ]);
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    const result = [];
+    for (let i = 1; i <= 12; i++) {
+      const monthData =
+        monthlyUserGrowth.find((data) => data.month === i) || {
+          month: i,
+          count: 0,
+          year: selectedYear,
+        };
+      result.push({
+        ...monthData,
+        month: months[i - 1],
+      });
+    }
+
+    return {
+      year: selectedYear,
+      data: result,
+    };
+  } catch (error) {
+    console.error('Error in getUserGrowth function: ', error);  
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service not found:", error.message);
+  }
+};
+// -----------------------------------------
+const sendNoticeUsers = async (req, res) => {
+  const { userId, all_user } = req.query;
+  const { title, message } = req.body;
+
+  if (!title || !message) { 
+    throw new ApiError(400, 'Title and message are required.');
+  } 
+  try { 
+    if (all_user) {
+      const users = await User.find({});
+       
+      const notifications = users.map(user =>
+        Notification.create({
+          title,
+          userId: user._id,
+          message,
+          admin_ms: true,
+        })
+      ); 
+      await Promise.all(notifications);
+    } else { 
+      if (!userId) { 
+        throw new ApiError(404,'User ID is required.');
+      }
+
+      await Notification.create({
+        title,
+        userId,
+        message,
+        admin_ms: true,
+      });
+    }
+
+    return  { massage: "Notification(s) sent successfully." };
+  } catch (error) {
+    console.error("Error sending notifications:", error);
+    throw new ApiError(500,"An error occurred while sending notifications." );
+  }
+};
+
+const sendNoticePartner = async (req, res) => {
+  const { userId, all_user } = req.query;
+  const { title, message } = req.body;
+
+  console.log(title, message)
+
+  if (!title || !message) { 
+    throw new ApiError(400, 'Title and message are required.');
+  } 
+ 
+    if (all_user) {
+      // console.log('title, message', all_user)
+      const users = await Partner.find({});
+      const notifications = users.map(user =>
+        Notification.create({
+          title,
+          userId: user._id,
+          message,
+          admin_ms: true,
+        })
+      ); 
+      await Promise.all(notifications);
+    } else { 
+
+      if (!userId) { 
+        throw new ApiError(404,'User ID is required.');
+      }
+
+      await Notification.create({
+        title,
+        userId,
+        message,
+        admin_ms: true,
+      });
+    }
+
+  return  { massage: "Notification(s) sent successfully." };
+   
+};
+// -----------------------
+const getTransactionsHistory = async (req) => {
+  const query = req.query; 
+  try {  
+    const servicesQuery = new QueryBuilder(Transaction.find(), query) 
+    .search(["userId.name", "partnerId.name"])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+    
+    servicesQuery.modelQuery
+    .populate("userId", "name email profile_image") 
+    .populate("partnerId", "name email profile_image") 
+    .populate("serviceId", "service category price");  
+
+  const result = await servicesQuery.modelQuery;
+  console.log("data", result)
+  const meta = await servicesQuery.countTotal();
+
+    return {result, meta};
+  } catch (error) {
+    console.error("Error fetching transactions history:", error);
+    throw new ApiError(500, "Internal Server Error");
+  }
+}
+
+const getTransactionsDetails = async (req) => {
+  const { id } = req.params;
+
+  try { 
+    if (!id) {
+      throw new ApiError(400, "Transaction ID is required.");
+    }
+ 
+    const result = await Transaction.findById(id)
+      .populate("userId")  
+      .populate("partnerId") 
+      .populate("serviceId"); 
+
+    if (!result) {
+      throw new ApiError(404, "Transaction not found.");
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error fetching transaction details:", error);
+    throw new ApiError(500, "Internal Server Error");
+  }
+};
 
  
-
 const DashboardService = {
   getAllUsers,
   getUserDetails,
@@ -696,7 +926,14 @@ const DashboardService = {
   editMinMaxBidAmount,
   totalOverview,
   getMonthlyRegistrations, 
-  filterAndSortServices
+  filterAndSortServices,
+  getTotalIncomeUserAuction,
+  incomeOverview,
+  getUserGrowth,
+  sendNoticeUsers,
+  sendNoticePartner,
+  getTransactionsHistory,
+  getTransactionsDetails
 };
 
 module.exports = { DashboardService };

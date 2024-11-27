@@ -233,6 +233,79 @@ const filterAndSortServices = catchAsync(async (req, res) => {
   });
 });
 
+const getTotalIncomeUserAuction = catchAsync(async (req, res) => {
+  const result = await DashboardService.getTotalIncomeUserAuction(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Retrieved successfully",
+    data: result,
+  });
+});
+
+const incomeOverview = catchAsync(async (req, res) => {
+  const result = await DashboardService.incomeOverview(req.query);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Income Overview get Successfully",
+    data: result,
+  });
+});
+
+const getUserGrowth = catchAsync(async (req, res) => {
+  const result = await DashboardService.getUserGrowth(req.query);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Income Overview get Successfully",
+    data: result,
+  });
+});
+
+const sendNoticeUsers = catchAsync(async (req, res) => {
+  const result = await DashboardService.sendNoticeUsers(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Send Notice Successfully",
+    data: result,
+  });
+});
+
+const sendNoticePartner = catchAsync(async (req, res) => {
+  const result = await DashboardService.sendNoticePartner(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Send Notice Successfully",
+    data: result,
+  });
+});
+
+const getTransactionsHistory = catchAsync(
+  async (req, res ) => {   
+    const result = await DashboardService.getTransactionsHistory(req) 
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: `Get Successfully!`,
+      data: result,
+    });
+  },
+);
+
+const getTransactionsDetails = catchAsync(
+  async (req, res ) => {   
+    const result = await DashboardService.getTransactionsDetails(req) 
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: `Get Details Successfully!`,
+      data: result,
+    });
+  },
+); 
 
  
 
@@ -259,7 +332,14 @@ const DashboardController = {
   editMinMaxBidAmount,
   totalOverview,
   getMonthlyRegistrations, 
-  filterAndSortServices
+  filterAndSortServices,
+  getTotalIncomeUserAuction,
+  incomeOverview,
+  getUserGrowth,
+  sendNoticeUsers,
+  sendNoticePartner,
+  getTransactionsHistory,
+  getTransactionsDetails
 };
 
 module.exports = { DashboardController };

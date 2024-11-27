@@ -5,9 +5,26 @@ const { DashboardController } = require("./dashboard.controller");
 const checkAdminAccess = require("../../middlewares/checkAdminAccess");
 
 const router = express.Router();
-
-// user ========================
+ 
 router
+// home -----------------
+.get(
+  "/total-counts",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
+  DashboardController.getTotalIncomeUserAuction
+)
+.get(
+  "/income-overview",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
+  DashboardController.incomeOverview
+)
+.get(
+  "/user-growth",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
+  DashboardController.getUserGrowth
+)
+ 
+// user ========================
   .get(
     "/get_all_user",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
@@ -24,6 +41,12 @@ router
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.deleteUser
+  )
+  .get(
+    "/get_all_user",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_MANAGE),
+    DashboardController.getAllUsers
   )
 
   // Partner ========================
@@ -138,11 +161,36 @@ router
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.getMonthlyRegistrations
   )
-  .get(
+  .patch(
     "/search",
     // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.filterAndSortServices
   )
+
+  .post(
+    "/notice/user",
+    // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.sendNoticeUsers
+  )
+  .post(
+    "/notice/partner",
+    // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.sendNoticePartner
+  )
+
+ .get(
+    '/transactions',
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.getTransactionsHistory
+)
+.get(
+  '/transaction/:id',
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  DashboardController.getTransactionsDetails
+);
+ 
+
+ 
 
   // variable ========================
  

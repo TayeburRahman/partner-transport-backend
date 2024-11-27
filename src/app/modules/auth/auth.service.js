@@ -326,28 +326,33 @@ const resetPassword = async (req) => {
 const changePassword = async (user, payload) => {
   const { authId } = user;
   const { oldPassword, newPassword, confirmPassword } = payload;
-
-  // console.log("Change password", oldPassword, newPassword, confirmPassword)
-
+ 
   if (newPassword !== confirmPassword) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Password and confirm password do not match"
-    );
+    throw new ApiError(httpStatus.BAD_REQUEST, "Password and confirm password do not match.");
   }
+ 
   const isUserExist = await Auth.findById(authId).select("+password");
   if (!isUserExist) {
-    throw new ApiError(404, "Account does not exist!");
+    throw new ApiError(httpStatus.NOT_FOUND, "Account does not exist!");
   }
+ 
   if (
     isUserExist.password &&
     !(await Auth.isPasswordMatched(oldPassword, isUserExist.password))
   ) {
-    throw new ApiError(402, "Old password is incorrect");
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Old password is incorrect.");
   }
-  isUserExist.password = newPassword;
-  await isUserExist.save();
+ 
+  const hashedPassword = await bcrypt.hash(
+    newPassword,
+    Number(config.bcrypt_salt_rounds)
+  );
+ 
+  await Auth.findByIdAndUpdate(authId, { password: hashedPassword });
+
+  return { message: "Password updated successfully." };
 };
+
 
 const resendCodeActivationAccount = async (payload) => {
   const email = payload.email;
@@ -484,6 +489,9 @@ const resendCodeForgotAccount = async (payload) => {
       `
   );
 };
+// ---------------------
+
+ 
 
 // Scheduled task to unset activationCode field
 cron.schedule("* * * * *", async () => {

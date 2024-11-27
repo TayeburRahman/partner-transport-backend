@@ -100,10 +100,10 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       }
     }
 
-    if (service.paymentStatus === 'paid') {
-      const existingTransaction = await Transaction.findOne({ serviceId: service._id });
-      return { status: "success", result: existingTransaction };
-    }
+    // if (service.paymentStatus === 'paid') {
+    //   const existingTransaction = await Transaction.findOne({ serviceId: service._id });
+    //   return { status: "success", result: existingTransaction };
+    // }
 
     // Update payment status for the service
     service.paymentStatus = 'paid';
@@ -238,10 +238,10 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
           });
         }
 
-        if (service.paymentStatus === 'paid') {
-          const existingTransaction = await Transaction.findOne({ serviceId: service._id });
-          return resolve({ status: "success", result: existingTransaction });
-        }
+        // if (service.paymentStatus === 'paid') {
+        //   const existingTransaction = await Transaction.findOne({ serviceId: service._id });
+        //   return resolve({ status: "success", result: existingTransaction });
+        // }
 
         const saleId = payment.transactions[0].related_resources[0].sale.id;
 
@@ -406,6 +406,29 @@ const stripeTransferPayment = (req, res) => {
   return
 }
 
+const transferPayments = async(req, res) => {
+  // Implement Bank Transfer Payment logic here  
+
+  // const transactionData = {
+  //   serviceId,
+  //   userId: service.user,
+  //   partnerId: service.confirmedPartner,
+  //   paymentMethod: 'Stripe',
+  //   amount: Number(refund.amount) / 100,
+  //   paymentStatus: "Refunded",
+  //   transactionId: refund.id,
+  //   paymentDetails: {
+  //     payId: refund.charge,
+  //     currency: refund.currency,
+  //   },
+  // };
+
+  // const newTransaction = await Transaction.create(transactionData);
+
+  return
+}
+
+
 // Bank Transfer Payment ------------
 const PaymentService = {
   // createConnectedAccountWithBank,
@@ -416,6 +439,7 @@ const PaymentService = {
   stripeCheckAndUpdateStatusSuccess,
   paypalRefundPayment,
   stripeRefundPayment,
+  transferPayments,
   stripeTransferPayment
 }
 

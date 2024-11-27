@@ -62,6 +62,10 @@ const ENUM_ADMIN_ACCESS = {
   ACC_TO_EDIT: "accTo_editor",//
   ACC_TO_ADMIN_MANAGE: "accTo_admin_manage",//
   ACC_TO_NOTIFICATION_MANAGE: "accTo_notifications_manage",//
+
+  ACC_TO_AUDIT: "accTo_audit",//
+  ACC_TO_TERMS_CONDITIONS: "accTo_terms&conditions",//
+  ACC_TO_PRIVACY_POLICY: "accTo_privacyPolicy",//
 };
 
 const ENUM_PAYMENT_STATUS = {};

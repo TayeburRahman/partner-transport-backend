@@ -6,7 +6,7 @@ const { ObjectId } = Schema.Types;
 const transactionSchema = new Schema({
     serviceId: {
         type: ObjectId,
-        ref: "Service",
+        ref: "Services",
         required: true,
     },
     userId: {

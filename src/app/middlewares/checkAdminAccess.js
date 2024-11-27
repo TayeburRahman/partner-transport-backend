@@ -18,7 +18,6 @@ const checkAdminAccess = (...requiredPermissions) => {
         if (!hasPermission) {
           throw new ApiError(httpStatus.FORBIDDEN, "Access denied. Insufficient permissions.");
         }
-  
         next();
       } catch (error) {
         next(error);
