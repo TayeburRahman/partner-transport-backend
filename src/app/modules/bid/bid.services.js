@@ -125,22 +125,47 @@ const filterBidsByMove = async (req) => {
 };
 
 const filterBidsByHistory = async (req) => {
-  const { categories, serviceType, bitStatus } = req.query;
-  const { userId } = req.user;
+  const { categories, rescheduled, bitStatus, page = 1, limit = 10 } = req.query;
+  const { serviceType } = req.body;
+  const { userId } = req.user; 
+  
+  const skip = (page - 1) * limit;
+
+  console.log("hello", rescheduled, categories);
+ 
+  const totalBids = await Bids.countDocuments({
+    partner: userId,
+    status: bitStatus ? bitStatus : { $in: ["Win", "Outbid", "Pending"] },  // Fix status filter here
+  });
+
+  // Find the bids with population of the service
   const filteredBids = await Bids.find({
     partner: userId,
-    status: bitStatus ? bitStatus : ["Win", "Outbid"],
+    status: bitStatus ? bitStatus : { $in: ["Win", "Outbid", "Pending"] },
   })
     .populate({
       path: "service",
       match: {
         service: serviceType || { $exists: true },
         category: categories ? { $in: categories } : { $exists: true },
+        status: rescheduled ? rescheduled : { $exists: true },  // Check service.status
       },
     })
+    .skip(skip) 
+    .limit(parseInt(limit)) 
     .exec();
-  return filteredBids.filter((bid) => bid.service !== null);
+
+  // Filter out bids with null service
+  const result = filteredBids.filter((bid) => bid.service !== null);
+
+  return {
+    page: parseInt(page),
+    totalPage: Math.ceil(totalBids / limit), // Calculate the total number of pages
+    limit: limit,
+    result,
+  };
 };
+
 
 const BidService = {
   partnerBidPost,

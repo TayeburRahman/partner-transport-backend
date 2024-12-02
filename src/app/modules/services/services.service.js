@@ -13,6 +13,8 @@ const {
   ENUM_USER_ROLE,
 } = require("../../../utils/enums");
 const Variable = require("../variable/variable.model");
+const { Transaction } = require("../payment/payment.model");
+const { default: mongoose } = require("mongoose");
 
 // --------------USER--------------------------------
 const validateScheduleInputs = (scheduleDate, scheduleTime) => {
@@ -67,6 +69,16 @@ const createPostDB = async (req) => {
     for (const field of requiredFields) {
       if (!data[field]) {
         throw new ApiError(400, `${field} is required.`);
+      }
+    }
+
+    if(req.body.mainService === "move"){
+      if(req.body.service !== "Goods" || req.body.service!=="Waste"){
+       throw new ApiError(400, 'For moving, you must choose between Goods or Waste.');
+      }
+    }else{
+      if(req.body.service!== "Second-hand items" || req.body.service === "Recyclable materials"){
+       throw new ApiError(400, 'For selling, you must choose Second-hand items or Recyclable materials.');
       }
     }
 
@@ -162,13 +174,14 @@ const getDetails = async (req) => {
     .populate({
       path: "bids",
       populate: [
-        {
-          path: "service",
-          model: "Services",
-        },
-        {
+        // {
+        //   path: "service",
+        //   model: "Services",
+        // },
+        { 
           path: "partner",
           model: "Partner",
+          select: "_id profile_image rating name",
         },
       ],
     })
@@ -208,6 +221,8 @@ const deletePostDB = async (req) => {
 
 const conformPartner = async (req) => {
   const { serviceId, partnerId, bidId } = req.query;
+
+  console.log("conformPartner",  serviceId, partnerId, bidId);
 
   const service = await Services.findById(serviceId);
   if (!service) {
@@ -344,7 +359,6 @@ const searchNearby = async (req) => {
   }
 
   const { coverageRadius } = await Variable.findOne({});
-  console.log("=======", lng, lat, coverageRadius);
 
   const nearbyServices = await Services.aggregate([
     {
@@ -369,9 +383,19 @@ const searchNearby = async (req) => {
         category: 1,
         image: 1,
         createdAt: 1,
+          scheduleDate: 1,
+          scheduleTime: 1,
+          deadlineDate: 1,
+          deadlineTime: 1,
+          deadlineDate: 1,
+          loadingLocation:1,
+          
+
       },
     },
   ]);
+
+  console.log("=======", nearbyServices);
 
   if (nearbyServices.length === 0) {
     throw new ApiError(httpStatus.NOT_FOUND, "No nearby services found");
@@ -495,24 +519,31 @@ const filterUserByHistory = async (req) => {
   let service;
   if (serviceType === "move") {
     service = ["Goods", "Waste"];
-  }
-  if (serviceType === "sell") {
+  }else if(serviceType === "sell") {
     service = ["Second-hand items", "Recyclable materials"];
+  }else{
+    service = ["Second-hand items", "Recyclable materials", "Goods", "Waste"]
   }
 
  const query = req.query;
  
-  const filtered = new QueryBuilder(Services.find({
+ const filtered = new QueryBuilder(
+  Services.find({
     user: userId,
     service,
     status: serviceStatus,
-  }), query)  
-    .sort()
-    .paginate() 
+  })
+    .populate({
+      path: "confirmedPartner",  
+      select: "profile_image name", 
+    }),
+  query
+)
+  .sort()   
+  .paginate();  
 
-  const result = await filtered.modelQuery;
-  const meta = await filtered.countTotal();
-
+const result = await filtered.modelQuery; 
+const meta = await filtered.countTotal();  
   return { result, meta };
 };
 
@@ -570,8 +601,71 @@ const updateServicesStatusPartner = async (req) => {
   return result;
 };
 
+// const updateServicesStatusUser = async (req) => {
+//   const { serviceId, status } = req.query;
+//   const {userId} = req.user;
+
+//   if (!serviceId || !status) {
+//     throw new ApiError(
+//       httpStatus.BAD_REQUEST,
+//       "Service ID and status are required in the query parameters."
+//     );
+//   }
+
+//   const service = await Services.findById(serviceId);
+//   if (!service) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
+//   }
+
+//   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
+//   }
+
+//   // Validation of status transitions for user
+//   if (status === "confirm-arrived" && service.partner_status !== "arrived") {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
+//   }
+
+//   if (status === "goods-loaded" && (service.user_status !== "confirm-arrived" || service.partner_status !== "arrived")) {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive and user must confirm arrival before loading goods.");
+//   }
+
+//   if (status === "partner-at-destination" && service.partner_status !== "arrive-at-destination") {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive at destination before confirming destination.");
+//   }
+
+//   if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark delivery before confirming delivery.");
+//   }
+
+//   // Mark the transaction as finished
+//   const transaction = await Transaction.findOne({ serviceId, userId });
+//   if (!transaction || transaction.paymentStatus !== "Completed") {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed!");
+//   } 
+  
+//   let service_status = service.status;
+//   if (status === "goods-loaded") {
+//     service_status = "pick-up";
+//   } else if (status === "delivery-confirmed") { 
+//     transaction.isServiceFinish = true;
+//     await transaction.save();
+//     service_status = "completed";
+//   }
+
+//   const result = await Services.findOneAndUpdate(
+//     { _id: serviceId },
+//     { user_status: status, status: service_status },
+//     { new: true }
+//   );
+
+//   return result;
+// };
+
+
 const updateServicesStatusUser = async (req) => {
   const { serviceId, status } = req.query;
+  const { userId } = req.user;
 
   if (!serviceId || !status) {
     throw new ApiError(
@@ -585,11 +679,12 @@ const updateServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
   }
 
+  // Validate the provided status
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
 
-  // Validation of status transitions for user
+  // Status transition validations
   if (status === "confirm-arrived" && service.partner_status !== "arrived") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
   }
@@ -606,21 +701,59 @@ const updateServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark delivery before confirming delivery.");
   }
 
-  // Determine service status based on user action
-  let service_status = service.status;
-  if (status === "goods-loaded") {
-    service_status = "pick-up";
-  } else if (status === "delivery-confirmed") {
-    service_status = "completed";
+  // Ensure the payment has been completed before proceeding
+  const transaction = await Transaction.findOne({ serviceId, userId });
+  if (!transaction || transaction.paymentStatus !== "Completed") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed!");
   }
 
-  const result = await Services.findOneAndUpdate(
-    { _id: serviceId },
-    { user_status: status, status: service_status },
-    { new: true }
-  );
+  // Start a MongoDB session for atomic updates
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  return result;
+  try {
+    // Fetch partner asynchronously
+    const partner = await Partner.findOne({ _id: transaction?.partnerId });
+    if (!partner) {
+      throw new ApiError(httpStatus.NOT_FOUND, "Your Transition Partner not found.");
+    }
+
+    // Handle delivery-confirmed status
+    if (status === "delivery-confirmed") {
+      partner.wallet += transaction.amount;
+      await partner.save({ session });
+
+      // Mark transaction as completed
+      transaction.isServiceFinish = true;
+      await transaction.save({ session });
+    }
+
+    // Update service status based on user input
+    let service_status = service.status;
+    if (status === "goods-loaded") {
+      service_status = "pick-up"; // Update service status to 'pick-up' when goods are loaded
+    } else if (status === "delivery-confirmed") {
+      service_status = "completed"; // Update service status to 'completed' when delivery is confirmed
+    }
+
+    // Apply the service status updates
+    const updatedService = await Services.findOneAndUpdate(
+      { _id: serviceId },
+      { user_status: status, status: service_status },
+      { new: true, session }
+    );
+
+    // Commit the transaction to ensure all changes are saved atomically
+    await session.commitTransaction();
+    session.endSession();
+
+    return updatedService;
+  } catch (error) {
+    // Rollback transaction if any error occurs
+    await session.abortTransaction();
+    session.endSession();
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
+  }
 };
 
 const ServicesService = {

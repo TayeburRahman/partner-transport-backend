@@ -1,6 +1,7 @@
 const catchAsync = require("../../../shared/catchasync");
 const sendResponse = require("../../../shared/sendResponse");
-const PaymentService = require("./payment.service2");
+const PaymentService = require("./payment.service");
+const TransitionsService = require("./transitions.service");
 
   // Stripe Payment -------------
 const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
@@ -19,13 +20,11 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
       }
       return res.render("failed", { message: data.message, text: data.text });
   });
-
   // Cancel page ------------
   const paymentStatusCancel  = catchAsync(async (req, res) => {
     const result = await PaymentService.paymentStatusCancel(req, res);  
       return res.render("cancel");
   });
-
   // Paypal Payment -------------
   const createCheckoutSessionPaypal  = catchAsync(async (req, res) => {
     const result = await PaymentService.createCheckoutSessionPaypal(req); 
@@ -43,7 +42,6 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
       }
       return res.render("failed", { message: data.message, text: data.text });
   });
-
   // Paypal Refund Payment ------------
   const paypalRefundPayment  = catchAsync(async (req, res) => {
     const result = await PaymentService.paypalRefundPayment(req);
@@ -55,9 +53,8 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
       data: result,
     });
   });  
-
-    // Stripe Refund Payment ------------
-    const stripeRefundPayment  = catchAsync(async (req, res) => {
+  // Stripe Refund Payment ------------
+  const stripeRefundPayment  = catchAsync(async (req, res) => {
       const result = await PaymentService.stripeRefundPayment(req);
        console.log(result);
        sendResponse(res, {
@@ -66,10 +63,9 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
         message: "Refund payment successfully",
         data: result,
       });
-    });
-
-     // Stripe Refund Payment ------------
-     const stripeTransferPayment  = catchAsync(async (req, res) => {
+  });
+  // Stripe Refund Payment ------------
+  const stripeTransferPayment = catchAsync(async (req, res) => {
       const result = await PaymentService.stripeTransferPayment(req);
        console.log(result);
        sendResponse(res, {
@@ -78,9 +74,29 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
         message: "Refund payment successfully",
         data: result,
       });
-    });
+  });
 
+// =Transition=================================
+const transitionsHistoryUser = catchAsync(async (req, res) => {
+  const result = await TransitionsService.transitionsHistoryUser(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Transition history get successfully",
+   data: result,
+ });
+})
 
+const transitionsHistoryPartner  = catchAsync(async (req, res) => {
+  const result = await TransitionsService.transitionsHistoryPartner(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Transition history get successfully",
+   data: result,
+ });
+
+})
      
 
  
@@ -93,7 +109,9 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
     paypalCheckAndUpdateStatusSuccess,
     paypalRefundPayment,
     stripeRefundPayment,
-    stripeTransferPayment
+    stripeTransferPayment,
+    transitionsHistoryPartner,
+    transitionsHistoryUser
      
   };
   

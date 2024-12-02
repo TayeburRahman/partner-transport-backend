@@ -40,6 +40,10 @@ const AuthSchema = new Schema(
     activationCode: {
       type: String,
     },
+    amount:{
+     type: Number,
+     default: 0,
+    },
     verifyExpire: {
       type: Date,
     },

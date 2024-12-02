@@ -106,11 +106,16 @@ const PartnerSchema = new Schema(
     },
     rating: {
       type: Number,
+      default: 0,
     },
     status: {
       type: String,
       enum: ["pending", "approved", "declined"],
       default: "pending",
+    },
+    wallet:{
+      type: Number,
+      default: 0,
     },
     current_trip_user: {
       type: Schema.Types.ObjectId,

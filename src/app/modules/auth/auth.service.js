@@ -489,9 +489,157 @@ const resendCodeForgotAccount = async (payload) => {
       `
   );
 };
-// ---------------------
+//OAuth -------------
+const OAuthLoginAccount = async (payload) => {
+  const { OAuthId, email, name, phone_number, profile_image, role } = payload;
 
+  let userDetails;
+  let accessToken;
+  let refreshToken;
+
+  try { 
+    const isAuth = await Auth.isAuthExist(email);
+
+    if (isAuth && isAuth.isActive) {
+      // Retrieve user details based on role
+      switch (isAuth.role) {
+        case ENUM_USER_ROLE.USER:
+          userDetails = await User.findOneAndUpdate(
+            { email },
+            { ...payload },
+            { new: true }  
+          );
+          break;
+
+        case ENUM_USER_ROLE.PARTNER:
+          userDetails = await Partner.findOneAndUpdate(
+            { email },
+            { ...payload },
+            { new: true }
+          );
+          break;
+
+        case ENUM_USER_ROLE.ADMIN:
+        case ENUM_USER_ROLE.SUPER_ADMIN:
+          userDetails = await Admin.findOneAndUpdate(
+            { email },
+            { ...payload },
+            { new: true }
+          );
+          break;
+
+        default:
+          throw new ApiError(400, "Invalid role provided!");
+      }
+
+      if (!userDetails) {
+        throw new ApiError(404, "User details not found.");
+      }
  
+      await Auth.findOneAndUpdate(
+        { _id: isAuth._id },
+        { name }  
+      );
+
+      // Generate tokens
+      ({ accessToken, refreshToken } = generateTokens(isAuth, userDetails));
+
+      return {
+        id: isAuth._id,
+        role: isAuth.role,
+        accessToken,
+        refreshToken,
+        user: userDetails,
+      };
+    } else { 
+      if (isAuth && !isAuth.isActive) {
+        await User.deleteOne({ email });
+        await Auth.deleteOne({ email });
+      }
+
+      const isActive = true;
+      const authUser = await Auth.create({
+        email,
+        password: generateRandomPassword(),
+        name,
+        phone_number,
+        profile_image,
+        role,
+        OAuthId,
+        isActive,
+      });
+
+      if (!authUser) {
+        throw new ApiError(
+          httpStatus.INTERNAL_SERVER_ERROR,
+          "Failed to create auth entry."
+        );
+      }
+
+      payload.authId = authUser._id;
+
+      // Create new user based on role
+      let result;
+      if (role === ENUM_USER_ROLE.PARTNER) {
+        result = await Partner.create(payload);
+      } else {
+        result = await User.create(payload);
+      }
+
+      if (!result) {
+        throw new ApiError(
+          httpStatus.INTERNAL_SERVER_ERROR,
+          "Failed to create user."
+        );
+      }
+
+      // Generate tokens
+      ({ accessToken, refreshToken } = generateTokens(authUser, result));
+
+      return {
+        id: authUser._id,
+        role: authUser.role,
+        accessToken,
+        refreshToken,
+        user: result,
+      };
+    }
+  } catch (error) {
+    throw new ApiError(500, `OAuth Login Error: ${error.message}`);
+  }
+};
+ 
+const generateTokens = (authUser, userDetails) => {
+  const accessToken = jwtHelpers.createToken(
+    {
+      authId: authUser._id,
+      role: authUser.role,
+      userId: userDetails._id,
+    },
+    config.jwt.secret,
+    config.jwt.expires_in
+  );
+
+  const refreshToken = jwtHelpers.createToken(
+    {
+      authId: authUser._id,
+      role: authUser.role,
+      userId: userDetails._id,
+    },
+    config.jwt.refresh_secret,
+    config.jwt.refresh_expires_in
+  );
+
+  return { accessToken, refreshToken };
+};
+ 
+const generateRandomPassword = () => {
+  return Math.random().toString(36).slice(-10);
+};
+// --------------
+
+
+// ---------------------
 
 // Scheduled task to unset activationCode field
 cron.schedule("* * * * *", async () => {
@@ -552,6 +700,7 @@ const AuthService = {
   checkIsValidForgetActivationCode,
   resendCodeActivationAccount,
   resendCodeForgotAccount,
+  OAuthLoginAccount
 };
 
 module.exports = { AuthService };

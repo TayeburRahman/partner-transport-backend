@@ -8,6 +8,9 @@ const checkAdminAccess = require("../../middlewares/checkAdminAccess");
 const router = Router();
 
 router
+  //====================
+  // Payments Stripe & Paypal ------------
+  //====================
   // Stripe Payment -------------
   .post("/stripe/create-checkout-session",
     bodyParser.json(),
@@ -37,8 +40,21 @@ router
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     PaymentController.stripeTransferPayment)
 
-// Bank Transfer Payment ------------
-
+  //====================
+  // Bank Transfer Payment ------------
+  //====================
+  
+  //====================
+  // Get Transition History ------------
+  //====================
+  .get("/user-transaction",
+    auth(ENUM_USER_ROLE.USER),
+    PaymentController.transitionsHistoryUser
+  )
+  .get("/partner-transaction",
+    auth(ENUM_USER_ROLE.PARTNER),
+    PaymentController.transitionsHistoryPartner
+  )
 
 
 module.exports = router;

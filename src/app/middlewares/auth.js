@@ -13,22 +13,21 @@ const auth =
   async (req, res, next) => {
     try {
       const tokenWithBearer = req.headers.authorization;
-
+      console.log('===tokenWithBearer', tokenWithBearer)
       if (!tokenWithBearer) {
         throw new ApiError(
           httpStatus.UNAUTHORIZED,
           "You are not authorized for this role"
         );
-      }
-
+      } 
       if (tokenWithBearer.startsWith("Bearer")) {
-        const token = tokenWithBearer.split(" ")[1];
-
-        // Verify token
+        const token = tokenWithBearer.split(" ")[1]; 
+       // Verify token
+       console.log('===', token)
         const verifyUser = jwtHelpers.verifyToken(token, config.jwt.secret);
+        console.log('===verifyUser', verifyUser)
         // Set user to headers
-        req.user = verifyUser;
-
+        req.user = verifyUser; 
         const isExist = await Auth.findById(verifyUser?.authId);
 
         if (

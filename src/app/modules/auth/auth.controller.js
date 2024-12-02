@@ -125,6 +125,23 @@ const resetPassword = catchAsync(async (req, res) => {
   });
 });
 
+const OAuthLoginAccount = catchAsync(async (req, res) => {
+  const data = await AuthService.OAuthLoginAccount(req.body);
+  let message;
+      message=  data.role === "USER" && "Please check your email for the activation OTP code." 
+      message=  data.role === "PARTNER" && "Your account is awaiting admin approval." 
+      message=  data.role === "ADMIN" || "SUPER_ADMIN" && "Create a new admin successfully."  
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message,
+    data: data,
+  });
+})
+
+ 
+
 const AuthController = {
   registrationAccount,
   activateAccount,
@@ -136,6 +153,7 @@ const AuthController = {
   checkIsValidForgetActivationCode,
   resendCodeActivationAccount,
   resendCodeForgotAccount,
+  OAuthLoginAccount
 };
 
 module.exports = { AuthController };

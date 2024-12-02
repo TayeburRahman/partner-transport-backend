@@ -38,6 +38,10 @@ const transactionSchema = new Schema({
         enum: ["Completed", "Pending", "Failed","Refunded"],
         required: true,
     },
+    isServiceFinish:{
+        type: Boolean,
+        default: false,
+    },
     paymentDetails: {
         email: {
             type: String, 

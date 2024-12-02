@@ -20,7 +20,7 @@ router
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN),
     BidController.filterBidsByMove
   )
-  .get(
+  .patch(
     "/history/filter",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN),
     BidController.filterBidsByHistory
