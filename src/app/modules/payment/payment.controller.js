@@ -77,18 +77,10 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
   });
 
 // =Transition=================================
-const transitionsHistoryUser = catchAsync(async (req, res) => {
-  const result = await TransitionsService.transitionsHistoryUser(req); 
-  sendResponse(res, {
-   statusCode: 200,
-   success: true,
-   message: "Transition history get successfully",
-   data: result,
- });
-})
+ 
 
-const transitionsHistoryPartner  = catchAsync(async (req, res) => {
-  const result = await TransitionsService.transitionsHistoryPartner(req); 
+const transitionsHistory  = catchAsync(async (req, res) => {
+  const result = await TransitionsService.transitionsHistory(req); 
   sendResponse(res, {
    statusCode: 200,
    success: true,
@@ -96,7 +88,18 @@ const transitionsHistoryPartner  = catchAsync(async (req, res) => {
    data: result,
  });
 
+}) 
+
+const paymentHistory = catchAsync(async (req, res) => {
+  const result = await TransitionsService.paymentHistory(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Payment history get successfully",
+   data: result,
+ });
 })
+ 
      
 
  
@@ -110,8 +113,8 @@ const transitionsHistoryPartner  = catchAsync(async (req, res) => {
     paypalRefundPayment,
     stripeRefundPayment,
     stripeTransferPayment,
-    transitionsHistoryPartner,
-    transitionsHistoryUser
+    transitionsHistory, 
+    paymentHistory
      
   };
   

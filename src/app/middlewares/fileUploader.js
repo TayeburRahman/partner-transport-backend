@@ -27,6 +27,8 @@ const uploadFile = () => {
         uploadPath = "uploads/images/vehicle-image";
       } else if (file.fieldname === "vehicleSideImage") {
         uploadPath = "uploads/images/vehicle-image";
+      }else if (file.fieldname === "fileClaimImage") {
+        uploadPath = "uploads/images/file-claim";
       } else {
         uploadPath = "uploads";
       }
@@ -62,6 +64,7 @@ const uploadFile = () => {
       "vehicleFrontImage",
       "vehicleBackImage",
       "vehicleSideImage",
+      "fileClaimImage",
       "image"
     ];
 
@@ -97,6 +100,8 @@ const uploadFile = () => {
     { name: "vehicleBackImage", maxCount: 1 },
     { name: "vehicleSideImage", maxCount: 1 },
     { name: "image", maxCount: 10 },
+    { name: "fileClaimImage", maxCount: 10 },
+     
   ]);
 
   return upload;

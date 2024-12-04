@@ -1,5 +1,4 @@
 const httpStatus = require("http-status");
-
 const Auth = require("../auth/auth.model");
 const User = require("../user/user.model");
 const QueryBuilder = require("../../../builder/queryBuilder");
@@ -771,7 +770,7 @@ const getUserGrowth = async (year) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Service not found:", error.message);
   }
 };
-// -----------------------------------------
+// =Send Notice=====================
 const sendNoticeUsers = async (req, res) => {
   const { userId, all_user } = req.query;
   const { title, message } = req.body;
@@ -851,7 +850,7 @@ const sendNoticePartner = async (req, res) => {
   return  { massage: "Notification(s) sent successfully." };
    
 };
-// -----------------------
+// =Transactions History=================
 const getTransactionsHistory = async (req) => {
   const query = req.query; 
   try {  
@@ -901,7 +900,7 @@ const getTransactionsDetails = async (req) => {
     throw new ApiError(500, "Internal Server Error");
   }
 };
-
+ 
  
 const DashboardService = {
   getAllUsers,

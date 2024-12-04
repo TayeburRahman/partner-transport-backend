@@ -45,12 +45,15 @@ const ServicesSchema = new Schema(
     scheduleTime: {
       type: String,
       required: [true, "Schedule Time is required"],
+
     },
     rescheduledDate: {
       type: String,
+      default:null
     },
     rescheduledTime: {
       type: String,
+      default:null
     },
     doYouDestinationLocation:{
       type: Boolean,
@@ -58,10 +61,12 @@ const ServicesSchema = new Schema(
     },
     rescheduledReason: {
       type: String,
+      default:null
     },
     rescheduledStatus: {
       type: String,
       enum: ["pending", "accepted", "decline"],
+      default:null
     },
     numberOfItems: {
       type: Number,
@@ -120,6 +125,7 @@ const ServicesSchema = new Schema(
     },
     unloadingAddress: {
       type: String,
+      default: null
     },
     unloadingLocation: {
       type: locationSchema,
@@ -130,6 +136,7 @@ const ServicesSchema = new Schema(
     },
     winBid: {
       type: Number,
+      default:null
     },
     status: {
       type: String,
@@ -184,7 +191,11 @@ const ServicesSchema = new Schema(
     transactionId: {
       type: String,
       trim: true,
-      // unique: true,
+      default:null
+    },
+    isReviewed:{
+      type: Boolean,
+      default: false,
     },
     distance: {
       type: Number,

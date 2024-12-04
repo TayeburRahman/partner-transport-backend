@@ -3,6 +3,7 @@ const { ServicesController } = require("./services.controller");
 const auth = require("../../middlewares/auth");
 const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const { uploadFile } = require("../../middlewares/fileUploader");
+const { BidController } = require("../bid/bid.controller");
 const router = express.Router();
 
 router
@@ -81,6 +82,47 @@ router
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
     ServicesController.getUserServicesWithinOneHour
   )
+
+  // ======================
+  // Review ------
+  // ======================
+  .post(
+    "/review",
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
+    BidController.postReviewMove
+  )
+  .get(
+    "/review-partner",
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
+    BidController.getPartnerReviews
+  )
+  // ================================
+  .get(
+    "/order-details",
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
+    BidController.orderDetailsPageFileClaim
+  )
+  .get(
+    "/status-details",
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
+    BidController.statusServicesDetails
+  )
+  .post(
+    "/create-file-claim",
+    uploadFile(),
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
+    BidController.createFileClaim
+  )
+
+  // .get(
+  //   "/map",
+  //   uploadFile(),
+  //   auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
+  //   BidController.orderServicesMapDetails
+  // )
+
+
+   
 
    
  

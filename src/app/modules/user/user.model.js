@@ -13,6 +13,7 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    
     email: {
       type: String,
       required: true,
@@ -52,7 +53,7 @@ const UserSchema = new Schema(
     date_of_birth: {
       type: Date,
     },
-    amount: {
+    wallet:{
       type: Number,
       default: 0,
     },

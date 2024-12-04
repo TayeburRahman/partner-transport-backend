@@ -5,7 +5,7 @@ const Services = require("./services.model");
 const httpStatus = require("http-status");
 const { Server } = require("socket.io");
 const Partner = require("../partner/partner.model");
-const Bids = require("../bid/bid.model");
+
 const {
   ENUM_SERVICE_STATUS,
   ENUM_SERVICE_TYPE,
@@ -15,109 +15,106 @@ const {
 const Variable = require("../variable/variable.model");
 const { Transaction } = require("../payment/payment.model");
 const { default: mongoose } = require("mongoose");
+const { Bids } = require("../bid/bid.model");
 
-// --------------USER--------------------------------
-const validateScheduleInputs = (scheduleDate, scheduleTime) => {
+// =USER=============================
+// Helper function to validate and process inputs
+const validateInputs = (data, image) => {
+  const requiredFields = [
+    "service", "category", "scheduleDate", "scheduleTime", "numberOfItems",
+    "weightMTS", "weightKG", "description", "deadlineDate", "deadlineTime",
+    "isLoaderNeeded", "loadFloorNo", "loadingAddress", "loadLongitude",
+    "loadLatitude", "mainService"
+  ];
+
+  // Validate required fields
+  for (const field of requiredFields) {
+    if (!data[field]) {
+      throw new ApiError(400, `${field} is required.`);
+    }
+  }
+
+  // Validate service based on mainService
+  const validServices = {
+    move: ["Goods", "Waste"],
+    sell: ["Second-hand items", "Recyclable materials"]
+  };
+
+  const validServiceForMain = validServices[data.mainService];
+  if (!validServiceForMain) {
+    throw new ApiError(400, 'Invalid mainService');
+  }
+  if (!validServiceForMain.includes(data.service)) {
+    throw new ApiError(400, `For ${data.mainService}, you must choose between ${validServiceForMain.join(' or ')}.`);
+  }
+
+  // Validate images
+  if (!image?.length) {
+    throw new ApiError(400, "At least one image is required.");
+  }
+
+  // Process images
+  const images = Array.isArray(image) ? image.map(file => `/images/services/${file.filename}`) : [];
+
+  // Validate date and time formats
   const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
   const timePattern = /^(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
 
-  const isDateValid = datePattern.test(scheduleDate);
-  const isTimeValid = timePattern.test(scheduleTime);
+  if (!datePattern.test(data.scheduleDate)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleDate format. Please use MM/DD/YYYY.");
+  }
+  if (!timePattern.test(data.scheduleTime)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleTime format. Please use hh:mm AM/PM.");
+  }
 
-  if (!isDateValid) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Invalid scheduleDate format. Please use MM-DD-YYYY."
-    );
-  }
-  if (!isTimeValid) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Invalid scheduleTime format. Please use hh:mm AM/PM."
-    );
-  }
-  return true;
-}; 
+  return images;
+};
+
+// Helper function to convert time to 24-hour format
+const convertTo24HourFormat = (timeStr) => {
+  let [hours, minutes] = timeStr.split(":").map(Number);
+  const modifier = timeStr.split(" ")[1];
+
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
     const { image } = req.files || {};
     const data = req.body;
 
-    const requiredFields = [
-      "service",
-      "category",
-      "scheduleDate",
-      "scheduleTime",
-      "numberOfItems",
-      "weightMTS",
-      "weightKG",
-      "description",
-      "deadlineDate",
-      "deadlineTime",
-      "isLoaderNeeded",
-      "loadFloorNo",
-      "loadingAddress",
-      "loadLongitude",
-      "loadLatitude",
-      "mainService"
-      // "price",
-      // "distance",
-    ];
+    // Validate inputs and process images
+    const images = validateInputs(data, image);
 
-    // Validate required fields
-    for (const field of requiredFields) {
-      if (!data[field]) {
-        throw new ApiError(400, `${field} is required.`);
-      }
-    }
+    // Convert time to 24-hour format
+    const scheduleTime = convertTo24HourFormat(data.scheduleTime);
+    const deadlineTime = convertTo24HourFormat(data.deadlineTime);
 
-    if(req.body.mainService === "move"){
-      if(req.body.service !== "Goods" || req.body.service!=="Waste"){
-       throw new ApiError(400, 'For moving, you must choose between Goods or Waste.');
-      }
-    }else{
-      if(req.body.service!== "Second-hand items" || req.body.service === "Recyclable materials"){
-       throw new ApiError(400, 'For selling, you must choose Second-hand items or Recyclable materials.');
-      }
-    }
-
-    // Validate image
-    if (!image || !image.length) {
-      throw new ApiError(400, "At least one image is required.");
-    }
-
-    let images = []; 
-  
-
-    if (image && Array.isArray(image)) { 
-      images = image.map(file => `/images/services/${file.filename}`);
-    }
-
-    // Validate scheduleDate and scheduleTime formats
-    validateScheduleInputs(data.scheduleDate, data.scheduleTime);
-
+    // Construct service data
     const serviceData = {
       user: userId,
       mainService: data.mainService,
       service: data.service,
       category: data.category,
       scheduleDate: data.scheduleDate,
-      scheduleTime: data.scheduleTime,
+      scheduleTime,
       numberOfItems: Number(data.numberOfItems),
       weightMTS: Number(data.weightMTS),
       weightKG: Number(data.weightKG),
       description: data.description,
       deadlineDate: data.deadlineDate,
-      deadlineTime: data.deadlineTime,
-      isLoaderNeeded: data.isLoaderNeeded === "true",
+      deadlineTime,
+      isLoaderNeeded: data.isLoaderNeeded,
       loadFloorNo: data.loadFloorNo,
-      isUnloaderNeeded: data.isUnloaderNeeded === "true",
+      isUnloaderNeeded: data.isUnloaderNeeded,
       unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
       image: images,
-      doYouForWaste: data.doYouForWaste === "true",
+      doYouForWaste: data.doYouForWaste,
       bids: [],
       confirmedPartner: null,
       loadingLocation: {
@@ -133,15 +130,15 @@ const createPostDB = async (req) => {
       distance: data.distance,
     };
 
+    // Create and save the service
     const newService = new Services(serviceData);
-    const result = await newService.save();
+    return await newService.save();
 
-    return result;
   } catch (error) {
-    throw new ApiError(401, error.message);
+    // Generalized error handling
+    throw new ApiError(400, error.message || 'Error while creating post');
   }
 };
-
 const updatePostDB = async (req) => {
   const { serviceId } = req.params;
   try {
@@ -166,7 +163,6 @@ const updatePostDB = async (req) => {
     throw new ApiError(400, error.message);
   }
 };
- 
 const getDetails = async (req) => {
   const { serviceId } = req.params;
 
@@ -178,7 +174,7 @@ const getDetails = async (req) => {
         //   path: "service",
         //   model: "Services",
         // },
-        { 
+        {
           path: "partner",
           model: "Partner",
           select: "_id profile_image rating name",
@@ -191,7 +187,6 @@ const getDetails = async (req) => {
   }
   return result;
 };
-
 const getUserPostHistory = async (req) => {
   const { userId } = req.user;
   const query = req.query;
@@ -208,7 +203,6 @@ const getUserPostHistory = async (req) => {
 
   return { data: result, meta };
 };
-
 const deletePostDB = async (req) => {
   const { serviceId } = req.params;
   const service = await Services.findById(serviceId);
@@ -218,11 +212,10 @@ const deletePostDB = async (req) => {
   const result = await Services.findByIdAndDelete(serviceId);
   return result._id;
 };
-
 const conformPartner = async (req) => {
   const { serviceId, partnerId, bidId } = req.query;
 
-  console.log("conformPartner",  serviceId, partnerId, bidId);
+  console.log("conformPartner", serviceId, partnerId, bidId);
 
   const service = await Services.findById(serviceId);
   if (!service) {
@@ -277,7 +270,6 @@ const conformPartner = async (req) => {
     service: result,
   };
 };
-
 const getServicePostUser = async (req) => {
   const { userId } = req.user;
   const { serviceType, status } = req.query;
@@ -307,7 +299,6 @@ const getServicePostUser = async (req) => {
 
   return result;
 };
-
 const rescheduledPostUser = async (req) => {
   const { userId } = req.user;
   const { serviceId } = req.params;
@@ -341,8 +332,7 @@ const rescheduledPostUser = async (req) => {
 
   return result;
 };
-
-// ----------------PARTNER---------------------------------
+// =PARTNER=================================
 const searchNearby = async (req) => {
   const { longitude, latitude } = req.query;
   const { userId } = req.user;
@@ -369,7 +359,7 @@ const searchNearby = async (req) => {
         },
         distanceField: "distance",
         spherical: true,
-        maxDistance: coverageRadius ? Number(coverageRadius * 1000)  :  Number(10000 * 1000) ,
+        maxDistance: coverageRadius ? Number(coverageRadius * 1000) : Number(10000 * 1000),
       },
     },
     {
@@ -383,13 +373,13 @@ const searchNearby = async (req) => {
         category: 1,
         image: 1,
         createdAt: 1,
-          scheduleDate: 1,
-          scheduleTime: 1,
-          deadlineDate: 1,
-          deadlineTime: 1,
-          deadlineDate: 1,
-          loadingLocation:1,
-          
+        scheduleDate: 1,
+        scheduleTime: 1,
+        deadlineDate: 1,
+        deadlineTime: 1,
+        deadlineDate: 1,
+        loadingLocation: 1,
+
 
       },
     },
@@ -406,7 +396,6 @@ const searchNearby = async (req) => {
     nearbyServices,
   };
 };
-
 const rescheduledAction = async (req) => {
   const { serviceId, rescheduledStatus } = req.query;
 
@@ -422,12 +411,6 @@ const rescheduledAction = async (req) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found!");
   }
 
-  if (service.rescheduledStatus !== "pending") {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Service is not in a pending state for rescheduling!"
-    );
-  }
 
   // Validate rescheduledStatus
   if (!["accepted", "decline"].includes(rescheduledStatus)) {
@@ -442,10 +425,12 @@ const rescheduledAction = async (req) => {
 
   if (rescheduledStatus === "accepted") {
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
+    updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.ACCEPTED;
     updateFields.scheduleTime = service.rescheduledTime;
     updateFields.scheduleDate = service.rescheduledDate;
   } else if (rescheduledStatus === "decline") {
-    updateFields.status = ENUM_SERVICE_STATUS.DECLINED;
+    updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.DECLINED;
+    updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
   }
 
   const result = await Services.findOneAndUpdate(
@@ -455,48 +440,34 @@ const rescheduledAction = async (req) => {
   );
 
   return result;
-};  
-
-// -----------------------------------------
+};
+// ============================
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const now = new Date();
 
-  const currentTime = now.getTime();
-  const oneHourLater = new Date(currentTime + 60 * 60 * 1000);
-  const formattedDate = `${now.getMonth() + 1
-    }/${now.getDate()}/${now.getFullYear()}`;
+  const formattedDate = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
 
-  const currentHours = now.getHours();
-  const currentMinutes = now.getMinutes();
+  const startTime = new Date(now);
+  const endTime = new Date(now.getTime() + 60 * 60 * 1000);
 
-  const startTime = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    currentHours,
-    currentMinutes
-  );
-  const endTime = new Date(
-    oneHourLater.getFullYear(),
-    oneHourLater.getMonth(),
-    oneHourLater.getDate(),
-    oneHourLater.getHours(),
-    oneHourLater.getMinutes()
-  );
+  function formatTimeWithAmPm(date) {
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+  }
+
+  const formattedStartTime = formatTimeWithAmPm(startTime);
+  const formattedEndTime = formatTimeWithAmPm(endTime);
 
   const query = {
     status: { $in: ["accepted", "rescheduled"] },
     scheduleDate: formattedDate,
     scheduleTime: {
-      $gte: startTime.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      $lt: endTime.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      $gte: formattedStartTime,
+      $lt: formattedEndTime,
     },
   };
 
@@ -508,46 +479,59 @@ const getUserServicesWithinOneHour = async (req) => {
   } else {
     throw new Error("Invalid user role");
   }
-  services = await Services.find(query);
+
+  services = await Services.find(query)
+    .populate({
+      path: "confirmedPartner",
+      select: "name email profile_image phone_number",
+    })
+    .populate({
+      path: "user",
+      select: "name email profile_image phone_number",
+    });
+
+  console.log("getUserServicesWithinOneHour", services, formattedDate, formattedStartTime, formattedEndTime);
 
   return services;
 };
-
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
   const { userId } = req.user;
   let service;
   if (serviceType === "move") {
     service = ["Goods", "Waste"];
-  }else if(serviceType === "sell") {
+  } else if (serviceType === "sell") {
     service = ["Second-hand items", "Recyclable materials"];
-  }else{
+  } else {
     service = ["Second-hand items", "Recyclable materials", "Goods", "Waste"]
   }
 
- const query = req.query;
- 
- const filtered = new QueryBuilder(
-  Services.find({
-    user: userId,
-    service,
-    status: serviceStatus,
-  })
-    .populate({
-      path: "confirmedPartner",  
-      select: "profile_image name", 
-    }),
-  query
-)
-  .sort()   
-  .paginate();  
+  const query = req.query;
 
-const result = await filtered.modelQuery; 
-const meta = await filtered.countTotal();  
+  const filtered = new QueryBuilder(
+    Services.find({
+      user: userId,
+      service,
+      status: serviceStatus,
+    })
+      .populate({
+        path: "user",
+        select: "profile_image name email",
+      })
+      .populate({
+        path: "confirmedPartner",
+        select: "profile_image name email",
+      }),
+    query
+  )
+    .sort()
+    .paginate();
+
+  const result = await filtered.modelQuery;
+  const meta = await filtered.countTotal();
   return { result, meta };
 };
-
-// ----------------------------
+// ===========================
 const updateServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;
 
@@ -600,69 +584,6 @@ const updateServicesStatusPartner = async (req) => {
 
   return result;
 };
-
-// const updateServicesStatusUser = async (req) => {
-//   const { serviceId, status } = req.query;
-//   const {userId} = req.user;
-
-//   if (!serviceId || !status) {
-//     throw new ApiError(
-//       httpStatus.BAD_REQUEST,
-//       "Service ID and status are required in the query parameters."
-//     );
-//   }
-
-//   const service = await Services.findById(serviceId);
-//   if (!service) {
-//     throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
-//   }
-
-//   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
-//   }
-
-//   // Validation of status transitions for user
-//   if (status === "confirm-arrived" && service.partner_status !== "arrived") {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
-//   }
-
-//   if (status === "goods-loaded" && (service.user_status !== "confirm-arrived" || service.partner_status !== "arrived")) {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive and user must confirm arrival before loading goods.");
-//   }
-
-//   if (status === "partner-at-destination" && service.partner_status !== "arrive-at-destination") {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive at destination before confirming destination.");
-//   }
-
-//   if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark delivery before confirming delivery.");
-//   }
-
-//   // Mark the transaction as finished
-//   const transaction = await Transaction.findOne({ serviceId, userId });
-//   if (!transaction || transaction.paymentStatus !== "Completed") {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed!");
-//   } 
-  
-//   let service_status = service.status;
-//   if (status === "goods-loaded") {
-//     service_status = "pick-up";
-//   } else if (status === "delivery-confirmed") { 
-//     transaction.isServiceFinish = true;
-//     await transaction.save();
-//     service_status = "completed";
-//   }
-
-//   const result = await Services.findOneAndUpdate(
-//     { _id: serviceId },
-//     { user_status: status, status: service_status },
-//     { new: true }
-//   );
-
-//   return result;
-// };
-
-
 const updateServicesStatusUser = async (req) => {
   const { serviceId, status } = req.query;
   const { userId } = req.user;
@@ -675,16 +596,16 @@ const updateServicesStatusUser = async (req) => {
   }
 
   const service = await Services.findById(serviceId);
-  if (!service) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
-  }
+  if (service?.paymentStatus !== "paid") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment must be completed before can you update status.");
+  } 
 
-  // Validate the provided status
+
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
 
-  // Status transition validations
+
   if (status === "confirm-arrived" && service.partner_status !== "arrived") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
   }
@@ -701,55 +622,54 @@ const updateServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark delivery before confirming delivery.");
   }
 
-  // Ensure the payment has been completed before proceeding
+
   const transaction = await Transaction.findOne({ serviceId, userId });
   if (!transaction || transaction.paymentStatus !== "Completed") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed!");
   }
 
-  // Start a MongoDB session for atomic updates
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Fetch partner asynchronously
+
     const partner = await Partner.findOne({ _id: transaction?.partnerId });
     if (!partner) {
       throw new ApiError(httpStatus.NOT_FOUND, "Your Transition Partner not found.");
     }
 
-    // Handle delivery-confirmed status
+
     if (status === "delivery-confirmed") {
       partner.wallet += transaction.amount;
       await partner.save({ session });
 
-      // Mark transaction as completed
-      transaction.isServiceFinish = true;
+
+      transaction.isFinish = true;
       await transaction.save({ session });
     }
 
-    // Update service status based on user input
+
     let service_status = service.status;
     if (status === "goods-loaded") {
-      service_status = "pick-up"; // Update service status to 'pick-up' when goods are loaded
+      service_status = "pick-up";
     } else if (status === "delivery-confirmed") {
-      service_status = "completed"; // Update service status to 'completed' when delivery is confirmed
+      service_status = "completed";
     }
 
-    // Apply the service status updates
+
     const updatedService = await Services.findOneAndUpdate(
       { _id: serviceId },
       { user_status: status, status: service_status },
       { new: true, session }
     );
 
-    // Commit the transaction to ensure all changes are saved atomically
+
     await session.commitTransaction();
     session.endSession();
 
     return updatedService;
   } catch (error) {
-    // Rollback transaction if any error occurs
     await session.abortTransaction();
     session.endSession();
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
@@ -769,7 +689,7 @@ const ServicesService = {
   rescheduledPostUser,
   rescheduledAction,
   updateServicesStatusPartner,
-  filterUserByHistory, 
+  filterUserByHistory,
   updateServicesStatusUser,
 };
 

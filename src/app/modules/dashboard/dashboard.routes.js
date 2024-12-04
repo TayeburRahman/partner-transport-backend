@@ -3,6 +3,7 @@ const auth = require("../../middlewares/auth");
 const { ENUM_USER_ROLE, ENUM_ADMIN_ACCESS } = require("../../../utils/enums");
 const { DashboardController } = require("./dashboard.controller");
 const checkAdminAccess = require("../../middlewares/checkAdminAccess");
+const { BidController } = require("../bid/bid.controller");
 
 const router = express.Router();
  
@@ -187,9 +188,21 @@ router
   '/transaction/:id',
   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   DashboardController.getTransactionsDetails
-);
- 
+)
 
+// =File Claim================================
+ .patch(
+    "/status-file-claim",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_FILE_CLAIM_MANAGE),
+    BidController.updateStatusFileClaim
+  )
+
+  .patch(
+    '/penalty',
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    BidController.applyPenaltyPercent
+  )
  
 
   // variable ========================

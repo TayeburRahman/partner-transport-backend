@@ -47,14 +47,14 @@ router
   //====================
   // Get Transition History ------------
   //====================
-  .get("/user-transaction",
-    auth(ENUM_USER_ROLE.USER),
-    PaymentController.transitionsHistoryUser
+  .get("/history-transaction",
+    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    PaymentController.transitionsHistory
+  ) 
+  .get("/history-payment",
+    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    PaymentController.paymentHistory
   )
-  .get("/partner-transaction",
-    auth(ENUM_USER_ROLE.PARTNER),
-    PaymentController.transitionsHistoryPartner
-  )
-
+   
 
 module.exports = router;

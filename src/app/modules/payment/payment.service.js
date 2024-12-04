@@ -11,14 +11,12 @@ const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const paypal = require('paypal-rest-sdk');
 const express = require('express');
 
-
-
 const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
 paypal.configure({
   'mode': config.paypal.paypal_mode,
   'client_id': config.paypal.paypal_client_id,
   'client_secret': config.paypal.paypal_client_secret_key
-}); 
+});
 // Stripe Payment -------------
 const createCheckoutSessionStripe = async (req) => {
   try {
@@ -26,10 +24,16 @@ const createCheckoutSessionStripe = async (req) => {
     const { userId, role } = req.user
 
     let user;
+    let payUserRole;
     if (role === ENUM_USER_ROLE.USER) {
       user = await User.findById(userId)
+      payUserRole = 'User'
     } else if (role === ENUM_USER_ROLE.PARTNER) {
       user = await Partner.findById(userId)
+      payUserRole = 'Partner'
+    } else if (role === ENUM_USER_ROLE.ADMIN) {
+      user = await Partner.findById(userId)
+      payUserRole = 'Admin'
     }
     const service = await Services.findById(serviceId)
     if (!service) {
@@ -41,7 +45,21 @@ const createCheckoutSessionStripe = async (req) => {
       throw new ApiError(httpStatus.NOT_FOUND, 'No conform the partner for service');
     }
 
+    let receiveUser;
+    let receiveUserRole;
+    if (service.mainService === "sell") {
+      receiveUser = service.user;
+      receiveUserRole = 'User';
+    } else if (service.mainService === "move") {
+      receiveUser = service.confirmedPartner;
+      receiveUserRole = 'Partner';
+    } else {
+      throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
+    }
+
     const unitAmount = packagePrice * 100;
+
+    console.log("===", userId, role)
 
     let session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -50,6 +68,12 @@ const createCheckoutSessionStripe = async (req) => {
       cancel_url: `${DOMAIN_URL}/cancel`,
       customer_email: `${user.email}`,
       client_reference_id: serviceId,
+      metadata: {
+        payUser: userId,
+        payUserType: payUserRole,
+        receiveUser: receiveUser.toHexString(),
+        receiveUserType: receiveUserRole
+      },
       line_items: [
         {
           price_data: {
@@ -65,7 +89,7 @@ const createCheckoutSessionStripe = async (req) => {
       ]
     })
 
-    return {url: session.url};
+    return { url: session.url };
 
   } catch (error) {
     throw new ApiError(400, error);
@@ -88,7 +112,10 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
         message: "Payment not approved",
       };
     }
-
+    const receiveUser = session.metadata.receiveUser;
+    const payUser = session.metadata.receiveUser;
+    const payUserType = session.metadata.payUserType;
+    const receiveUserType = session.metadata.receiveUserType;
     const serviceId = session.client_reference_id;
     const service = await Services.findById(serviceId);
 
@@ -112,12 +139,15 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
 
     const transactionData = {
       serviceId,
-      userId: service.user,
-      partnerId: service.confirmedPartner,
+      payUser: payUser,
+      payUserType: payUserType,
+      receiveUser: receiveUser,
+      receiveUserType: receiveUserType,
       paymentMethod: 'Stripe',
       amount: Number(session.amount_total) / 100,
       paymentStatus: "Completed",
-      isServiceFinish: false,
+      isFinish: false,
+      payType: service.mainService,
       transactionId: session.payment_intent,
       paymentDetails: {
         email: session.customer_email,
@@ -144,13 +174,19 @@ const createCheckoutSessionPaypal = async (req, res) => {
 
 
     let user;
+    let payUserRole;
     if (role === ENUM_USER_ROLE.USER) {
-      user = await User.findById(userId);
+      user = await User.findById(userId)
+      payUserRole = 'User'
     } else if (role === ENUM_USER_ROLE.PARTNER) {
-      user = await Partner.findById(userId);
+      user = await Partner.findById(userId)
+      payUserRole = 'Partner'
+    } else if (role === ENUM_USER_ROLE.ADMIN) {
+      user = await Partner.findById(userId)
+      payUserRole = 'Admin'
     }
 
-    const service = await Services.findById(serviceId);
+    const service = await Services.findById(serviceId).populate('user').populate('confirmedPartner')
     if (!service) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service ID.');
     }
@@ -160,6 +196,18 @@ const createCheckoutSessionPaypal = async (req, res) => {
       throw new ApiError(httpStatus.NOT_FOUND, 'No conforming partner for service');
     }
 
+    let receiveUser;
+    let receiveUserRole;
+    if (service.mainService === "sell") {
+      receiveUser = service.user;
+      receiveUserRole = 'User';
+    } else if (service.mainService === "move") {
+      receiveUser = service.confirmedPartner;
+      receiveUserRole = 'Partner';
+    } else {
+      throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
+    }
+
     // Create payment JSON
     const create_payment_json = {
       "intent": "sale",
@@ -167,7 +215,7 @@ const createCheckoutSessionPaypal = async (req, res) => {
         "payment_method": "paypal"
       },
       "redirect_urls": {
-        "return_url": `${DOMAIN_URL}/payment/paypal/success?serviceId=${serviceId}&userId=${userId}`,
+        return_url: `${DOMAIN_URL}/payment/paypal/success?serviceId=${encodeURIComponent(serviceId)}&payUser=${encodeURIComponent(userId)}&payUserType=${encodeURIComponent(payUserRole)}&receiveUser=${encodeURIComponent(receiveUser)}&receiveUserType=${encodeURIComponent(receiveUserRole)}`,
         "cancel_url": `${DOMAIN_URL}/cancel`,
       },
       "transactions": [{
@@ -202,7 +250,7 @@ const createCheckoutSessionPaypal = async (req, res) => {
     // Find the approval URL
     const approvalUrl = payment.links.find(link => link.rel === 'approval_url');
     if (approvalUrl) {
-      return {url: approvalUrl.href};
+      return { url: approvalUrl.href };
     } else {
       throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'No approval URL found');
     }
@@ -212,7 +260,7 @@ const createCheckoutSessionPaypal = async (req, res) => {
   }
 };
 const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
-  const { paymentId, PayerID, serviceId, userId } = req.query;
+  const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query;
 
   try {
     const execute_payment_json = {
@@ -246,20 +294,22 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
 
         const saleId = payment.transactions[0].related_resources[0].sale.id;
 
-        // Update payment status for the service
         service.paymentStatus = 'paid';
         service.transactionId = saleId;
         await service.save();
 
         const transactionData = {
           serviceId,
-          userId: service.user,
-          partnerId: service.confirmedPartner,
+          payUser: payUser,
+          payUserType: payUserType,
+          receiveUser: receiveUser,
+          receiveUserType: receiveUserType,
           paymentMethod: 'PayPal',
           amount: Number(payment.transactions[0].amount.total),
           paymentStatus: "Completed",
-          isServiceFinish: false,
+          isFinish: false,
           transactionId: saleId,
+          payType: service.mainService,
           paymentDetails: {
             email: payment.payer.payer_info.email,
             payId: paymentId,
@@ -337,7 +387,7 @@ const paypalRefundPayment = async (req, res) => {
         currency: refund.amount.currency,
       },
     };
- 
+
     const newTransaction = await Transaction.create(transactionData);
 
     // Return success response
@@ -393,7 +443,7 @@ const stripeRefundPayment = async (req, res) => {
 
     const newTransaction = await Transaction.create(transactionData);
 
-    return  { success: true, transaction: newTransaction };
+    return { success: true, transaction: newTransaction };
 
   } catch (error) {
     console.error("Refund error:", error);
@@ -404,7 +454,7 @@ const stripeTransferPayment = (req, res) => {
   // Implement Bank Transfer Payment logic here  
   return
 }
-const transferPayments = async(req, res) => {
+const transferPayments = async (req, res) => {
   // Implement Bank Transfer Payment logic here  
 
   // const transactionData = {

@@ -27,6 +27,7 @@ const ENUM_SERVICE_STATUS = {
   PENDING: "pending",
   ACCEPTED: "accepted",
   RESCHEDULED: "rescheduled",
+  DECLINED: "declined",
   PICK_UP: "pick-up",
   IN_PROGRESS: "in-progress",
   COMPLETED: "completed",
