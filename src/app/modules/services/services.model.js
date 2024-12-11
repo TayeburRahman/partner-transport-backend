@@ -36,10 +36,11 @@ const ServicesSchema = new Schema(
     },
     category: {
       type: [String],
+      ref: "Category",
       required: [true, "Category is required"],
     },
     scheduleDate: {
-      type: String,
+      type: Date,
       required: [true, "Schedule Date is required"],
     },
     scheduleTime: {
@@ -48,7 +49,7 @@ const ServicesSchema = new Schema(
 
     },
     rescheduledDate: {
-      type: String,
+      type: Date,
       default:null
     },
     rescheduledTime: {
@@ -85,7 +86,7 @@ const ServicesSchema = new Schema(
       required: [true, "Description is required"],
     },
     deadlineDate: {
-      type: String,
+      type: Date,
       required: [true, "Deadline Date is required"],
     },
     deadlineTime: {

@@ -65,7 +65,9 @@ const registrationAccount = async (payload) => {
     expirationTime: Date.now() + 3 * 60 * 1000,
   };
 
-  if (role === "USER" || role === "PARTNER") {
+  if (role === "USER"
+    //  || role === "PARTNER"
+    ) {
     sendEmail({
       email: auth.email,
       subject: "Activate Your Account",

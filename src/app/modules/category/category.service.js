@@ -50,8 +50,8 @@ const getAllCategory = async (query) => {
   const categoryQuery = new QueryBuilder(Category.find({}), query)
     .search([])
     .filter()
-    .sort()
-    .paginate()
+    // .sort()
+    // .paginate()
     .fields();
 
   const result = await categoryQuery.modelQuery;

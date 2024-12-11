@@ -43,6 +43,18 @@ const getAllPartner = catchAsync(async (req, res) => {
   });
 });
 
+const getPaddingPartner = catchAsync(async (req, res) => {
+  const result = await DashboardService.getPaddingPartner();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Partner retrieval successful",
+    data: result,
+  });
+});
+
+ 
+
 const getPartnerDetails = catchAsync(async (req, res) => {
   const result = await DashboardService.getPartnerDetails(req.query);
   sendResponse(res, {
@@ -315,6 +327,7 @@ const DashboardController = {
   deleteUser,
   blockUnblockUserPartnerAdmin,
   getAllPartner,
+  getPaddingPartner,
   getPartnerDetails,
   deletePartner,
   getAllAdmins,

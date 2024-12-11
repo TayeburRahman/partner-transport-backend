@@ -30,6 +30,17 @@ router
     "/peso_to_dollar", 
     VariableController.convertPesoToDollar
   )  
+  .post(
+    "/contact-number",  
+    VariableController.changeContactNumber
+  ) 
+
+  .get(
+    "/contact-number",  
+    VariableController.getContactNumber
+  ) 
+  
+   
 
    
 

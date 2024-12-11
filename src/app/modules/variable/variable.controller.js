@@ -55,13 +55,38 @@ const convertPesoToDollar = catchAsync(async (req, res) => {
         data: result,
     });
 });
+
+const changeContactNumber = catchAsync(async (req, res) => {
+    const result = await VariableCount.changeContactNumber(req.body);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Get successfully",
+        data: result,
+    });
+});
+
+const getContactNumber = catchAsync(async (req, res) => {
+    const result = await VariableCount.getContactNumber(req.body);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Get successfully",
+        data: result,
+    });
+});
+ 
+
+ 
  
 const VariableController = {
     createVariable,
     updateVariable,
     getVariable,
     convertDollarToPeso,
-    convertPesoToDollar
+    convertPesoToDollar,
+    changeContactNumber,
+    getContactNumber
 };
 
 module.exports = { VariableController };

@@ -54,9 +54,16 @@ router
   .get(
     "/get_all_partner",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.getAllPartner
   )
+  .get(
+    "/get_padding_partner",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    DashboardController.getPaddingPartner
+  ) 
+   
   .get(
     "/get_partner_details",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
@@ -77,7 +84,7 @@ router
   .patch(
     "/approve_decline_partner",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE),
     DashboardController.approveDeclinePartner
   )
 

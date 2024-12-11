@@ -35,22 +35,25 @@ const paymentHistory = async (req, res) => {
 };
 
 const transitionsHistory = async (req, res) => {
-  const { authId, userId } = req.user;
   const query = req.query;
+  const {role} = req.user;
   if (!query.receiveUser) {
     throw new ApiError(400, 'User email (receiveUser) is required.');
   }
-
-  if (!query.authType) { 
-    throw new ApiError(400, 'Auth type (authType) is required.');
-  } 
+ 
   let wallet;
  
-   if (query.authType === ENUM_USER_ROLE.USER) {
+   if (role === ENUM_USER_ROLE.USER) {
    const user = await User.findById(query.receiveUser)
+   if (!user) {
+    throw new ApiError(404, 'User not found.');
+    } 
    wallet = user.wallet;
-   }  else if (query.authType === ENUM_USER_ROLE.PARTNER) {
+   }  else if (role === ENUM_USER_ROLE.PARTNER) {
     const user = await Partner.findById(query.receiveUser)
+    if (!user) {
+      throw new ApiError(404, 'User not found.');
+      } 
     wallet = user.wallet;
    } else {
     throw new ApiError(400, 'Invalid (authType) type.');

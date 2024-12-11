@@ -1,4 +1,5 @@
 const ApiError = require("../../../errors/ApiError");
+const { ContactNumber } = require("../manage/manage.model");
 const Variable = require("./variable.model");
 
 const calculateBedCosts = async (data) => {
@@ -61,11 +62,47 @@ const convertPesoToDollar = async (price) => {
     return { dollarCost };
 };
 
+const changeContactNumber = async ({contactNumber}) => {
+    if (!contactNumber) {
+      throw new Error("Contact number is required!");
+    }
+   
+    const existingContact = await ContactNumber.findOne();
+  
+    if (existingContact) { 
+      const result = await ContactNumber.findOneAndUpdate(
+        {},  
+        { contact: contactNumber },  
+        { new: true, runValidators: true }  
+      );
+  
+      return {
+        message: "Contact number updated successfully",
+        result,
+      };
+    } else { 
+      const result = await ContactNumber.create({ contact: contactNumber });
+  
+      return {
+        message: "Contact number added successfully",
+        result,
+      };
+    }
+  };
+
+  const getContactNumber = async () => {
+    return ContactNumber.findOne({})
+  }
+  
+ 
+
 
 const VariableCount = {
     calculateBedCosts,
     convertDollarToPeso,
-    convertPesoToDollar
+    convertPesoToDollar,
+    changeContactNumber,
+    getContactNumber
 }
 
 module.exports = VariableCount;

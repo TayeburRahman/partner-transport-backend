@@ -2,14 +2,14 @@ const httpStatus = require("http-status");
 const Partner = require("../partner/partner.model");
 const User = require("../user/user.model");
 const Services = require("../services/services.model");
-const { ENUM_PAYMENT_STATUS, ENUM_USER_ROLE } = require("../../../utils/enums");
+const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const config = require("../../../config");
 const ApiError = require("../../../errors/ApiError");
 const { Transaction } = require("./payment.model");
-const { assign } = require("nodemailer/lib/shared");
+// const { assign } = require("nodemailer/lib/shared");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const paypal = require('paypal-rest-sdk');
-const express = require('express');
+// const express = require('express');
 
 const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
 paypal.configure({
@@ -17,7 +17,7 @@ paypal.configure({
   'client_id': config.paypal.paypal_client_id,
   'client_secret': config.paypal.paypal_client_secret_key
 });
-// Stripe Payment -------------
+//Stripe Payment -------------
 const createCheckoutSessionStripe = async (req) => {
   try {
     const { serviceId } = req.body
@@ -39,7 +39,6 @@ const createCheckoutSessionStripe = async (req) => {
     if (!service) {
       throw new ApiError(httpStatus.NOT_FOUND, 'invalid service ID.');
     }
-
     const packagePrice = Number(service.winBid);
     if (!packagePrice) {
       throw new ApiError(httpStatus.NOT_FOUND, 'No conform the partner for service');
@@ -66,7 +65,7 @@ const createCheckoutSessionStripe = async (req) => {
       mode: 'payment',
       success_url: `${DOMAIN_URL}/payment/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${DOMAIN_URL}/cancel`,
-      customer_email: `${user.email}`,
+      customer_email: `${user?.email}`,
       client_reference_id: serviceId,
       metadata: {
         payUser: userId,
@@ -105,19 +104,30 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
         message: "Payment execution failed",
       };
     }
-
+ 
+ 
     if (session.payment_status !== 'paid') {
       return {
         status: "failed",
         message: "Payment not approved",
       };
     }
+
     const receiveUser = session.metadata.receiveUser;
-    const payUser = session.metadata.receiveUser;
+    const payUser = session.metadata.payUser;
     const payUserType = session.metadata.payUserType;
     const receiveUserType = session.metadata.receiveUserType;
     const serviceId = session.client_reference_id;
     const service = await Services.findById(serviceId);
+
+    // console.log("=========================================",service,)
+
+    // if (service.paymentStatus === 'paid') {
+    //   const existingTransaction = await Transaction.findOne({ serviceId: service._id });
+    //   console.log("Transaction", existingTransaction)
+    //   return { status: "success", result: existingTransaction };
+    // }
+
 
     if (!service) {
       return {
@@ -127,12 +137,6 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       }
     }
 
-    // if (service.paymentStatus === 'paid') {
-    //   const existingTransaction = await Transaction.findOne({ serviceId: service._id });
-    //   return { status: "success", result: existingTransaction };
-    // }
-
-    // Update payment status for the service
     service.paymentStatus = 'paid';
     service.transactionId = session.payment_intent;
     await service.save();
@@ -154,9 +158,9 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
         payId: sessionId,
         currency: "USD"
       }
-    };
+    }; 
 
-    const newTransaction = await Transaction.create(transactionData);
+    const newTransaction = await Transaction.create(transactionData); 
 
     return { status: "success", result: newTransaction };
 
@@ -165,7 +169,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     return { status: "failed", message: "Payment execution failed" }
   }
 };
-// Paypal Payment ------------
+//Paypal Payment ------------
 const createCheckoutSessionPaypal = async (req, res) => {
   const { serviceId } = req.body;
   const { userId, role } = req.user;
@@ -272,8 +276,7 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
         if (error) {
           return reject({ status: "failed", message: "Payment execution failed" });
         }
-
-        // Verify payment status
+ 
         if (payment.state !== 'approved') {
           return reject({ status: "failed", message: "Payment not approved" });
         }
@@ -287,10 +290,10 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
           });
         }
 
-        // if (service.paymentStatus === 'paid') {
-        //   const existingTransaction = await Transaction.findOne({ serviceId: service._id });
-        //   return resolve({ status: "success", result: existingTransaction });
-        // }
+        if (service.paymentStatus === 'paid') {
+          const existingTransaction = await Transaction.findOne({ serviceId: service._id });
+          return resolve({ status: "success", result: existingTransaction });
+        }
 
         const saleId = payment.transactions[0].related_resources[0].sale.id;
 
@@ -328,11 +331,10 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
     return { status: "failed", message: "Payment execution failed" };;
   }
 };
-// Cancel page ------------
 const paymentStatusCancel = async (req, res) => {
   return { status: "canceled" }
 }
-// Paypal Refund Payment ------------
+//Paypal Refund Payment ------------
 const paypalRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
   try {
@@ -398,7 +400,7 @@ const paypalRefundPayment = async (req, res) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
 };
-// Stripe Refund Payment ------------
+//Stripe Refund Payment ------------
 const stripeRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
 
@@ -475,9 +477,7 @@ const transferPayments = async (req, res) => {
 
   return
 }
-
-
-// Bank Transfer Payment ------------
+//Bank Transfer Payment ------------
 const PaymentService = {
   // createConnectedAccountWithBank,
   createCheckoutSessionStripe,

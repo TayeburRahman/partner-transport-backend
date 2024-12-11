@@ -148,9 +148,11 @@ const filterBidsByMove = async (req) => {
 };
 
 const filterBidsByHistory = async (req) => {
-  const { categories, rescheduled, bitStatus, page = 1, limit = 10 } = req.query;
+  const { categories, serviceStatus, bitStatus, page = 1, limit = 10 } = req.query;
   const { serviceType } = req.body;
   const { userId } = req.user;
+
+  console.log("Filtering", categories, serviceStatus, bitStatus, page)
 
   const skip = (page - 1) * limit;
 
@@ -176,7 +178,7 @@ const filterBidsByHistory = async (req) => {
       match: {
         service: serviceType || { $exists: true },
         category: categories ? { $in: categories } : { $exists: true },
-        status: rescheduled ? rescheduled : { $exists: true },
+        status: serviceStatus ? serviceStatus : { $exists: true },
       },
     })
     .skip(skip)

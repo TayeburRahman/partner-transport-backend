@@ -16,9 +16,9 @@ const Variable = require("../variable/variable.model");
 const { Transaction } = require("../payment/payment.model");
 const { default: mongoose } = require("mongoose");
 const { Bids } = require("../bid/bid.model");
+const User = require("../user/user.model");
 
-// =USER=============================
-// Helper function to validate and process inputs
+// =USER============================= 
 const validateInputs = (data, image) => {
   const requiredFields = [
     "service", "category", "scheduleDate", "scheduleTime", "numberOfItems",
@@ -26,15 +26,13 @@ const validateInputs = (data, image) => {
     "isLoaderNeeded", "loadFloorNo", "loadingAddress", "loadLongitude",
     "loadLatitude", "mainService"
   ];
-
-  // Validate required fields
+ 
   for (const field of requiredFields) {
     if (!data[field]) {
       throw new ApiError(400, `${field} is required.`);
     }
   }
-
-  // Validate service based on mainService
+ 
   const validServices = {
     move: ["Goods", "Waste"],
     sell: ["Second-hand items", "Recyclable materials"]
@@ -47,22 +45,23 @@ const validateInputs = (data, image) => {
   if (!validServiceForMain.includes(data.service)) {
     throw new ApiError(400, `For ${data.mainService}, you must choose between ${validServiceForMain.join(' or ')}.`);
   }
-
-  // Validate images
+ 
   if (!image?.length) {
     throw new ApiError(400, "At least one image is required.");
   }
-
-  // Process images
+ 
   const images = Array.isArray(image) ? image.map(file => `/images/services/${file.filename}`) : [];
-
-  // Validate date and time formats
-  const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+ 
+  // const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
   const timePattern = /^(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
 
-  if (!datePattern.test(data.scheduleDate)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleDate format. Please use MM/DD/YYYY.");
+  // if (!datePattern.test(data.scheduleDate)) {
+  //   throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleDate format. Please use MM/DD/YYYY.");
+  // }
+  if (!timePattern.test(data.scheduleTime)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleTime format. Please use hh:mm AM/PM.");
   }
+
   if (!timePattern.test(data.scheduleTime)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleTime format. Please use hh:mm AM/PM.");
   }
@@ -70,28 +69,51 @@ const validateInputs = (data, image) => {
   return images;
 };
 
-// Helper function to convert time to 24-hour format
-const convertTo24HourFormat = (timeStr) => {
-  let [hours, minutes] = timeStr.split(":").map(Number);
-  const modifier = timeStr.split(" ")[1];
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+ 
+function formatTimeTo12hr(date) {
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+}
 
-  if (modifier === "PM" && hours !== 12) hours += 12;
-  if (modifier === "AM" && hours === 12) hours = 0;
+// const convertTo12HourFormat = (timeStr) => { 
+//   if (/^(0[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i.test(timeStr)) {
+//     return timeStr.toUpperCase(); 
+//   }
+ 
+//   const [hours, minutes] = timeStr.split(":").map(Number);
 
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-};
+//   if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+//     throw new Error("Invalid time format. Please provide time in 'HH:MM' 24-hour format or 'HH:MM AM/PM'.");
+//   }
+
+//   const modifier = hours >= 12 ? "PM" : "AM";
+//   const adjustedHours = hours % 12 === 0 ? 12 : hours % 12;
+
+//   return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${modifier}`;
+// };
+
+function formatTimeTo24hr(date) {
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${String(hours).padStart(2, '0')}:${minutes}`;
+}
+
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
     const { image } = req.files || {};
     const data = req.body;
-
-    // Validate inputs and process images
-    const images = validateInputs(data, image);
-
-    // Convert time to 24-hour format
-    const scheduleTime = convertTo24HourFormat(data.scheduleTime);
-    const deadlineTime = convertTo24HourFormat(data.deadlineTime);
+ 
+    const images = validateInputs(data, image); 
 
     // Construct service data
     const serviceData = {
@@ -100,13 +122,13 @@ const createPostDB = async (req) => {
       service: data.service,
       category: data.category,
       scheduleDate: data.scheduleDate,
-      scheduleTime,
+      scheduleTime: data.scheduleTime,
       numberOfItems: Number(data.numberOfItems),
       weightMTS: Number(data.weightMTS),
       weightKG: Number(data.weightKG),
       description: data.description,
       deadlineDate: data.deadlineDate,
-      deadlineTime,
+      deadlineTime: data.deadlineTime,
       isLoaderNeeded: data.isLoaderNeeded,
       loadFloorNo: data.loadFloorNo,
       isUnloaderNeeded: data.isUnloaderNeeded,
@@ -130,12 +152,10 @@ const createPostDB = async (req) => {
       distance: data.distance,
     };
 
-    // Create and save the service
     const newService = new Services(serviceData);
     return await newService.save();
 
-  } catch (error) {
-    // Generalized error handling
+  } catch (error) { 
     throw new ApiError(400, error.message || 'Error while creating post');
   }
 };
@@ -304,19 +324,22 @@ const rescheduledPostUser = async (req) => {
   const { serviceId } = req.params;
   const { rescheduledReason, rescheduledTime, rescheduledDate } = req.body;
 
-  validateScheduleInputs(rescheduledDate, rescheduledTime);
+  // validateScheduleInputs(rescheduledDate, rescheduledTime); 
+  // const deadlineTime = convertTo12HourFormat(rescheduledTime);
 
   if (!rescheduledDate || !rescheduledTime) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "Rescheduled Time and Date are required!"
     );
-  }
+  } 
 
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found!");
   }
+
+  console.log("service: ", service)
 
   const result = await Services.findOneAndUpdate(
     { _id: serviceId },
@@ -330,11 +353,13 @@ const rescheduledPostUser = async (req) => {
     { new: true }
   );
 
+  console.log("===Result===", result)
+
   return result;
 };
 // =PARTNER=================================
 const searchNearby = async (req) => {
-  const { longitude, latitude } = req.query;
+  const { longitude, latitude, service } = req.query;
   const { userId } = req.user;
 
   if (!longitude || !latitude) {
@@ -363,7 +388,10 @@ const searchNearby = async (req) => {
       },
     },
     {
-      $match: { status: ENUM_SERVICE_STATUS.PENDING },
+      $match: { 
+        status: ENUM_SERVICE_STATUS.PENDING,
+        service: service,
+       },
     },
     {
       $project: {
@@ -379,17 +407,13 @@ const searchNearby = async (req) => {
         deadlineTime: 1,
         deadlineDate: 1,
         loadingLocation: 1,
-
-
       },
     },
-  ]);
+  ]); 
 
-  console.log("=======", nearbyServices);
-
-  if (nearbyServices.length === 0) {
-    throw new ApiError(httpStatus.NOT_FOUND, "No nearby services found");
-  }
+  // if (nearbyServices.length === 0) {
+  //   throw new ApiError(httpStatus.NOT_FOUND, "No nearby services found");
+  // }
 
   return {
     count: nearbyServices.length,
@@ -441,59 +465,94 @@ const rescheduledAction = async (req) => {
 
   return result;
 };
-// ============================
+
+// ============================  
+// const getUserServicesWithinOneHour = async (req) => {
+//   const { userId, role } = req.user;
+//   const now = new Date();
+//   const formattedDate = formatDate(now); 
+//   const formattedStartTime = formatTimeTo12hr(now);
+//   const formattedEndTime = formatTimeTo12hr(new Date(now.getTime() + 60 * 60 * 1000));
+//    console.log('formattedDate, formattedStartTime', formattedEndTime)
+//   const query = {
+//     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
+//     scheduleDate: {
+//       $gte: formattedDate
+//     },  
+//     scheduleTime: { 
+//       $gte: formattedStartTime, 
+//       $lt: formattedEndTime
+//     }
+//   };
+
+//   if (role === 'USER') {
+//     query.user = userId; 
+//   } else if (role === 'PARTNER') {
+//     query.confirmedPartner = userId; 
+//   } 
+//   const services = await Services.find(query)
+//     .populate({
+//       path: "confirmedPartner",
+//       select: "name email profile_image phone_number",
+//     })
+//     .populate({
+//       path: "user",
+//       select: "name email profile_image phone_number",
+//     }); 
+
+//   console.log("Fetched services:", services);
+//   return services;
+// };
+
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const now = new Date();
+ 
+  const formattedDate = formatDate(now);
+  const formattedStartTime = formatTimeTo12hrs(now);  
+   
+  const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
+  const formattedStartRange = formatTimeTo12hrs(oneHourBefore);   
 
-  const formattedDate = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
-
-  const startTime = new Date(now);
-  const endTime = new Date(now.getTime() + 60 * 60 * 1000);
-
-  function formatTimeWithAmPm(date) {
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-  }
-
-  const formattedStartTime = formatTimeWithAmPm(startTime);
-  const formattedEndTime = formatTimeWithAmPm(endTime);
-
+  console.log("Fetched services:", formattedStartRange,)
+   
   const query = {
-    status: { $in: ["accepted", "rescheduled"] },
-    scheduleDate: formattedDate,
-    scheduleTime: {
-      $gte: formattedStartTime,
-      $lt: formattedEndTime,
+    status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] }, 
+    scheduleDate: {
+      $lte: formattedDate, 
     },
+    scheduleTime: { 
+      // $gte: formattedStartRange, 
+       $lte: formattedStartRange  
+    }
   };
 
-  let services;
-  if (role === ENUM_USER_ROLE.USER) {
-    query.user = userId;
-  } else if (role === ENUM_USER_ROLE.PARTNER) {
-    query.confirmedPartner = userId;
-  } else {
-    throw new Error("Invalid user role");
+  if (role === 'USER') {
+    query.user = userId; 
+  } else if (role === 'PARTNER') {
+    query.confirmedPartner = userId; 
   }
 
-  services = await Services.find(query)
+  const services = await Services.find(query)
     .populate({
       path: "confirmedPartner",
-      select: "name email profile_image phone_number",
+      select: "name email profile_image phone_number rating",
     })
     .populate({
       path: "user",
-      select: "name email profile_image phone_number",
+      select: "name email profile_image phone_number rating",
     });
 
-  console.log("getUserServicesWithinOneHour", services, formattedDate, formattedStartTime, formattedEndTime);
-
+  // console.log("Fetched services:", services);
   return services;
-};
+}; 
+function formatTimeTo12hrs(date) {
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+} 
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
   const { userId } = req.user;
@@ -531,15 +590,14 @@ const filterUserByHistory = async (req) => {
   const meta = await filtered.countTotal();
   return { result, meta };
 };
+
 // ===========================
 const updateServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;
 
   if (!serviceId || !status) {
     throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Service ID and status are required in the query parameters."
-    );
+      httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
   }
 
   const service = await Services.findById(serviceId);
@@ -549,14 +607,13 @@ const updateServicesStatusPartner = async (req) => {
 
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
-  }
-
-  console.log("service", service.status)
-
-  // Validation of status transitions for partner
+  } 
+  console.log("service", service.status) 
   if (status === "arrived" && service.status !== "accepted") {
     throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
   }
+
+  console.log("status==", status)
 
   if (status === "start-trip" && service.user_status !== "goods-loaded") {
     throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm goods are loaded before starting the trip.");
@@ -569,8 +626,7 @@ const updateServicesStatusPartner = async (req) => {
   if (status === "delivered" && service.user_status !== "partner-at-destination") {
     throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm partner is at the destination before marking as delivered.");
   }
-
-  // Determine service status based on partner action
+ 
   let service_status = service.status;
   if (status === "start-trip") {
     service_status = "in-progress";
@@ -584,28 +640,28 @@ const updateServicesStatusPartner = async (req) => {
 
   return result;
 };
+
 const updateServicesStatusUser = async (req) => {
   const { serviceId, status } = req.query;
   const { userId } = req.user;
-
+ 
   if (!serviceId || !status) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Service ID and status are required in the query parameters."
-    );
+    throw new ApiError( httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
+  }
+ 
+  const service = await Services.findById(serviceId);
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");
   }
 
-  const service = await Services.findById(serviceId);
-  if (service?.paymentStatus !== "paid") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Payment must be completed before can you update status.");
-  } 
-
-
+  if (service.paymentStatus !== "paid") {
+    throw new ApiError( httpStatus.BAD_REQUEST, "Payment must be completed before you can update the status.");
+  }
+ 
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
-
-
+ 
   if (status === "confirm-arrived" && service.partner_status !== "arrived") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
   }
@@ -622,59 +678,61 @@ const updateServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark delivery before confirming delivery.");
   }
 
-
-  const transaction = await Transaction.findOne({ serviceId, userId });
+  const transaction = await Transaction.findOne({ serviceId });
   if (!transaction || transaction.paymentStatus !== "Completed") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed!");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
   }
-
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  try {
+  try { 
+    const receivedUser =
+      transaction.receiveUserType === "Partner"
+        ? await Partner.findById(transaction.receiveUser)
+        : await User.findById(transaction.receiveUser);
 
-    const partner = await Partner.findOne({ _id: transaction?.partnerId });
-    if (!partner) {
-      throw new ApiError(httpStatus.NOT_FOUND, "Your Transition Partner not found.");
-    }
-
+    if (!receivedUser) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        "Recipient user not found for the transaction."
+      );
+    } 
 
     if (status === "delivery-confirmed") {
-      partner.wallet += transaction.amount;
-      await partner.save({ session });
-
+      receivedUser.wallet += transaction.amount;
+      await receivedUser.save({ session });
 
       transaction.isFinish = true;
       await transaction.save({ session });
     }
-
-
-    let service_status = service.status;
+ 
+    let serviceStatus = service.status;
     if (status === "goods-loaded") {
-      service_status = "pick-up";
+      serviceStatus = "pick-up";
     } else if (status === "delivery-confirmed") {
-      service_status = "completed";
+      serviceStatus = "completed";
     }
-
-
-    const updatedService = await Services.findOneAndUpdate(
-      { _id: serviceId },
-      { user_status: status, status: service_status },
+ 
+    const updatedService = await Services.findByIdAndUpdate(
+      serviceId,
+      { user_status: status, status: serviceStatus },
       { new: true, session }
     );
 
-
     await session.commitTransaction();
-    session.endSession();
-
     return updatedService;
-  } catch (error) {
+  } catch (error) { 
     await session.abortTransaction();
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      `Error updating service status: ${error.message}`
+    );
+  } finally {
     session.endSession();
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
 };
+
 
 const ServicesService = {
   createPostDB,
@@ -694,3 +752,5 @@ const ServicesService = {
 };
 
 module.exports = { ServicesService };
+
+

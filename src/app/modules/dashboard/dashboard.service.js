@@ -15,7 +15,7 @@ const Services = require("../services/services.model");
 const Variable = require("../variable/variable.model");
 const { Transaction } = require("../payment/payment.model");
 const Notification = require("../notification/notification.model");
-
+const auth = require("../../middlewares/auth");
 
 const getYearRange = (year) => {
   const startDate = new Date(`${year}-01-01`);
@@ -92,6 +92,58 @@ const blockUnblockUserPartnerAdmin = async (payload) => {
 
   return updatedAuth;
 };
+
+const getPaddingPartner = async (query) => {
+  const aggregationPipeline = [
+    { 
+      $match: {
+        authId: { $ne: null },
+      },
+    },
+    { 
+      $lookup: {
+        from: "auths",  
+        localField: "authId",
+        foreignField: "_id",
+        as: "authId",
+      },
+    },
+    {
+     
+      $match: {
+        "authId.isActive": false,
+      },
+    },
+    {
+      // Unwind the authData array to make it a flat structure
+      $unwind: "$authId",
+    },
+    // { 
+      // $project: {
+      //   _id: 1,
+      //   name: 1,
+      //   email: 1,
+      //   "authData._id": 1,
+      //   "authData.name": 1,
+      //   "authData.profile_image": 1,
+      //   "authData.email": 1,
+      // },
+    // },
+  ];
+
+  // Execute the aggregation pipeline
+  const partners = await Partner.aggregate(aggregationPipeline);
+
+  if (!partners.length) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No inactive partners found");
+  }
+
+  return {
+    meta: { count: partners.length },
+    data: partners,
+  };
+};
+ 
 
 const getAllPartner = async (query) => {
   const partnerQuery = new QueryBuilder(
@@ -255,6 +307,15 @@ const approveDeclinePartner = async (payload) => {
     }
   ).select("email status");
 
+  await Auth.findOneAndUpdate(
+    { email: partnerEmail },
+    { isActive:  status === "approved"? true : false },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("email status");
+
   const data = {
     name: existPartner.name,
   };
@@ -346,7 +407,11 @@ const deletePrivacyPolicy = async (query) => {
 };
 //=Auction Management ========================
 const getAllAuctions = async (query) => {
-  const servicesQuery = new QueryBuilder(Services.find({}), query)
+  const servicesQuery = new QueryBuilder(
+    Services.find({})
+    .populate('user')
+    .populate('confirmedPartner') 
+  , query)
     .search([])
     .filter()
     .sort()
@@ -536,8 +601,9 @@ const filterAndSortServices = async (req, res) => {
   const {
     service,      
     sortBy ,
-    sortOrder,
+    sortOrder, 
     page,
+    serviceStatus,
     limit
   } = req.query;
 
@@ -549,6 +615,9 @@ const filterAndSortServices = async (req, res) => {
     }
     if (categories.length > 0) {
       filterQuery.category = { $in: categories };
+    } 
+    if (serviceStatus) {
+      filterQuery.status = { $in: serviceStatus };
     } 
 
     filterQuery.page = page
@@ -610,17 +679,20 @@ const getTotalIncomeUserAuction = async (req, res) => {
       ]);
 
       const usersResult = await User.find({})
+      const partnerResult = await Partner.find({})
       const servicesResult = await Services.find({})
 
       // Check if resultIncome is empty
       const income = resultIncome.length > 0 ? resultIncome[0].totalIncome : 0;
       const users = usersResult.length ? usersResult.length : 0;
       const services = servicesResult.length ? servicesResult.length : 0;
+      const partner = partnerResult.length ? partnerResult.length : 0;
 
-      return { income, users, services };
+       
+
+      return { income, users, services, partner };
  
 };
-
 //=Overview ==========================  
 const incomeOverview = async (year) => {
   try {
@@ -753,7 +825,7 @@ const getUserGrowth = async (year) => {
         monthlyUserGrowth.find((data) => data.month === i) || {
           month: i,
           count: 0,
-          year: selectedYear,
+          year: selectedYear.year,
         };
       result.push({
         ...monthData,
@@ -932,7 +1004,8 @@ const DashboardService = {
   sendNoticeUsers,
   sendNoticePartner,
   getTransactionsHistory,
-  getTransactionsDetails
+  getTransactionsDetails,
+  getPaddingPartner
 };
 
 module.exports = { DashboardService };

@@ -6,7 +6,7 @@ const termsAndConditionsSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true,
-    },
+    }
   },
   {
     timestamps: true,
