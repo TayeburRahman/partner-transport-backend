@@ -62,29 +62,29 @@ const reviewSchema = new Schema(
 
 const fileClaimSchema = new Schema(
   {
-    serviceId: {
+    serviceId:{
       type: mongoose.Schema.ObjectId,
       ref: "Services",
       required: true,  
     },
-    against: {
+    user:{
       type: mongoose.Schema.ObjectId,
       refPath: "againstType",
       required: true, 
     },
-    againstType: {
+    userType:{
       type: String,
       enum: ["User", "Partner"],
       required: true, 
     },
-    description: {
+    description:{
       type: String,
       required: true, 
     },
-    fileClaimImage: {
+    fileClaimImage:{
       type: [String],   
     },
-    status: {
+    status:{
       type: String,
       enum: ["pending", "in-progress", "resolved"],
       default: "pending",

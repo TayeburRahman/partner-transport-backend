@@ -99,8 +99,39 @@ const paymentHistory = catchAsync(async (req, res) => {
    data: result,
  });
 })
+
+const withdrawRequest = catchAsync(async (req, res) => {
+  const result = await TransitionsService.withdrawRequest(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Withdraw request sent successfully.",
+   data: result,
+ });
+})
+
+const withdrawSuccess = catchAsync(async (req, res) => {
+  const result = await TransitionsService.withdrawSuccess(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Withdraw request processed successfully.",
+   data: result,
+ });
+})
+
+const userDetailsWithdraw = catchAsync(async (req, res) => {
+  const result = await TransitionsService.userDetailsWithdraw(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "get successfully.",
+   data: result,
+ });
+})
  
-     
+ 
+ 
 
  
 
@@ -114,7 +145,10 @@ const paymentHistory = catchAsync(async (req, res) => {
     stripeRefundPayment,
     stripeTransferPayment,
     transitionsHistory, 
-    paymentHistory
+    paymentHistory,
+    withdrawRequest,
+    withdrawSuccess,
+    userDetailsWithdraw
      
   };
   

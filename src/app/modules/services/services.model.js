@@ -46,7 +46,6 @@ const ServicesSchema = new Schema(
     scheduleTime: {
       type: String,
       required: [true, "Schedule Time is required"],
-
     },
     rescheduledDate: {
       type: Date,

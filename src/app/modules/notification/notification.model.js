@@ -1,20 +1,21 @@
 const { Schema, default: mongoose } = require("mongoose");
 const { ENUM_NOTIFICATION_TYPE } = require("../../../utils/enums");
+const { ObjectId } = Schema.Types;
 
 const notificationSchema = new Schema(
   {
-    orderId: {
-      type: Schema.Types.ObjectId,
-      // required: true,
-      ref: "Job",
+     getId: {
+      type: Schema.Types.ObjectId,  
     },
-    userId: {
-      type: String, 
+    user: {
+      type: Schema.Types.ObjectId, 
+      refPath: 'userType',
       ref: "User",
     },
-    driverId: {
+     userType: {
       type: String, 
-      ref: "Driver",
+      enum: ['User', 'Partner', 'Admin'],
+      required: true,
     },
     title: {
       type: String,
@@ -27,11 +28,15 @@ const notificationSchema = new Schema(
     message: {
       type: String,
       required: true,
-    }, 
-    // otp: {
-    //   type: Number,
-    //   default: null,
-    // },
+    },
+    notice:{
+      type: String,
+    },
+    types: {
+      type: String,
+      enum: ENUM_NOTIFICATION_TYPE,
+      required: true,
+    },
     seen: {
       type: Boolean,
       default: false,

@@ -1,6 +1,19 @@
 const catchAsync = require("../../../shared/catchasync");
-const sendResponse = require("../../../shared/sendResponse");
-const { notificationService } = require("./notification.service");
+const sendResponse = require("../../../shared/sendResponse"); 
+const { NotificationService } = require("./notification.service");
+
+const getUserNotification = catchAsync(async (req, res) => {
+  const result = await NotificationService.getUserNotification(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "User notification retrieved successfully",
+    data: result,
+  });
+});
+
+ 
+
 
 const getAllNotification = catchAsync(async (req, res) => {
   // const result = await notificationService.getAllNotificationFromDB(req?.user);
@@ -13,6 +26,7 @@ const getAllNotification = catchAsync(async (req, res) => {
 });
 
 const notificationController = {
+  getUserNotification,
   getAllNotification,
 };
 

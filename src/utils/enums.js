@@ -20,7 +20,6 @@ const ENUM_SOCKET_EVENT = {
   MESSAGE_GETALL: "message",
   CONVERSION: "conversion", 
   PARTNER_LOCATION: "partner-location",  
-  
 };
 
 const ENUM_SERVICE_STATUS = {
@@ -63,13 +62,19 @@ const ENUM_ADMIN_ACCESS = {
   ACC_TO_EDIT: "accTo_editor",//
   ACC_TO_ADMIN_MANAGE: "accTo_admin_manage",//
   ACC_TO_NOTIFICATION_MANAGE: "accTo_notifications_manage",//
-
   ACC_TO_AUDIT: "accTo_audit",//
   ACC_TO_TERMS_CONDITIONS: "accTo_terms&conditions",//
   ACC_TO_PRIVACY_POLICY: "accTo_privacyPolicy",//
 };
 
-const ENUM_PAYMENT_STATUS = {};
+const ENUM_NOTIFICATION_TYPE = {
+  NEW_SERVICE: "service",
+  NEW_MESSAGE: "new-message",   
+  NOTICE: "notice", 
+  TICKET: 'ticket',
+   NONE: 'none'
+};
+const ENUM_PAYMENT_STATUS = {}; 
 
  
 module.exports = {
@@ -79,5 +84,6 @@ module.exports = {
   ENUM_SERVICE_STATUS,
   ENUM_SERVICE_TYPE,
   ENUM_PAYMENT_STATUS,
-  ENUM_ADMIN_ACCESS
+  ENUM_ADMIN_ACCESS,
+  ENUM_NOTIFICATION_TYPE
 };

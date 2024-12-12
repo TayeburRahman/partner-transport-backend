@@ -7,6 +7,7 @@ const calculateBedCosts = require("../variable/variable.count");
 const { Review, Bids, FileClaim } = require("./bid.model");
 const { Transaction } = require("../payment/payment.model");
 const User = require("../user/user.model");
+const { NotificationService } = require("../notification/notification.service");
 // const Bids = require("./bid.model");
 
 const partnerBidPost = async (req) => {
@@ -26,7 +27,6 @@ const partnerBidPost = async (req) => {
 
   const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
   //  console.log("llllllllllllll", minimumBed, maximumBed)
-
   if (price < minimumBed) {
     throw new ApiError(400, `Price must be greater than or equal to ${minimumBed}`);
   }
@@ -86,6 +86,15 @@ const partnerBidPost = async (req) => {
       { new: true }
     );
   }
+
+  await NotificationService.sendNotification({ 
+    title: "New Bid Received", 
+    message: `You have placed a new bid of $${price} for your service.`, 
+    user: userId, 
+    userType: 'User',  
+    getId: serviceId, 
+    types: 'service',
+  });
 
   return {
     service: updateService,
@@ -194,6 +203,7 @@ const filterBidsByHistory = async (req) => {
     result,
   };
 };
+
 // ================================
 const orderDetailsPageFileClaim = async (req) => {
   const { serviceId } = req.query;
@@ -206,13 +216,13 @@ const orderDetailsPageFileClaim = async (req) => {
       path: 'confirmedPartner',
       select: 'name profile_image email'
     })
-    .select('_id category scheduleTime scheduleTime scheduleDate loadingAddress deadlineTime loadingLocation paymentStatus deadlineDate unloadingAddress unloadingLocation updatedAt image winBid deadlineTime')
+    .select('_id category numberOfItems scheduleTime scheduleTime scheduleDate loadingAddress deadlineTime loadingLocation paymentStatus deadlineDate unloadingAddress unloadingLocation updatedAt image winBid deadlineTime')
   const payment = await Transaction.findOne({ serviceId }).select('amount paymentMethod',)
   return { service, payment }
 }
 
 // ===============================
-// Review---------
+// Review
 // ===============================
 const postReviewMove = async (req) => {
   const { serviceId, partnerId } = req.query;
@@ -281,6 +291,7 @@ const getPartnerReviews = async (req) => {
     })
   return result
 }
+
 // =File Claim============================
 const createFileClaim = async (req, res) => {
   const { serviceId } = req.query;
@@ -300,10 +311,10 @@ const createFileClaim = async (req, res) => {
 
   const result = await FileClaim.create({
     fileClaimImage: images ? images.path : '',
-    against: userId,
+    user: userId,
     serviceId,
     description,
-    againstType: role === "USER" ? "User" : "Partner"
+    userType: role === "USER" ? "User" : "Partner"
   })
 
   return result;
@@ -331,8 +342,19 @@ const updateStatusFileClaim = async (req, res) => {
     throw new ApiError(404, "File claim not found.");
   }
 
+  if(status === "resolved") {
+    await NotificationService.sendNotification({ 
+      title: "File Claim Resolved.", 
+      message: `Your claim against ${result?.userType === "User"? 'partner':'user'} has been resolved.`, 
+      user: result.user, 
+      userType: result.userType,  
+      types: 'none',
+    });
+  }
+
   return result;
 };
+
 //cut-amount---
 const applyPenaltyPercent = async (req, res) => {
   const { serviceId, amountPercent, reason } = req.query;
@@ -371,6 +393,13 @@ const applyPenaltyPercent = async (req, res) => {
     }
     user.wallet -= cutAmount;
     await user.save();
+    await NotificationService.sendNotification({ 
+      title: "Penalty Applied",
+      message: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
+      user: user._id, 
+      userType: 'User',  
+      types: 'none',
+    });
 
   } else if (service.mainService === "move") {
     const partner = await Partner.findById(service.confirmedPartner);
@@ -379,18 +408,27 @@ const applyPenaltyPercent = async (req, res) => {
     }
     partner.wallet -= cutAmount;
     await partner.save();
+    await NotificationService.sendNotification({ 
+      title: "Penalty Applied",
+      message: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
+      user: partner._id, 
+      userType: 'Partner',  
+      types: 'none',
+    });
   }
   await transaction.save();
 
+ 
+
   return { service, transaction };
 };
-
 
 const statusServicesDetails = async (req, res) => {
   const { serviceId } = req.query;
   if (!serviceId) {
     throw new ApiError(400, "Service ID is required.");
   }
+  
 
   const service = await Services.findById(serviceId)
     .populate({
@@ -399,13 +437,12 @@ const statusServicesDetails = async (req, res) => {
     })
     .populate({
       path: 'confirmedPartner',
-      select: 'name email profile_image'
+      select: 'name email profile_image rating'
     })
   return service;
 };
 
  
-
 const BidService = {
   partnerBidPost,
   partnerAllBids,

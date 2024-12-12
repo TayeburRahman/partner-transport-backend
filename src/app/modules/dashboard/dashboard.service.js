@@ -407,65 +407,40 @@ const deletePrivacyPolicy = async (query) => {
 };
 //=Auction Management ========================
 const getAllAuctions = async (query) => {
+  const searchTerm = query.searchTerm;
+
+  // console.log(searchTerm);
   const servicesQuery = new QueryBuilder(
-    Services.find({})
-    .populate('user')
-    .populate('confirmedPartner') 
-  , query)
-    .search([])
+    Services.find(
+      searchTerm
+        ? {
+            $or: [
+              { "user.name": { $regex: searchTerm, $options: "i" } },
+              { "confirmedPartner.name": { $regex: searchTerm, $options: "i" } },
+            ],
+          }
+        : {}
+    )
+      .populate('user')
+      .populate('confirmedPartner')
+      .populate("category"),
+    query
+  )
     .filter()
     .sort()
     .paginate()
     .fields();
 
+  // Execute the query
   const result = await servicesQuery.modelQuery;
-  const meta = await servicesQuery.countTotal();
-
-  if (!result) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Service not found");
-  }
+  const meta = await servicesQuery.countTotal(); 
 
   return {
     meta,
     data: result,
   };
-  // const { serviceType, page = 1, limit = 10 } = query;
-  // const skip = (page - 1) * limit;
-
-  // if (!serviceType) {
-  //   throw new ApiError(httpStatus.BAD_REQUEST, "Missing service type");
-  // }
-
-  // let type;
-  // if (serviceType === "sell") {
-  //   type = ["Second-hand items", "Recyclable materials"];
-  // } else {
-  //   type = ["Goods", "Waste"];
-  // }
-
-  // const [totalServices, result] = await Promise.all([
-  //   Services.countDocuments({ service: { $in: type } }),
-  //   Services.find({ service: { $in: type } })
-  //     .skip(skip)
-  //     .limit(Number(limit)),
-  // ]);
-
-  // if (!result?.length) {
-  //   throw new ApiError(httpStatus.NOT_FOUND, "Services not found");
-  // }
-
-  // const totalPage = Math.ceil(totalServices / limit);
-
-  // return {
-  //   meta: {
-  //     page: Number(page),
-  //     limit: Number(limit),
-  //     total: totalServices,
-  //     totalPage,
-  //   },
-  //   data: result,
-  // };
 };
+
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
 

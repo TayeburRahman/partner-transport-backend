@@ -1,3 +1,4 @@
+const ApiError = require("../../../errors/ApiError");
 const { ENUM_SOCKET_EVENT, ENUM_USER_ROLE } = require("../../../utils/enums");
 const Notification = require("./notification.model");
 
@@ -48,14 +49,15 @@ const handleNotification = async (receiverId, role, socket, io) => {
 };
  
 // Send notification function
-const sendNotification = async (title, message, userId, driverId, orderId) => {
+const sendNotification = async ({title, message, user, userType, getId, types}) => {
   try {
     const notification = await Notification.create({
-      title,
-      driverId,
-      userId,
+      title, 
+      user,
       message,
-      orderId,
+      getId,
+      userType,
+      types
     }); 
 
     return notification;  
@@ -73,4 +75,24 @@ const emitNotification = (receiver, notification) => {
   }
 };
 
-module.exports = { handleNotification, sendNotification, emitNotification};
+const getUserNotification = async (req) => {
+    const { userId, role } = req.user;
+    let notifications;
+    if(role === ENUM_USER_ROLE.USER){
+      notifications = await Notification.find({ userId });
+    }else if(role === ENUM_USER_ROLE.PARTNER){
+      notifications = await Notification.find({ driverId: userId });
+    }else{
+      console.error('Invalid role provided');
+      throw new ApiError(400,'Invalid role provided');
+    }
+    return notifications;
+};
+
+const NotificationService = { 
+  handleNotification,
+   sendNotification, 
+   emitNotification, 
+   getUserNotification
+  };
+module.exports = {NotificationService}

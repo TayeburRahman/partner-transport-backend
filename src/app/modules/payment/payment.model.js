@@ -5,8 +5,7 @@ const { ObjectId } = Schema.Types;
 const transactionSchema = new Schema({
   serviceId: {
     type: ObjectId,
-    ref: 'Services',
-    required: true,
+    ref: 'Services', 
   },
   payUserType: {
     type: String,
@@ -34,7 +33,7 @@ const transactionSchema = new Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['Stripe', 'PayPal', 'ApplePay', 'GooglePay'],
+    enum: ['Stripe', 'PayPal', 'ApplePay', 'GooglePay', "BankTransfer"],
     required: true,
   },
   transactionId: {
@@ -69,8 +68,7 @@ const transactionSchema = new Schema({
       type: String,
     },
     payId: {
-      type: String,
-      required: true,
+      type: String, 
     },
     currency: {
       type: String,
@@ -79,7 +77,35 @@ const transactionSchema = new Schema({
   },
 }, { timestamps: true });
 
-// Registering the model
-const Transaction = mongoose.model('Transaction', transactionSchema);
+const withdrawSchema = new Schema({
+  user: {
+    type: ObjectId,
+    refPath: 'userType',
+    required: true,
+  },
+  userType: {
+    type: String,
+    enum: ['User', 'Partner'],
+    required: true,
+  },
+  request_amount: {
+    type: Number,
+    required: true,
+  }, 
+  bankTransferId:{
+    type: String, 
+  },
+  status:{
+    type: String,
+    enum: ['Pending', 'Completed'],
+    default: 'Pending',
+  }
+   
+ 
+}, { timestamps: true });
 
-module.exports = { Transaction };
+// Registering the model
+const Transaction = mongoose.model('Transaction', transactionSchema); 
+const Withdraw = mongoose.model('Withdraw', withdrawSchema); 
+
+module.exports = { Transaction, Withdraw};

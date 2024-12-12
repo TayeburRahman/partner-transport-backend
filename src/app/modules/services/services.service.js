@@ -17,6 +17,7 @@ const { Transaction } = require("../payment/payment.model");
 const { default: mongoose } = require("mongoose");
 const { Bids } = require("../bid/bid.model");
 const User = require("../user/user.model");
+const { NotificationService } = require("../notification/notification.service");
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -207,6 +208,7 @@ const getDetails = async (req) => {
   }
   return result;
 };
+
 const getUserPostHistory = async (req) => {
   const { userId } = req.user;
   const query = req.query;
@@ -233,9 +235,7 @@ const deletePostDB = async (req) => {
   return result._id;
 };
 const conformPartner = async (req) => {
-  const { serviceId, partnerId, bidId } = req.query;
-
-  console.log("conformPartner", serviceId, partnerId, bidId);
+  const { serviceId, partnerId, bidId } = req.query; 
 
   const service = await Services.findById(serviceId);
   if (!service) {
@@ -286,10 +286,20 @@ const conformPartner = async (req) => {
 
   await Bids.bulkWrite(bulkOps);
 
+  await NotificationService.sendNotification({ 
+    title: "You’ve Won the Bid!",
+    message: `Congratulations! Your bid for service has been accepted.`,
+    user: partnerId, 
+    userType: 'Partner',  
+    types: 'service',
+    getId: serviceId,
+  });
+
   return {
     service: result,
   };
 };
+
 const getServicePostUser = async (req) => {
   const { userId } = req.user;
   const { serviceType, status } = req.query;
@@ -319,6 +329,7 @@ const getServicePostUser = async (req) => {
 
   return result;
 };
+
 const rescheduledPostUser = async (req) => {
   const { userId } = req.user;
   const { serviceId } = req.params;
@@ -351,9 +362,7 @@ const rescheduledPostUser = async (req) => {
       status: ENUM_SERVICE_STATUS.RESCHEDULED,
     },
     { new: true }
-  );
-
-  console.log("===Result===", result)
+  ); 
 
   return result;
 };
@@ -638,6 +647,15 @@ const updateServicesStatusPartner = async (req) => {
     { new: true }
   );
 
+  await NotificationService.sendNotification({ 
+    title: "Service Status Updated",
+    message: `The service status has been updated to "${status}".`,
+    user: service.user,
+    userType: "User",
+    types: "service",
+    getId: serviceId,
+  });
+
   return result;
 };
 
@@ -705,6 +723,15 @@ const updateServicesStatusUser = async (req) => {
 
       transaction.isFinish = true;
       await transaction.save({ session });
+
+      await NotificationService.sendNotification({ 
+        title: "Payment Received",
+        message: `You have received a payment of ${transaction.amount} for the service.`,
+        user: receivedUser._id,
+        userType: transaction.receiveUserType,
+        types: "service",
+        getId: serviceId,
+      });
     }
  
     let serviceStatus = service.status;
@@ -719,6 +746,15 @@ const updateServicesStatusUser = async (req) => {
       { user_status: status, status: serviceStatus },
       { new: true, session }
     );
+
+    await NotificationService.sendNotification({ 
+      title: "Service Status Updated",
+      message: `The service status has been updated to "${status}".`,
+      user: service.confirmedPartner,
+      userType: "Partner",
+      types: "service",
+      getId: serviceId,
+    });
 
     await session.commitTransaction();
     return updatedService;

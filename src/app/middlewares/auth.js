@@ -12,8 +12,7 @@ const auth =
   (...roles) =>
   async (req, res, next) => {
     try {
-      const tokenWithBearer = req.headers.authorization;
-      console.log('===tokenWithBearer', tokenWithBearer)
+      const tokenWithBearer = req.headers.authorization; 
       if (!tokenWithBearer) {
         throw new ApiError(
           httpStatus.UNAUTHORIZED,
@@ -22,10 +21,8 @@ const auth =
       } 
       if (tokenWithBearer.startsWith("Bearer")) {
         const token = tokenWithBearer.split(" ")[1]; 
-       // Verify token
-       console.log('===', token)
-        const verifyUser = jwtHelpers.verifyToken(token, config.jwt.secret);
-        console.log('===verifyUser', verifyUser)
+       // Verify token 
+        const verifyUser = jwtHelpers.verifyToken(token, config.jwt.secret); 
         // Set user to headers
         req.user = verifyUser; 
         const isExist = await Auth.findById(verifyUser?.authId);

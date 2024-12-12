@@ -55,6 +55,22 @@ router
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     PaymentController.paymentHistory
   )
+  // =============================
+  // Withdraw 
+  // =============================
+  .post("/withdraw",
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
+    PaymentController.withdrawRequest
+  ) 
+  .patch("/withdraw-success",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    PaymentController.withdrawSuccess
+  )
+  .get("/withdraw-user-details",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    PaymentController.userDetailsWithdraw
+  )
+
    
 
 module.exports = router;

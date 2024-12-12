@@ -11,6 +11,8 @@ const CategoryRoutes = require("../modules/category/category.routes");
 const MessageRoutes = require("../modules/message/message.routes");
 const PaymentRoutes = require("../modules/payment/payment.routes");
 const VariableRoutes = require("../modules/variable/variable.route");
+const SupportRoutes = require("../modules/support/support.router");
+const NotificationRoutes = require("../modules/notification/notification.route");
 
 const moduleRoutes = [
   {
@@ -50,8 +52,16 @@ const moduleRoutes = [
     route: CategoryRoutes,
   },
   {
+    path: "/support",
+    route: SupportRoutes,
+  },
+  {
     path: "/message",
     route: MessageRoutes,
+  },
+  {
+    path: "/notification",
+    route: NotificationRoutes,
   },
   {
     path: "/payment",

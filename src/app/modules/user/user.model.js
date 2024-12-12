@@ -57,6 +57,42 @@ const UserSchema = new Schema(
       type: Number,
       default: 0,
     },
+    bank_holder_name:{
+      type: String,
+      default: null,
+    },
+    bank_holder_type:{
+      type: String, 
+      default: null,
+    },
+    bank_account_number:{
+      type: String, 
+      default: null,
+    },
+    routing_number:{
+      type: String, 
+      default: null,
+    },
+    date_of_birth:{
+      type: Date,
+      default: null,
+    },
+    address_line:{
+      type: String,
+      default: null,
+    },
+    address_city:{
+      type: String,
+      default: null,
+    },
+    address_state:{
+      type: String,
+      default: null,
+    },
+    address_postal_code:{
+      type: String,
+      default: null,
+    },
     status: {
       type: String,
       enum: ["active", "deactivate"],
