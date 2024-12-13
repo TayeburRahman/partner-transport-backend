@@ -90,7 +90,7 @@ const partnerBidPost = async (req) => {
   await NotificationService.sendNotification({ 
     title: "New Bid Received", 
     message: `You have placed a new bid of $${price} for your service.`, 
-    user: userId, 
+    user: foundService.user, 
     userType: 'User',  
     getId: serviceId, 
     types: 'service',

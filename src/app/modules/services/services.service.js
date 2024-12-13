@@ -599,8 +599,7 @@ const filterUserByHistory = async (req) => {
   const meta = await filtered.countTotal();
   return { result, meta };
 };
-
-// ===========================
+// Status===========================
 const updateServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;
 
@@ -652,7 +651,7 @@ const updateServicesStatusPartner = async (req) => {
     message: `The service status has been updated to "${status}".`,
     user: service.user,
     userType: "User",
-    types: "service",
+    types: "ongoing",
     getId: serviceId,
   });
 
@@ -729,7 +728,7 @@ const updateServicesStatusUser = async (req) => {
         message: `You have received a payment of ${transaction.amount} for the service.`,
         user: receivedUser._id,
         userType: transaction.receiveUserType,
-        types: "service",
+        types: "ongoing",
         getId: serviceId,
       });
     }
@@ -740,6 +739,87 @@ const updateServicesStatusUser = async (req) => {
     } else if (status === "delivery-confirmed") {
       serviceStatus = "completed";
     }
+ 
+    const updatedService = await Services.findByIdAndUpdate(
+      serviceId,
+      { user_status: status, status: serviceStatus },
+      { new: true, session }
+    );
+
+    await NotificationService.sendNotification({ 
+      title: "Service Status Updated",
+      message: `The service status has been updated to "${status}".`,
+      user: service.confirmedPartner,
+      userType: "Partner",
+      types:serviceStatus === "completed"? "complete-status": "ongoing" ,
+      getId: serviceId,
+    });
+
+    await session.commitTransaction();
+    return updatedService;
+  } catch (error) { 
+    await session.abortTransaction();
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      `Error updating service status: ${error.message}`
+    );
+  } finally {
+    session.endSession();
+  }
+};
+
+
+// ---------------
+const updateSellServicesStatusUser = async (req) => {
+  const { serviceId, status } = req.query;
+  const { userId } = req.user;
+ 
+  if (!serviceId || !status) {
+    throw new ApiError( httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
+  }
+ 
+  const service = await Services.findById(serviceId);
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");
+  }
+
+  if (service.paymentStatus !== "paid") {
+    throw new ApiError( httpStatus.BAD_REQUEST, "Payment must be completed before you can update the status.");
+  }
+ 
+  if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
+  }
+ 
+  if (status === "confirm-arrived" && service.partner_status !== "arrived") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
+  }
+
+  if (status === "delivered" && (service.user_status !== "confirm-arrived" || service.partner_status !== "arrived")) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive and user must confirm arrival before loading goods.");
+  }
+
+
+  const transaction = await Transaction.findOne({ serviceId });
+  if (!transaction || transaction.paymentStatus !== "Completed") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try { 
+    const receivedUser =
+      transaction.receiveUserType === "Partner"
+        ? await Partner.findById(transaction.receiveUser)
+        : await User.findById(transaction.receiveUser);
+
+    if (!receivedUser) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        "Recipient user not found for the transaction."
+      );
+    }  
  
     const updatedService = await Services.findByIdAndUpdate(
       serviceId,
@@ -770,6 +850,79 @@ const updateServicesStatusUser = async (req) => {
 };
 
 
+const updateSellServicesStatusPartner = async (req) => {
+  const { serviceId, status } = req.query;
+
+  if (!serviceId || !status) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
+  }
+
+  const service = await Services.findById(serviceId);
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
+  }
+
+  if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
+  } 
+  console.log("service", service.status) 
+  console.log("status==", status)
+  if (status === "arrived" && service.status !== "accepted") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
+  }
+
+  if (status === "delivery-confirmed" && service.user_status !== "delivered") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm goods are loaded before starting the trip.");
+  } 
+ 
+  let service_status = service.status;
+ 
+
+  if (status === "delivery-confirmed") {
+     receivedUser.wallet += transaction.amount;
+    await receivedUser.save({ session });
+
+    transaction.isFinish = true;
+    await transaction.save({ session });
+
+    await NotificationService.sendNotification({ 
+      title: "Payment Received",
+      message: `You have received a payment of ${transaction.amount} for the service.`,
+      user: receivedUser._id,
+      userType: transaction.receiveUserType,
+      types: "service",
+      getId: serviceId,
+    });
+  }
+
+  let serviceStatus = service.status;
+  if (status === "goods-loaded") {
+    serviceStatus = "pick-up";
+  } else if (status === "delivery-confirmed") {
+    serviceStatus = "completed";
+  }
+
+  const result = await Services.findOneAndUpdate(
+    { _id: serviceId },
+    { partner_status: status, status: service_status },
+    { new: true }
+  );
+
+  await NotificationService.sendNotification({ 
+    title: "Service Status Updated",
+    message: `The service status has been updated to "${status}".`,
+    user: service.user,
+    userType: "User",
+    types: "service",
+    getId: serviceId,
+  });
+
+  return result;
+};
+
+// Status===========================
+
 const ServicesService = {
   createPostDB,
   updatePostDB,
@@ -785,6 +938,8 @@ const ServicesService = {
   updateServicesStatusPartner,
   filterUserByHistory,
   updateServicesStatusUser,
+  updateSellServicesStatusUser,
+  updateSellServicesStatusPartner
 };
 
 module.exports = { ServicesService };

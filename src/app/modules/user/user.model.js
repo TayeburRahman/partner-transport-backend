@@ -13,7 +13,6 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
-    
     email: {
       type: String,
       required: true,
@@ -93,6 +92,7 @@ const UserSchema = new Schema(
       type: String,
       default: null,
     },
+
     status: {
       type: String,
       enum: ["active", "deactivate"],

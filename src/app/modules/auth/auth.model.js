@@ -20,6 +20,10 @@ const AuthSchema = new Schema(
         message: "Please provide a valid email address",
       },
     },
+    playerIds:{
+      type: [String],
+      default: null,
+    },
     password: {
       type: String,
       required: [true, "Password is required"],

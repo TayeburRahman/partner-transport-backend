@@ -1,5 +1,9 @@
 const ApiError = require("../../../errors/ApiError");
 const { ENUM_SOCKET_EVENT, ENUM_USER_ROLE } = require("../../../utils/enums");
+const Auth = require("../auth/auth.model");
+const { sendNotificationOnesignal } = require("../one-signal/onesignal.notifications"); 
+const Partner = require("../partner/partner.model");
+const User = require("../user/user.model");
 const Notification = require("./notification.model");
 
  
@@ -47,22 +51,67 @@ const handleNotification = async (receiverId, role, socket, io) => {
   });
  
 };
- 
-// Send notification function
-const sendNotification = async ({title, message, user, userType, getId, types}) => {
-  try {
+  
+const sendNotification = async ({ title, message, user, userType, getId, types }) => {
+  try {  
     const notification = await Notification.create({
-      title, 
+      title,
       user,
       message,
       getId,
       userType,
-      types
-    }); 
+      types,
+    });
 
-    return notification;  
+    let authId;
+ 
+    if (userType === "User") {
+      const userDb = await User.findById(user);
+      if (!userDb) {
+        console.error(`User with ID ${user} not found`);
+        return;
+      }
+      authId = userDb.authId;
+    } else if (userType === "Partner") {
+      const partnerDb = await Partner.findById(user);
+      if (!partnerDb) {
+        console.error(`Partner with ID ${user} not found`);
+        return;
+      }
+      authId = partnerDb.authId;
+    } else {
+      console.error(`Invalid userType: ${userType}`);
+      return;
+    }
+
+    const authDb = await Auth.findById(authId);
+    if (!authDb) {
+      console.error(`Auth with ID ${authId} not found`);
+      return;
+    }
+
+    const playerIds = authDb.playerIds;
+    if (!playerIds || playerIds.length === 0) {
+      console.error(`No player IDs found for auth ID ${authId}`);
+      return;
+    } 
+    
+
+    // Send notification via OneSignal
+    await sendNotificationOnesignal(playerIds, title, message, types, getId);
+
+    return notification;
   } catch (error) {
-    console.error("Error sending notification:", error);
+    console.error("Error sending notification:", {
+      error: error.message,
+      stack: error.stack,
+      title,
+      message,
+      user,
+      userType,
+      getId,
+      types,
+    });
   }
 };
 
@@ -79,9 +128,9 @@ const getUserNotification = async (req) => {
     const { userId, role } = req.user;
     let notifications;
     if(role === ENUM_USER_ROLE.USER){
-      notifications = await Notification.find({ userId });
+      notifications = await Notification.find({ user:userId });
     }else if(role === ENUM_USER_ROLE.PARTNER){
-      notifications = await Notification.find({ driverId: userId });
+      notifications = await Notification.find({ user: userId });
     }else{
       console.error('Invalid role provided');
       throw new ApiError(400,'Invalid role provided');
@@ -90,9 +139,10 @@ const getUserNotification = async (req) => {
 };
 
 const NotificationService = { 
-  handleNotification,
+   handleNotification,
    sendNotification, 
    emitNotification, 
    getUserNotification
   };
+  
 module.exports = {NotificationService}

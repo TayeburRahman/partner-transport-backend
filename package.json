@@ -19,6 +19,7 @@
   "description": "mobile app for a single vendor business",
   "dependencies": {
     "@paypal/checkout-server-sdk": "^1.0.3",
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
     "cloudinary": "^2.5.0",
@@ -37,6 +38,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.14",
     "nodemon": "^3.1.4",
+    "onesignal-node": "^3.4.0",
     "path": "^0.12.7",
     "paypal-rest-sdk": "^1.8.1",
     "socket.io": "^4.8.0",

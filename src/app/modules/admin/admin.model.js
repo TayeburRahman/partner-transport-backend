@@ -13,6 +13,10 @@ const AdminSchema = new Schema(
       type: String,
       required: true,
     },
+    // playerIds:{
+    //   type: [String],
+    //   default: null,
+    // },
     email: {
       type: String,
       required: true,

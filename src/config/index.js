@@ -59,6 +59,14 @@ const config = {
     paypal_mode:process.env.PAYPAL_MODE, 
      
   },
+  onesignal:{
+    app_id: process.env.ONESIGNAL_APP_ID,
+    api_key: process.env.ONESIGNAL_API_KEY,
+    user_auth_key: process.env.ONESIGNAL_USER_AUTH_KEY,
+    headings: {
+      en: "New Notification"
+    }
+  }
 };
 
 // Validate configuration

@@ -13,17 +13,31 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
       data: result,
     });
   });  
+
   const stripeCheckAndUpdateStatusSuccess  = catchAsync(async (req, res) => {
     const data = await PaymentService.stripeCheckAndUpdateStatusSuccess(req, res);  
-    if (data.status === "success") {
-        return res.render("success", { amount: data.result?.amount });
-      }
-      return res.render("failed", { message: data.message, text: data.text });
+    // if (data.status === "success") {
+    //     return res.render("success", { amount: data.result?.amount });
+    //   }
+    //   return res.render("failed", { message: data.message, text: data.text });
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Payment successfully",
+      data: data,
+    });
   });
   // Cancel page ------------
   const paymentStatusCancel  = catchAsync(async (req, res) => {
     const result = await PaymentService.paymentStatusCancel(req, res);  
-      return res.render("cancel");
+      // return res.render("cancel");
+      sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Payment Cancel",
+        data: result,
+      });
   });
   // Paypal Payment -------------
   const createCheckoutSessionPaypal  = catchAsync(async (req, res) => {
@@ -37,10 +51,16 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
   });    
   const paypalCheckAndUpdateStatusSuccess  = catchAsync(async (req, res) => {
     const data = await PaymentService.paypalCheckAndUpdateStatusSuccess(req, res);  
-     if (data.status === "success") {
-        return res.render("success", { amount: data.result?.amount });
-      }
-      return res.render("failed", { message: data.message, text: data.text });
+    //  if (data.status === "success") {
+    //     return res.render("success", { amount: data.result?.amount });
+    //   }
+    //   return res.render("failed", { message: data.message, text: data.text });
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Payment successfully",
+      data: data,
+    });
   });
   // Paypal Refund Payment ------------
   const paypalRefundPayment  = catchAsync(async (req, res) => {

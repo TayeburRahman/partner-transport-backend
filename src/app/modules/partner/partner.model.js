@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const { Schema, model } = mongoose;
 
 const locationSchema = new Schema({
@@ -25,6 +24,10 @@ const PartnerSchema = new Schema(
       type: String,
       required: true,
     },
+    // playerIds:{
+    //   type: [String],
+    //   default: null,
+    // },
     email: {
       type: String,
       required: true,

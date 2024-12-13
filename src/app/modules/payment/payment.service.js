@@ -266,6 +266,8 @@ const createCheckoutSessionPaypal = async (req, res) => {
 const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
   const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query;
 
+  // console.log('PaypalCheckAndUpdateStatusSuccess', req.query)
+
   try {
     const execute_payment_json = {
       "payer_id": PayerID,

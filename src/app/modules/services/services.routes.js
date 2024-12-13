@@ -4,6 +4,7 @@ const auth = require("../../middlewares/auth");
 const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const { uploadFile } = require("../../middlewares/fileUploader");
 const { BidController } = require("../bid/bid.controller");
+
 const router = express.Router();
 
 router
@@ -25,13 +26,11 @@ router
     auth(ENUM_USER_ROLE.USER),
     ServicesController.getUserPostHistory
   )
-  // ---------------
   .get(
     "/history/filter",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
     ServicesController.filterUserByHistory
   )
-  // ---------------
   .delete(
     "/delete/:serviceId",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
@@ -46,14 +45,12 @@ router
     "/get_post_user",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
     ServicesController.getServicePostUser
-  ) 
+  )
   .patch(
     "/rescheduled/:serviceId",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
     ServicesController.rescheduledPostUser
-  )  
-  
-  // ------Partner action--------------
+  )
   .get(
     "/search_nearby",
     auth(ENUM_USER_ROLE.PARTNER),
@@ -63,40 +60,31 @@ router
     "/rescheduled_partner",
     auth(ENUM_USER_ROLE.PARTNER),
     ServicesController.rescheduledAction
-  ) 
+  )
   .patch(
     "/update-status-users",
     auth(ENUM_USER_ROLE.USER),
     ServicesController.updateServicesStatusUser
-  )  
-
+  )
   .patch(
     "/update-status-partner",
     auth(ENUM_USER_ROLE.PARTNER),
     ServicesController.updateServicesStatusPartner
-  )  
-
-  // ------------------------------
+  )
   .get(
     "/user/within_one_hour",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
     ServicesController.getUserServicesWithinOneHour
   )
+  .post("/review",
+    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
+   BidController.postReviewMove)
 
-  // ======================
-  // Review ------
-  // ======================
-  .post(
-    "/review",
-    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
-    BidController.postReviewMove
-  )
   .get(
     "/review-partner",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
     BidController.getPartnerReviews
   )
-  // ================================
   .get(
     "/order-details",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
@@ -112,19 +100,6 @@ router
     uploadFile(),
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
     BidController.createFileClaim
-  )
-
-  // .get(
-  //   "/map",
-  //   uploadFile(),
-  //   auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
-  //   BidController.orderServicesMapDetails
-  // )
-
-
-   
-
-   
- 
+  );
 
 module.exports = router;

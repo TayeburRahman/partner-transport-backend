@@ -2,9 +2,7 @@ const catchAsync = require("../../../shared/catchasync");
 const sendResponse = require("../../../shared/sendResponse");
 const { BidService } = require("./bid.services");
 
-
 const partnerBidPost = catchAsync(async (req, res) => {
-
   const result = await BidService.partnerBidPost(req);
   sendResponse(res, {
     statusCode: 200,
@@ -12,10 +10,9 @@ const partnerBidPost = catchAsync(async (req, res) => {
     message: "Bids successfully",
     data: result,
   });
-}); 
+});
 
 const partnerAllBids = catchAsync(async (req, res) => {
-
   const result = await BidService.partnerAllBids(req);
   sendResponse(res, {
     statusCode: 200,
@@ -26,7 +23,6 @@ const partnerAllBids = catchAsync(async (req, res) => {
 });
 
 const filterBidsByMove = catchAsync(async (req, res) => {
-
   const result = await BidService.filterBidsByMove(req);
   sendResponse(res, {
     statusCode: 200,
@@ -34,10 +30,9 @@ const filterBidsByMove = catchAsync(async (req, res) => {
     message: "Get successfully",
     data: result,
   });
-}); 
+});
 
 const filterBidsByHistory = catchAsync(async (req, res) => {
-
   const result = await BidService.filterBidsByHistory(req);
   sendResponse(res, {
     statusCode: 200,
@@ -47,7 +42,7 @@ const filterBidsByHistory = catchAsync(async (req, res) => {
   });
 });
 
-const getBitProfilePartner = catchAsync(async (req, res) => { 
+const getBitProfilePartner = catchAsync(async (req, res) => {
   const result = await BidService.getBitProfilePartner(req);
   sendResponse(res, {
     statusCode: 200,
@@ -57,7 +52,7 @@ const getBitProfilePartner = catchAsync(async (req, res) => {
   });
 });
 
-const postReviewMove = catchAsync(async (req, res) => { 
+const postReviewMove = catchAsync(async (req, res) => {
   const result = await BidService.postReviewMove(req);
   sendResponse(res, {
     statusCode: 200,
@@ -67,9 +62,7 @@ const postReviewMove = catchAsync(async (req, res) => {
   });
 });
 
- 
-
-const getPartnerReviews = catchAsync(async (req, res) => { 
+const getPartnerReviews = catchAsync(async (req, res) => {
   const result = await BidService.getPartnerReviews(req);
   sendResponse(res, {
     statusCode: 200,
@@ -79,8 +72,7 @@ const getPartnerReviews = catchAsync(async (req, res) => {
   });
 });
 
-// ---------------------
-const orderDetailsPageFileClaim = catchAsync(async (req, res) => { 
+const orderDetailsPageFileClaim = catchAsync(async (req, res) => {
   const result = await BidService.orderDetailsPageFileClaim(req);
   sendResponse(res, {
     statusCode: 200,
@@ -89,17 +81,8 @@ const orderDetailsPageFileClaim = catchAsync(async (req, res) => {
     data: result,
   });
 });
-// const orderServicesMapDetails = catchAsync(async (req, res) => { 
-//   const result = await BidService.orderServicesMapDetails(req);
-//   sendResponse(res, {
-//     statusCode: 200,
-//     success: true,
-//     message: "Get successfully",
-//     data: result,
-//   });
-// });
 
-const createFileClaim = catchAsync(async (req, res) => { 
+const createFileClaim = catchAsync(async (req, res) => {
   const result = await BidService.createFileClaim(req);
   sendResponse(res, {
     statusCode: 200,
@@ -107,9 +90,9 @@ const createFileClaim = catchAsync(async (req, res) => {
     message: "File claim submit successfully",
     data: result,
   });
-}); 
+});
 
-const updateStatusFileClaim = catchAsync(async (req, res) => { 
+const updateStatusFileClaim = catchAsync(async (req, res) => {
   const result = await BidService.updateStatusFileClaim(req);
   sendResponse(res, {
     statusCode: 200,
@@ -117,9 +100,9 @@ const updateStatusFileClaim = catchAsync(async (req, res) => {
     message: "File claim submit successfully",
     data: result,
   });
-}); 
+});
 
-const applyPenaltyPercent = catchAsync(async (req, res) => { 
+const applyPenaltyPercent = catchAsync(async (req, res) => {
   const result = await BidService.applyPenaltyPercent(req);
   sendResponse(res, {
     statusCode: 200,
@@ -127,40 +110,31 @@ const applyPenaltyPercent = catchAsync(async (req, res) => {
     message: "Penalty apply successfully!",
     data: result,
   });
-}); 
+});
 
 const statusServicesDetails = catchAsync(async (req, res) => {
-   const result = await BidService.statusServicesDetails(req)
-   sendResponse(res, {
+  const result = await BidService.statusServicesDetails(req);
+  sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Get successfully!",
     data: result,
   });
-})
-
- 
- 
-
- 
- 
- 
-
+});
 
 const BidController = {
   partnerBidPost,
   partnerAllBids,
   filterBidsByMove,
   filterBidsByHistory,
-  postReviewMove,
+  postReviewMove, 
   getPartnerReviews,
   getBitProfilePartner,
   orderDetailsPageFileClaim,
-  // orderServicesMapDetails,
   createFileClaim,
-  updateStatusFileClaim, 
+  updateStatusFileClaim,
   applyPenaltyPercent,
-  statusServicesDetails
+  statusServicesDetails,
 };
 
 module.exports = { BidController };

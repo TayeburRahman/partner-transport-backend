@@ -16,6 +16,7 @@ const Variable = require("../variable/variable.model");
 const { Transaction } = require("../payment/payment.model");
 const Notification = require("../notification/notification.model");
 const auth = require("../../middlewares/auth");
+const { NotificationService } = require("../notification/notification.service");
 
 const getYearRange = (year) => {
   const startDate = new Date(`${year}-01-01`);
@@ -48,7 +49,7 @@ const getUserDetails = async (query) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Missing User Id");
   }
 
-  const user = await User.findById(id);
+  const user = await User.findById(id).populate("authId");;
 
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, "User not found");
@@ -820,21 +821,27 @@ const getUserGrowth = async (year) => {
 // =Send Notice=====================
 const sendNoticeUsers = async (req, res) => {
   const { userId, all_user } = req.query;
-  const { title, message } = req.body;
+  const { message } = req.body;
 
-  if (!title || !message) { 
+  if ( !message) { 
     throw new ApiError(400, 'Title and message are required.');
   } 
+
+  console.log("====", message);
   try { 
     if (all_user) {
       const users = await User.find({});
        
       const notifications = users.map(user =>
         Notification.create({
-          title,
-          userId: user._id,
-          message,
+          title: "Impotent Notice From Admin.",
+          user: user._id, 
           admin_ms: true,
+          userType:"User",
+          message:'We have made some updates to improve your experience.',
+          notice: message,
+          types: 'notice',
+          getId: null, 
         })
       ); 
       await Promise.all(notifications);
@@ -843,11 +850,21 @@ const sendNoticeUsers = async (req, res) => {
         throw new ApiError(404,'User ID is required.');
       }
 
-      await Notification.create({
-        title,
-        userId,
-        message,
-        admin_ms: true,
+      // await Notification.create({
+      //   title,
+      //   userId,
+      //   message,
+      //   admin_ms: true,
+      // });
+
+      await NotificationService.sendNotification({ 
+        title: "Impotent Notice From Admin.", 
+        message: 'We have made some updates to improve your experience.', 
+        user: userId, 
+        userType: 'User',  
+        getId: null, 
+        notice: message,
+        types: 'notice',
       });
     }
 
@@ -860,24 +877,25 @@ const sendNoticeUsers = async (req, res) => {
 
 const sendNoticePartner = async (req, res) => {
   const { userId, all_user } = req.query;
-  const { title, message } = req.body;
-
-  console.log(title, message)
+  const { title, message } = req.body; 
 
   if (!title || !message) { 
     throw new ApiError(400, 'Title and message are required.');
   } 
  
-    if (all_user) {
-      // console.log('title, message', all_user)
+    if (all_user) { 
       const users = await Partner.find({});
       const notifications = users.map(user =>
         Notification.create({
-          title,
-          userId: user._id,
-          message,
-          admin_ms: true,
+          title: "Impotent Notice From Admin.", 
+          message: 'We have made some updates to improve your experience.', 
+          user: user._id, 
+          userType: 'Partner',  
+          getId: null, 
+          notice: message,
+          types: 'notice',
         })
+        
       ); 
       await Promise.all(notifications);
     } else { 
@@ -886,12 +904,16 @@ const sendNoticePartner = async (req, res) => {
         throw new ApiError(404,'User ID is required.');
       }
 
-      await Notification.create({
-        title,
-        userId,
-        message,
-        admin_ms: true,
-      });
+      await NotificationService.sendNotification({ 
+        title: "Impotent Notice From Admin.", 
+        message: 'We have made some updates to improve your experience.', 
+        user: userId, 
+        userType: 'Partner',  
+        getId: null, 
+        notice: message,
+        types: 'notice',
+      }); 
+
     }
 
   return  { massage: "Notification(s) sent successfully." };
@@ -900,21 +922,24 @@ const sendNoticePartner = async (req, res) => {
 // =Transactions History=================
 const getTransactionsHistory = async (req) => {
   const query = req.query; 
+
+  console.log("Getting", query)
   try {  
-    const servicesQuery = new QueryBuilder(Transaction.find(), query) 
-    .search(["userId.name", "partnerId.name"])
+    const servicesQuery = new QueryBuilder(Transaction.find()
+    .populate("receiveUser", "name email profile_image") 
+    .populate("payUser", "name email profile_image") 
+    .populate("serviceId", "service category price")
+    , query) 
+    .search(["payUser.name", "receiveUser.name"])
     .filter()
     .sort()
     .paginate()
     .fields();
     
     servicesQuery.modelQuery
-    .populate("userId", "name email profile_image") 
-    .populate("partnerId", "name email profile_image") 
-    .populate("serviceId", "service category price");  
+  
 
-  const result = await servicesQuery.modelQuery;
-  console.log("data", result)
+  const result = await servicesQuery.modelQuery; 
   const meta = await servicesQuery.countTotal();
 
     return {result, meta};

@@ -72,7 +72,8 @@ const ENUM_NOTIFICATION_TYPE = {
   NEW_MESSAGE: "new-message",   
   NOTICE: "notice", 
   TICKET: 'ticket',
-   NONE: 'none'
+  NONE: 'none',
+  ONGOING: 'ongoing'
 };
 const ENUM_PAYMENT_STATUS = {}; 
 

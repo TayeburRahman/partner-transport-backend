@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
 const httpStatus = require("http-status");
-
 const ApiError = require("../../../errors/ApiError");
 const config = require("../../../config");
 const { jwtHelpers } = require("../../../helpers/jwtHelpers");
@@ -67,7 +66,7 @@ const registrationAccount = async (payload) => {
 
   if (role === "USER"
     //  || role === "PARTNER"
-    ) {
+  ) {
     sendEmail({
       email: auth.email,
       subject: "Activate Your Account",
@@ -115,7 +114,7 @@ const registrationAccount = async (payload) => {
 };
 
 const activateAccount = async (payload) => {
-  const { activation_code, userEmail } = payload;
+  const { activation_code, userEmail, playerId } = payload;
 
   const existAuth = await Auth.findOne({ email: userEmail });
   if (!existAuth) {
@@ -147,6 +146,15 @@ const activateAccount = async (payload) => {
     throw new ApiError(400, "Invalid role provided!");
   }
 
+  // --------------
+  console.log("playerId====", playerId)
+  if (!existAuth.playerIds) {
+    existAuth.playerIds = [];
+  }
+   existAuth.playerIds.push(playerId);
+  await existAuth.save();
+  // ------------
+
   const accessToken = jwtHelpers.createToken(
     {
       authId: existAuth._id,
@@ -174,7 +182,7 @@ const activateAccount = async (payload) => {
 };
 
 const loginAccount = async (payload) => {
-  const { email, password } = payload;
+  const { email, password, playerId } = payload;
 
   const isAuth = await Auth.isAuthExist(email);
 
@@ -217,6 +225,16 @@ const loginAccount = async (payload) => {
     default:
       throw new ApiError(400, "Invalid role provided!");
   }
+
+  // --------------
+  isAuth.playerIds = (isAuth.playerIds || []).filter((id) => id !== playerId);
+  isAuth.playerIds.push(playerId);
+  if (isAuth.playerIds.length > 5) {
+    isAuth.playerIds.shift();
+  }
+  await isAuth.save();
+  
+  // ------------
 
   const accessToken = jwtHelpers.createToken(
     { authId, role, userId: userDetails._id },
@@ -328,33 +346,32 @@ const resetPassword = async (req) => {
 const changePassword = async (user, payload) => {
   const { authId } = user;
   const { oldPassword, newPassword, confirmPassword } = payload;
- 
+
   if (newPassword !== confirmPassword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Password and confirm password do not match.");
   }
- 
+
   const isUserExist = await Auth.findById(authId).select("+password");
   if (!isUserExist) {
     throw new ApiError(httpStatus.NOT_FOUND, "Account does not exist!");
   }
- 
+
   if (
     isUserExist.password &&
     !(await Auth.isPasswordMatched(oldPassword, isUserExist.password))
   ) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Old password is incorrect.");
   }
- 
+
   const hashedPassword = await bcrypt.hash(
     newPassword,
     Number(config.bcrypt_salt_rounds)
   );
- 
+
   await Auth.findByIdAndUpdate(authId, { password: hashedPassword });
 
   return { message: "Password updated successfully." };
 };
-
 
 const resendCodeActivationAccount = async (payload) => {
   const email = payload.email;
@@ -491,15 +508,16 @@ const resendCodeForgotAccount = async (payload) => {
       `
   );
 };
+
 //OAuth -------------
 const OAuthLoginAccount = async (payload) => {
-  const { OAuthId, email, name, phone_number, profile_image, role } = payload;
+  const { OAuthId, email, name, phone_number, profile_image, role, playerId } = payload;
 
   let userDetails;
   let accessToken;
   let refreshToken;
 
-  try { 
+  try {
     const isAuth = await Auth.isAuthExist(email);
 
     if (isAuth && isAuth.isActive) {
@@ -509,7 +527,7 @@ const OAuthLoginAccount = async (payload) => {
           userDetails = await User.findOneAndUpdate(
             { email },
             { ...payload },
-            { new: true }  
+            { new: true }
           );
           break;
 
@@ -537,14 +555,23 @@ const OAuthLoginAccount = async (payload) => {
       if (!userDetails) {
         throw new ApiError(404, "User details not found.");
       }
- 
+
       await Auth.findOneAndUpdate(
         { _id: isAuth._id },
-        { name }  
+        { name }
       );
 
       // Generate tokens
       ({ accessToken, refreshToken } = generateTokens(isAuth, userDetails));
+
+      // -------------- 
+      isAuth.playerIds = (isAuth.playerIds || []).filter((id) => id !== playerId);
+      isAuth.playerIds.push(playerId);
+      if (isAuth.playerIds.length > 5) {
+        isAuth.playerIds.shift();
+      }
+      await isAuth.save();
+      // ------------
 
       return {
         id: isAuth._id,
@@ -553,7 +580,7 @@ const OAuthLoginAccount = async (payload) => {
         refreshToken,
         user: userDetails,
       };
-    } else { 
+    } else {
       if (isAuth && !isAuth.isActive) {
         await User.deleteOne({ email });
         await Auth.deleteOne({ email });
@@ -579,6 +606,7 @@ const OAuthLoginAccount = async (payload) => {
       }
 
       payload.authId = authUser._id;
+      payload.playerIds = [playerId];
 
       // Create new user based on role
       let result;
@@ -610,7 +638,7 @@ const OAuthLoginAccount = async (payload) => {
     throw new ApiError(500, `OAuth Login Error: ${error.message}`);
   }
 };
- 
+
 const generateTokens = (authUser, userDetails) => {
   const accessToken = jwtHelpers.createToken(
     {
@@ -634,7 +662,7 @@ const generateTokens = (authUser, userDetails) => {
 
   return { accessToken, refreshToken };
 };
- 
+
 const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-10);
 };
