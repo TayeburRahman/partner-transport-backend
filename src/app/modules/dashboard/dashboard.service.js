@@ -17,6 +17,7 @@ const { Transaction } = require("../payment/payment.model");
 const Notification = require("../notification/notification.model");
 const auth = require("../../middlewares/auth");
 const { NotificationService } = require("../notification/notification.service");
+const VariableCount = require("../variable/variable.count");
 
 const getYearRange = (year) => {
   const startDate = new Date(`${year}-01-01`);
@@ -116,7 +117,6 @@ const getPaddingPartner = async (query) => {
       },
     },
     {
-      // Unwind the authData array to make it a flat structure
       $unwind: "$authId",
     },
     // { 
@@ -132,7 +132,6 @@ const getPaddingPartner = async (query) => {
     // },
   ];
 
-  // Execute the aggregation pipeline
   const partners = await Partner.aggregate(aggregationPipeline);
 
   if (!partners.length) {
@@ -144,7 +143,6 @@ const getPaddingPartner = async (query) => {
     data: partners,
   };
 };
- 
 
 const getAllPartner = async (query) => {
   const partnerQuery = new QueryBuilder(
@@ -171,13 +169,13 @@ const getAllPartner = async (query) => {
 };
 
 const getPartnerDetails = async (query) => {
-  const { email } = query;
+  const { id } = query;
 
-  if (!email) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Missing email");
+  if (!id) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Missing Id");
   }
 
-  const partner = await Partner.findOne({ email: email }).populate("authId");
+  const partner = await Partner.findById(id).populate("authId");
 
   if (!partner) {
     throw new ApiError(httpStatus.NOT_FOUND, "Partner not found");
@@ -406,6 +404,7 @@ const deletePrivacyPolicy = async (query) => {
 
   return result;
 };
+
 //=Auction Management ========================
 const getAllAuctions = async (query) => {
   const searchTerm = query.searchTerm;
@@ -469,17 +468,17 @@ const editMinMaxBidAmount = async (payload) => {
 
   return result;
 };
+
 //=Overview ========================
 const getMonthlyRegistrations = async (query) => {
   const year = Number(query.year);
-  const startOfYear = new Date(year, 0, 1); // January 1st of the year
-  const endOfYear = new Date(year + 1, 0, 1); // January 1st of the next year
+  const startOfYear = new Date(year, 0, 1); 
+  const endOfYear = new Date(year + 1, 0, 1); 
 
   const months = Array.from({ length: 12 }, (_, i) =>
     new Date(0, i).toLocaleString("en", { month: "long" })
   );
 
-  // Aggregate monthly registration counts and list of all years
   const [monthlyRegistration, totalYears] = await Promise.all([
     Auth.aggregate([
       {
@@ -537,6 +536,7 @@ const getMonthlyRegistrations = async (query) => {
     monthlyRegistration: result,
   };
 };
+
 const totalOverview = async () => {
   const [totalAuth, totalUser, totalPartner, totalAdmin, totalAuction] =
     await Promise.all([
@@ -555,6 +555,7 @@ const totalOverview = async () => {
     totalAuction,
   };
 };
+
 const parseDateTime = (date, time) => {
   const [month, day, year] = date.split('/').map(Number);
   const [hours, minutes] = time.split(':').map((part, index) => {
@@ -599,12 +600,19 @@ const filterAndSortServices = async (req, res) => {
     filterQuery.page = page
     filterQuery.limit = limit
 
-  const result = new QueryBuilder(Services.find({}), filterQuery)
+  const result = new QueryBuilder(
+    Services.find({}) 
+  .populate({
+    path: "category",
+    select: "_id category"
+  }) 
+  , filterQuery)
   .search(["service"])
   .filter()
   .sort()
   .paginate()
   .fields();
+
  
   const services  = await result.modelQuery;
   const meta = await result.countTotal();
@@ -634,9 +642,11 @@ const filterAndSortServices = async (req, res) => {
 
     return 0;  
   });
- 
-  return {sortedServices,meta};
+   const pisoVariable = await VariableCount.getPisoVariable();
+
+  return {sortedServices,meta, piso: pisoVariable};
 };
+
 //=Total Income/User/Auction ========================
 const getTotalIncomeUserAuction = async (req, res) => {
  
@@ -669,6 +679,7 @@ const getTotalIncomeUserAuction = async (req, res) => {
       return { income, users, services, partner };
  
 };
+
 //=Overview ==========================  
 const incomeOverview = async (year) => {
   try {
@@ -818,47 +829,40 @@ const getUserGrowth = async (year) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Service not found:", error.message);
   }
 };
+
 // =Send Notice=====================
 const sendNoticeUsers = async (req, res) => {
   const { userId, all_user } = req.query;
-  const { message } = req.body;
+  const { title,message } = req.body;
 
-  if ( !message) { 
+  if ( !title|| !message) { 
     throw new ApiError(400, 'Title and message are required.');
-  } 
-
-  console.log("====", message);
+  }  
   try { 
     if (all_user) {
       const users = await User.find({});
        
-      const notifications = users.map(user =>
-        Notification.create({
-          title: "Impotent Notice From Admin.",
-          user: user._id, 
-          admin_ms: true,
-          userType:"User",
-          message:'We have made some updates to improve your experience.',
-          notice: message,
-          types: 'notice',
-          getId: null, 
-        })
-      ); 
-      await Promise.all(notifications);
+      const notifications = users.map(user => ({
+        title: title,
+        user: user._id,
+        admin_ms: true,
+        userType: "User",
+        message: 'We have made some updates to improve your experience.',
+        notice: message,
+        types: 'notice',
+        getId: null,
+      })); 
+
+      await Notification.insertMany(notifications);
     } else { 
       if (!userId) { 
         throw new ApiError(404,'User ID is required.');
       }
 
-      // await Notification.create({
-      //   title,
-      //   userId,
-      //   message,
-      //   admin_ms: true,
-      // });
+ 
 
       await NotificationService.sendNotification({ 
-        title: "Impotent Notice From Admin.", 
+        title: title, 
         message: 'We have made some updates to improve your experience.', 
         user: userId, 
         userType: 'User',  
@@ -884,20 +888,18 @@ const sendNoticePartner = async (req, res) => {
   } 
  
     if (all_user) { 
-      const users = await Partner.find({});
-      const notifications = users.map(user =>
-        Notification.create({
-          title: "Impotent Notice From Admin.", 
-          message: 'We have made some updates to improve your experience.', 
-          user: user._id, 
-          userType: 'Partner',  
-          getId: null, 
-          notice: message,
-          types: 'notice',
-        })
+      const users = await Partner.find({}); 
+       const notifications = users.map(user => ({
+         title: title, 
+         message: 'We have made some updates to improve your experience.', 
+         user: user._id, 
+         userType: 'Partner',  
+         getId: null, 
+         notice: message,
+         types: 'notice',
+       }));
         
-      ); 
-      await Promise.all(notifications);
+       await Notification.insertMany(notifications);
     } else { 
 
       if (!userId) { 
@@ -905,7 +907,7 @@ const sendNoticePartner = async (req, res) => {
       }
 
       await NotificationService.sendNotification({ 
-        title: "Impotent Notice From Admin.", 
+        title: title, 
         message: 'We have made some updates to improve your experience.', 
         user: userId, 
         userType: 'Partner',  

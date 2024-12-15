@@ -18,6 +18,7 @@ const { default: mongoose } = require("mongoose");
 const { Bids } = require("../bid/bid.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
+const VariableCount = require("../variable/variable.count");
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -27,13 +28,13 @@ const validateInputs = (data, image) => {
     "isLoaderNeeded", "loadFloorNo", "loadingAddress", "loadLongitude",
     "loadLatitude", "mainService"
   ];
- 
+
   for (const field of requiredFields) {
     if (!data[field]) {
       throw new ApiError(400, `${field} is required.`);
     }
   }
- 
+
   const validServices = {
     move: ["Goods", "Waste"],
     sell: ["Second-hand items", "Recyclable materials"]
@@ -46,19 +47,15 @@ const validateInputs = (data, image) => {
   if (!validServiceForMain.includes(data.service)) {
     throw new ApiError(400, `For ${data.mainService}, you must choose between ${validServiceForMain.join(' or ')}.`);
   }
- 
+
   if (!image?.length) {
     throw new ApiError(400, "At least one image is required.");
   }
- 
+
   const images = Array.isArray(image) ? image.map(file => `/images/services/${file.filename}`) : [];
- 
-  // const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+
   const timePattern = /^(0[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/;
 
-  // if (!datePattern.test(data.scheduleDate)) {
-  //   throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleDate format. Please use MM/DD/YYYY.");
-  // }
   if (!timePattern.test(data.scheduleTime)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid scheduleTime format. Please use hh:mm AM/PM.");
   }
@@ -76,7 +73,7 @@ function formatDate(date) {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
- 
+
 function formatTimeTo12hr(date) {
   let hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -84,23 +81,6 @@ function formatTimeTo12hr(date) {
   hours = hours % 12 || 12;
   return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
 }
-
-// const convertTo12HourFormat = (timeStr) => { 
-//   if (/^(0[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i.test(timeStr)) {
-//     return timeStr.toUpperCase(); 
-//   }
- 
-//   const [hours, minutes] = timeStr.split(":").map(Number);
-
-//   if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-//     throw new Error("Invalid time format. Please provide time in 'HH:MM' 24-hour format or 'HH:MM AM/PM'.");
-//   }
-
-//   const modifier = hours >= 12 ? "PM" : "AM";
-//   const adjustedHours = hours % 12 === 0 ? 12 : hours % 12;
-
-//   return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${modifier}`;
-// };
 
 function formatTimeTo24hr(date) {
   let hours = date.getHours();
@@ -113,10 +93,9 @@ const createPostDB = async (req) => {
     const { userId } = req.user;
     const { image } = req.files || {};
     const data = req.body;
- 
-    const images = validateInputs(data, image); 
 
-    // Construct service data
+    const images = validateInputs(data, image);
+
     const serviceData = {
       user: userId,
       mainService: data.mainService,
@@ -156,10 +135,11 @@ const createPostDB = async (req) => {
     const newService = new Services(serviceData);
     return await newService.save();
 
-  } catch (error) { 
+  } catch (error) {
     throw new ApiError(400, error.message || 'Error while creating post');
   }
 };
+
 const updatePostDB = async (req) => {
   const { serviceId } = req.params;
   try {
@@ -184,10 +164,15 @@ const updatePostDB = async (req) => {
     throw new ApiError(400, error.message);
   }
 };
+
 const getDetails = async (req) => {
   const { serviceId } = req.params;
 
   const result = await Services.findById(serviceId)
+  .populate({
+      path: "category", 
+      select: "_id category",
+    })
     .populate({
       path: "bids",
       populate: [
@@ -198,7 +183,7 @@ const getDetails = async (req) => {
         {
           path: "partner",
           model: "Partner",
-          select: "_id profile_image rating name",
+          select: "_id profile_image rating name rating",
         },
       ],
     })
@@ -206,14 +191,20 @@ const getDetails = async (req) => {
   if (!result) {
     throw new ApiError(404, "Service not found");
   }
-  return result;
+  const pisoVariable = await VariableCount.getPisoVariable();
+  return { result, piso: pisoVariable };
 };
 
 const getUserPostHistory = async (req) => {
   const { userId } = req.user;
   const query = req.query;
 
-  const dataQuery = new QueryBuilder(Services.find({ user: userId }), query)
+  const dataQuery = new QueryBuilder(Services.find({ user: userId })
+  .populate({
+    path: "category",
+    select: "_id category",
+  })
+  , query)
     .search([])
     .filter()
     .sort()
@@ -223,8 +214,11 @@ const getUserPostHistory = async (req) => {
   const result = await dataQuery.modelQuery;
   const meta = await dataQuery.countTotal();
 
-  return { data: result, meta };
+  const pisoVariable = await VariableCount.getPisoVariable();
+
+  return {piso: pisoVariable, result, meta };
 };
+
 const deletePostDB = async (req) => {
   const { serviceId } = req.params;
   const service = await Services.findById(serviceId);
@@ -234,8 +228,9 @@ const deletePostDB = async (req) => {
   const result = await Services.findByIdAndDelete(serviceId);
   return result._id;
 };
+
 const conformPartner = async (req) => {
-  const { serviceId, partnerId, bidId } = req.query; 
+  const { serviceId, partnerId, bidId } = req.query;
 
   const service = await Services.findById(serviceId);
   if (!service) {
@@ -286,11 +281,11 @@ const conformPartner = async (req) => {
 
   await Bids.bulkWrite(bulkOps);
 
-  await NotificationService.sendNotification({ 
+  await NotificationService.sendNotification({
     title: "You’ve Won the Bid!",
     message: `Congratulations! Your bid for service has been accepted.`,
-    user: partnerId, 
-    userType: 'Partner',  
+    user: partnerId,
+    userType: 'Partner',
     types: 'service',
     getId: serviceId,
   });
@@ -335,15 +330,12 @@ const rescheduledPostUser = async (req) => {
   const { serviceId } = req.params;
   const { rescheduledReason, rescheduledTime, rescheduledDate } = req.body;
 
-  // validateScheduleInputs(rescheduledDate, rescheduledTime); 
-  // const deadlineTime = convertTo12HourFormat(rescheduledTime);
-
   if (!rescheduledDate || !rescheduledTime) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "Rescheduled Time and Date are required!"
     );
-  } 
+  }
 
   const service = await Services.findById(serviceId);
   if (!service) {
@@ -362,7 +354,7 @@ const rescheduledPostUser = async (req) => {
       status: ENUM_SERVICE_STATUS.RESCHEDULED,
     },
     { new: true }
-  ); 
+  );
 
   return result;
 };
@@ -397,10 +389,10 @@ const searchNearby = async (req) => {
       },
     },
     {
-      $match: { 
+      $match: {
         status: ENUM_SERVICE_STATUS.PENDING,
         service: service,
-       },
+      },
     },
     {
       $project: {
@@ -409,7 +401,7 @@ const searchNearby = async (req) => {
         mainService: 1,
         category: 1,
         image: 1,
-        createdAt: 1,
+        createdAt: 1, 
         scheduleDate: 1,
         scheduleTime: 1,
         deadlineDate: 1,
@@ -418,15 +410,14 @@ const searchNearby = async (req) => {
         loadingLocation: 1,
       },
     },
-  ]); 
+  ]) 
+ 
 
-  // if (nearbyServices.length === 0) {
-  //   throw new ApiError(httpStatus.NOT_FOUND, "No nearby services found");
-  // }
+  const populatedServices = await Services.populate(nearbyServices, 'category');
 
   return {
-    count: nearbyServices.length,
-    nearbyServices,
+    count: populatedServices.length,
+    populatedServices,
   };
 };
 const rescheduledAction = async (req) => {
@@ -516,30 +507,30 @@ const rescheduledAction = async (req) => {
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const now = new Date();
- 
+
   const formattedDate = formatDate(now);
-  const formattedStartTime = formatTimeTo12hrs(now);  
-   
-  const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
-  const formattedStartRange = formatTimeTo12hrs(oneHourBefore);   
+  const formattedStartTime = formatTimeTo12hrs(now);
+
+  const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000);
+  const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
 
   console.log("Fetched services:", formattedStartRange,)
-   
+
   const query = {
-    status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] }, 
+    status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
     scheduleDate: {
-      $lte: formattedDate, 
+      $lte: formattedDate,
     },
-    scheduleTime: { 
+    scheduleTime: {
       // $gte: formattedStartRange, 
-       $lte: formattedStartRange  
+      $lte: formattedStartRange
     }
   };
 
   if (role === 'USER') {
-    query.user = userId; 
+    query.user = userId;
   } else if (role === 'PARTNER') {
-    query.confirmedPartner = userId; 
+    query.confirmedPartner = userId;
   }
 
   const services = await Services.find(query)
@@ -554,14 +545,14 @@ const getUserServicesWithinOneHour = async (req) => {
 
   // console.log("Fetched services:", services);
   return services;
-}; 
+};
 function formatTimeTo12hrs(date) {
   let hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
   return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-} 
+}
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
   const { userId } = req.user;
@@ -589,6 +580,10 @@ const filterUserByHistory = async (req) => {
       .populate({
         path: "confirmedPartner",
         select: "profile_image name email",
+      })
+      .populate({
+        path: "category",
+        select: "_id category",
       }),
     query
   )
@@ -597,7 +592,9 @@ const filterUserByHistory = async (req) => {
 
   const result = await filtered.modelQuery;
   const meta = await filtered.countTotal();
-  return { result, meta };
+
+  const pisoVariable = await VariableCount.getPisoVariable();
+  return { result, meta, piso: pisoVariable};
 };
 // Status===========================
 const updateServicesStatusPartner = async (req) => {
@@ -615,8 +612,8 @@ const updateServicesStatusPartner = async (req) => {
 
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
-  } 
-  console.log("service", service.status) 
+  }
+  console.log("service", service.status)
   if (status === "arrived" && service.status !== "accepted") {
     throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
   }
@@ -634,7 +631,7 @@ const updateServicesStatusPartner = async (req) => {
   if (status === "delivered" && service.user_status !== "partner-at-destination") {
     throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm partner is at the destination before marking as delivered.");
   }
- 
+
   let service_status = service.status;
   if (status === "start-trip") {
     service_status = "in-progress";
@@ -646,7 +643,7 @@ const updateServicesStatusPartner = async (req) => {
     { new: true }
   );
 
-  await NotificationService.sendNotification({ 
+  await NotificationService.sendNotification({
     title: "Service Status Updated",
     message: `The service status has been updated to "${status}".`,
     user: service.user,
@@ -661,24 +658,24 @@ const updateServicesStatusPartner = async (req) => {
 const updateServicesStatusUser = async (req) => {
   const { serviceId, status } = req.query;
   const { userId } = req.user;
- 
+
   if (!serviceId || !status) {
-    throw new ApiError( httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
   }
- 
+
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");
   }
 
   if (service.paymentStatus !== "paid") {
-    throw new ApiError( httpStatus.BAD_REQUEST, "Payment must be completed before you can update the status.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment must be completed before you can update the status.");
   }
- 
+
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
- 
+
   if (status === "confirm-arrived" && service.partner_status !== "arrived") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
   }
@@ -703,7 +700,7 @@ const updateServicesStatusUser = async (req) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  try { 
+  try {
     const receivedUser =
       transaction.receiveUserType === "Partner"
         ? await Partner.findById(transaction.receiveUser)
@@ -714,7 +711,7 @@ const updateServicesStatusUser = async (req) => {
         httpStatus.NOT_FOUND,
         "Recipient user not found for the transaction."
       );
-    } 
+    }
 
     if (status === "delivery-confirmed") {
       receivedUser.wallet += transaction.amount;
@@ -723,7 +720,7 @@ const updateServicesStatusUser = async (req) => {
       transaction.isFinish = true;
       await transaction.save({ session });
 
-      await NotificationService.sendNotification({ 
+      await NotificationService.sendNotification({
         title: "Payment Received",
         message: `You have received a payment of ${transaction.amount} for the service.`,
         user: receivedUser._id,
@@ -732,32 +729,32 @@ const updateServicesStatusUser = async (req) => {
         getId: serviceId,
       });
     }
- 
+
     let serviceStatus = service.status;
     if (status === "goods-loaded") {
       serviceStatus = "pick-up";
     } else if (status === "delivery-confirmed") {
       serviceStatus = "completed";
     }
- 
+
     const updatedService = await Services.findByIdAndUpdate(
       serviceId,
       { user_status: status, status: serviceStatus },
       { new: true, session }
     );
 
-    await NotificationService.sendNotification({ 
+    await NotificationService.sendNotification({
       title: "Service Status Updated",
       message: `The service status has been updated to "${status}".`,
       user: service.confirmedPartner,
       userType: "Partner",
-      types:serviceStatus === "completed"? "complete-status": "ongoing" ,
+      types: serviceStatus === "completed" ? "complete-status" : "ongoing",
       getId: serviceId,
     });
 
     await session.commitTransaction();
     return updatedService;
-  } catch (error) { 
+  } catch (error) {
     await session.abortTransaction();
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
@@ -768,29 +765,28 @@ const updateServicesStatusUser = async (req) => {
   }
 };
 
-
 // ---------------
 const updateSellServicesStatusUser = async (req) => {
   const { serviceId, status } = req.query;
   const { userId } = req.user;
- 
+
   if (!serviceId || !status) {
-    throw new ApiError( httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
   }
- 
+
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");
   }
 
   if (service.paymentStatus !== "paid") {
-    throw new ApiError( httpStatus.BAD_REQUEST, "Payment must be completed before you can update the status.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment must be completed before you can update the status.");
   }
- 
+
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
- 
+
   if (status === "confirm-arrived" && service.partner_status !== "arrived") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must mark arrival before confirming arrival.");
   }
@@ -808,7 +804,7 @@ const updateSellServicesStatusUser = async (req) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  try { 
+  try {
     const receivedUser =
       transaction.receiveUserType === "Partner"
         ? await Partner.findById(transaction.receiveUser)
@@ -819,15 +815,15 @@ const updateSellServicesStatusUser = async (req) => {
         httpStatus.NOT_FOUND,
         "Recipient user not found for the transaction."
       );
-    }  
- 
+    }
+
     const updatedService = await Services.findByIdAndUpdate(
       serviceId,
-      { user_status: status, status: serviceStatus },
+      { user_status: status, },
       { new: true, session }
     );
 
-    await NotificationService.sendNotification({ 
+    await NotificationService.sendNotification({
       title: "Service Status Updated",
       message: `The service status has been updated to "${status}".`,
       user: service.confirmedPartner,
@@ -838,7 +834,7 @@ const updateSellServicesStatusUser = async (req) => {
 
     await session.commitTransaction();
     return updatedService;
-  } catch (error) { 
+  } catch (error) {
     await session.abortTransaction();
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
@@ -849,77 +845,109 @@ const updateSellServicesStatusUser = async (req) => {
   }
 };
 
-
 const updateSellServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;
 
+  // Validate input
   if (!serviceId || !status) {
     throw new ApiError(
-      httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
+      httpStatus.BAD_REQUEST,
+      "Service ID and status are required."
+    );
   }
 
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
   }
-
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
-  } 
-  console.log("service", service.status) 
-  console.log("status==", status)
-  if (status === "arrived" && service.status !== "accepted") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
   }
 
-  if (status === "delivery-confirmed" && service.user_status !== "delivered") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm goods are loaded before starting the trip.");
-  } 
- 
-  let service_status = service.status;
- 
+  const STATUS_TRANSITIONS = {
+    arrived: ["accepted"],
+    "delivery-confirmed": ["delivered"],
+  };
 
-  if (status === "delivery-confirmed") {
-     receivedUser.wallet += transaction.amount;
-    await receivedUser.save({ session });
+  if (STATUS_TRANSITIONS[status] && !STATUS_TRANSITIONS[status].includes(service.status)) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Cannot set status to "${status}" from "${service.status}".`
+    );
+  }
 
-    transaction.isFinish = true;
-    await transaction.save({ session });
+  const transaction = await Transaction.findOne(
+    { serviceId },
+    "paymentStatus receiveUserType receiveUser amount isFinish"
+  );
 
-    await NotificationService.sendNotification({ 
-      title: "Payment Received",
-      message: `You have received a payment of ${transaction.amount} for the service.`,
-      user: receivedUser._id,
-      userType: transaction.receiveUserType,
+  if (!transaction || transaction.paymentStatus !== "Completed") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
+  }
+
+  const receivedUser = await (transaction.receiveUserType === "Partner"
+    ? Partner
+    : User
+  ).findById(transaction.receiveUser);
+
+  if (!receivedUser) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "Recipient user not found for the transaction."
+    );
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (status === "delivery-confirmed") {
+      receivedUser.wallet += transaction.amount;
+      await receivedUser.save({ session });
+
+      transaction.isFinish = true;
+      await transaction.save({ session });
+
+      await NotificationService.sendNotification({
+        title: "Payment Received",
+        message: `You have received a payment of ${transaction.amount} for the service.`,
+        user: receivedUser._id,
+        userType: transaction.receiveUserType,
+        types: "service",
+        getId: serviceId,
+      });
+    }
+
+    const updatedServiceStatus =
+      status === "arrived" ? "in-progress" :
+        status === "delivery-confirmed" ? "completed" :
+          service.status;
+
+    const result = await Services.findOneAndUpdate(
+      { _id: serviceId },
+      { partner_status: status, status: updatedServiceStatus },
+      { new: true, session }
+    );
+
+    await NotificationService.sendNotification({
+      title: "Service Status Updated",
+      message: `The service status has been updated to "${status}".`,
+      user: service.user,
+      userType: "User",
       types: "service",
       getId: serviceId,
     });
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-
-  let serviceStatus = service.status;
-  if (status === "goods-loaded") {
-    serviceStatus = "pick-up";
-  } else if (status === "delivery-confirmed") {
-    serviceStatus = "completed";
-  }
-
-  const result = await Services.findOneAndUpdate(
-    { _id: serviceId },
-    { partner_status: status, status: service_status },
-    { new: true }
-  );
-
-  await NotificationService.sendNotification({ 
-    title: "Service Status Updated",
-    message: `The service status has been updated to "${status}".`,
-    user: service.user,
-    userType: "User",
-    types: "service",
-    getId: serviceId,
-  });
-
-  return result;
 };
+
 
 // Status===========================
 

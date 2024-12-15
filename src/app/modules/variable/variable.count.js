@@ -58,7 +58,7 @@ const convertPesoToDollar = async (price) => {
     if (!perDollarMexicanPeso) {
         throw new ApiError(200, "Variable data not found!");
     } 
-    const dollarCost = Number(peso) / Number(perDollarMexicanPeso);
+    const dollarCost = Number(price) / Number(perDollarMexicanPeso);
     return { dollarCost };
 };
 
@@ -93,6 +93,11 @@ const changeContactNumber = async ({contactNumber}) => {
   const getContactNumber = async () => {
     return ContactNumber.findOne({})
   }
+
+  const getPisoVariable = async () => {
+    const result = await Variable.findOne({})
+    return result.perDollarMexicanPeso;
+  }
   
  
 
@@ -102,7 +107,8 @@ const VariableCount = {
     convertDollarToPeso,
     convertPesoToDollar,
     changeContactNumber,
-    getContactNumber
+    getContactNumber,
+    getPisoVariable
 }
 
 module.exports = VariableCount;

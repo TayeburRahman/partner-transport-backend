@@ -25,18 +25,15 @@ const partnerBidPost = async (req) => {
     throw new ApiError(404, "Service not found");
   }
 
-  const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
-  //  console.log("llllllllllllll", minimumBed, maximumBed)
+  const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService) 
   if (price < minimumBed) {
     throw new ApiError(400, `Price must be greater than or equal to ${minimumBed}`);
   }
 
   if (price > maximumBed) {
     throw new ApiError(400, `Price must be less than or equal to ${maximumBed}`);
-  }
-
-
-
+  }  
+  
   const existingBid = await Bids.findOne({
     service: serviceId,
     partner: userId,
@@ -115,9 +112,9 @@ const getBitProfilePartner = async (req) => {
     .populate({
       path: 'userId',
       select: 'name email profile_image'
-    })
-
-  return { bids, all_review };
+    }) 
+const pisoVariable = await VariableCount.getPisoVariable();
+  return { bids, all_review, piso: pisoVariable};
 };
 
 const partnerAllBids = async (req) => {
@@ -136,9 +133,7 @@ const partnerAllBids = async (req) => {
 const filterBidsByMove = async (req) => {
   const { categories, serviceType } = req.query;
   const { userId } = req.user;
-
-  console.log("categories", categories);
-
+ 
   if (!serviceType) {
     throw new ApiError(400, "Please provide serviceType");
   }
@@ -161,47 +156,55 @@ const filterBidsByHistory = async (req) => {
   const { serviceType } = req.body;
   const { userId } = req.user;
 
-  console.log("Filtering", categories, serviceStatus, bitStatus, page)
-
   const skip = (page - 1) * limit;
 
-  const totalBids = await Bids.countDocuments({
-    partner: userId,
-    status: bitStatus ? bitStatus : { $in: ["Win", "Outbid", "Pending"] },
-  });
+  try { 
+    const bidQuery = {
+      partner: userId,
+      status: bitStatus || { $in: ["Win", "Outbid", "Pending"] },
+    };
+ 
+    const totalBids = await Bids.countDocuments(bidQuery);
+ 
+    const serviceQuery = {
+      ...(serviceType && { service: serviceType }),
+      ...(categories && { category: { $in: categories } }),
+      ...(serviceStatus && { status: serviceStatus }),
+    };
 
-  const filteredBids = await Bids.find({
-    partner: userId,
-    status: bitStatus ? bitStatus : { $in: ["Win", "Outbid", "Pending"] },
-  })
-    .populate({
-      path: "partner",
-      select: '_id name profile_image email',
-    })
-    .populate({
-      populate: ({
-        path: "user",
-        select: '_id name profile_image email',
-      }),
-      path: "service",
-      match: {
-        service: serviceType || { $exists: true },
-        category: categories ? { $in: categories } : { $exists: true },
-        status: serviceStatus ? serviceStatus : { $exists: true },
-      },
-    })
-    .skip(skip)
-    .limit(parseInt(limit))
-    .exec();
+    const filteredBids = await Bids.find(bidQuery)
+      .populate({
+        path: "partner",
+        select: "_id name profile_image email rating",  
+      })
+      .populate({
+        path: "service",
+        match: serviceQuery,
+        // select: "_id name status",  
+        populate: [
+          { path: "user", select: "_id name profile_image email" },
+          { path: "category", select: "_id category" },
+        ],
+      })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .exec();
 
-  const result = filteredBids.filter((bid) => bid.service !== null);
+    const result = filteredBids.filter((bid) => bid.service);
 
-  return {
-    page: parseInt(page),
-    totalPage: Math.ceil(totalBids / limit),
-    limit: limit,
-    result,
-  };
+    const pisoVariable = await VariableCount.getPisoVariable();
+
+    return {
+      piso: pisoVariable,
+      page: parseInt(page),
+      totalPage: Math.ceil(totalBids / limit),
+      limit: parseInt(limit),
+      result,
+    };
+  } catch (error) {
+    console.error("Error in filterBidsByHistory:", error);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "An error occurred while filtering bids.");
+  }
 };
 
 // ================================
@@ -214,7 +217,11 @@ const orderDetailsPageFileClaim = async (req) => {
     })
     .populate({
       path: 'confirmedPartner',
-      select: 'name profile_image email'
+      select: 'name profile_image email rating'
+    })
+    .populate({
+      path: 'category',
+      select: '_id name'
     })
     .select('_id category numberOfItems scheduleTime scheduleTime scheduleDate loadingAddress deadlineTime loadingLocation paymentStatus deadlineDate unloadingAddress unloadingLocation updatedAt image winBid deadlineTime')
   const payment = await Transaction.findOne({ serviceId }).select('amount paymentMethod',)

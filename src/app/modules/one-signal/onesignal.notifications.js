@@ -2,7 +2,7 @@ const { default: axios } = require("axios");
 const config = require("../../../config"); 
  
 
-const sendNotificationOnesignal = async (playerIds, title, message, types, getId) => {   
+const sendNotificationOnesignal = async (playerIds, title, message, types, getId, notice) => {   
   let router = "";
 
   switch (types) {
@@ -24,6 +24,9 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
     case "complete-status":
       router = "getCompleteService";
       break;
+    case "ticket":
+      router = "getTicket";
+      break;
     default:
       console.warn("Unknown notification type:", types);
   }
@@ -36,6 +39,7 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
     data: {
       route: router,
       getId: getId || "",
+      notice: notice || "",
 
     }
   };
@@ -47,7 +51,7 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
 
   try {
     const response = await axios.post(
-      'https://onesignal.com/api/v1/notifications',
+      `${config.onesignal.onesignal_url}/api/v1/notifications`,
       data,
       { headers }
     );

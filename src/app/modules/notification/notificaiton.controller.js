@@ -12,9 +12,6 @@ const getUserNotification = catchAsync(async (req, res) => {
   });
 });
 
- 
-
-
 const getAllNotification = catchAsync(async (req, res) => {
   // const result = await notificationService.getAllNotificationFromDB(req?.user);
   // sendResponse(res, {
@@ -25,9 +22,22 @@ const getAllNotification = catchAsync(async (req, res) => {
   // });
 });
 
+
+const getNoticeNotification = catchAsync(async (req, res) => {
+  const result = await NotificationService.getNoticeNotification(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Notification retrieved successfully",
+    data: result,
+  });
+});
+ 
+
 const notificationController = {
   getUserNotification,
   getAllNotification,
+  getNoticeNotification
 };
 
 module.exports = { notificationController };

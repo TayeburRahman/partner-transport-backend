@@ -26,12 +26,36 @@ const createTicket = catchAsync(async (req, res) => {
     })
   }) 
 
+  const getTicketDb = catchAsync(async (req, res) => {
+    const result = await SupportService.getTicketDb(req);
+     
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Replay ticket successfully!",
+      data: result,
+    })
+  }) 
+
+  const getTicketDetails = catchAsync(async (req, res) => {
+    const result = await SupportService.getTicketDetails(req);
+     
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Ticket get successfully!",
+      data: result,
+    })
+  }) 
+   
    
 
 
   const SupportController = { 
     createTicket,
-    repliedTicket
+    repliedTicket,
+    getTicketDb,
+    getTicketDetails
   };
 
   module.exports = { SupportController };

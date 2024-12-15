@@ -94,59 +94,53 @@ const createCheckoutSessionStripe = async (req) => {
     throw new ApiError(400, error);
   }
 };
+
 const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
   const sessionId = req.query.session_id;
+
+  if (!sessionId) {
+    return { status: "failed", message: "Missing session ID in the request." };
+  }
+
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+
     if (!session) {
-      return {
-        status: "failed",
-        message: "Payment execution failed",
-      };
+      return { status: "failed", message: "Session not found." };
     }
- 
- 
+
     if (session.payment_status !== 'paid') {
-      return {
-        status: "failed",
-        message: "Payment not approved",
-      };
+      return { status: "failed", message: "Payment not approved." };
     }
 
-    const receiveUser = session.metadata.receiveUser;
-    const payUser = session.metadata.payUser;
-    const payUserType = session.metadata.payUserType;
-    const receiveUserType = session.metadata.receiveUserType;
-    const serviceId = session.client_reference_id;
+    const { receiveUser, payUser, payUserType, receiveUserType, serviceId } = session.metadata;
+
     const service = await Services.findById(serviceId);
-
-    // console.log("=========================================",service,)
-
-    // if (service.paymentStatus === 'paid') {
-    //   const existingTransaction = await Transaction.findOne({ serviceId: service._id });
-    //   console.log("Transaction", existingTransaction)
-    //   return { status: "success", result: existingTransaction };
-    // }
-
-
     if (!service) {
       return {
         status: "failed",
         message: "Service not found!",
-        text: 'Payment is Success! but the service you are could not be found. Please contact support.'
-      }
+        text: 'Payment succeeded, but the service could not be found. Please contact support.'
+      };
+    }
+
+    if (service.paymentStatus === 'paid') {
+      const existingTransaction = await Transaction.findOne({ serviceId: service._id });
+      console.log("Existing Transaction", existingTransaction);
+      return { status: "success", result: existingTransaction };
     }
 
     service.paymentStatus = 'paid';
     service.transactionId = session.payment_intent;
     await service.save();
 
+    // Create transaction data
     const transactionData = {
       serviceId,
-      payUser: payUser,
-      payUserType: payUserType,
-      receiveUser: receiveUser,
-      receiveUserType: receiveUserType,
+      payUser,
+      payUserType,
+      receiveUser,
+      receiveUserType,
       paymentMethod: 'Stripe',
       amount: Number(session.amount_total) / 100,
       paymentStatus: "Completed",
@@ -158,17 +152,18 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
         payId: sessionId,
         currency: "USD"
       }
-    }; 
+    };
 
-    const newTransaction = await Transaction.create(transactionData); 
+    const newTransaction = await Transaction.create(transactionData);
 
     return { status: "success", result: newTransaction };
 
   } catch (error) {
-    console.error('Error processing payment:', error);
-    return { status: "failed", message: "Payment execution failed" }
+    console.error('Error processing Stripe payment:', error);
+    return { status: "failed", message: "Payment execution failed", error: error.message };
   }
 };
+
 //Paypal Payment ------------
 const createCheckoutSessionPaypal = async (req, res) => {
   const { serviceId } = req.body;
@@ -263,32 +258,34 @@ const createCheckoutSessionPaypal = async (req, res) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Paypal server error: ' + error);
   }
 };
+
 const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
   const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query;
 
-  // console.log('PaypalCheckAndUpdateStatusSuccess', req.query)
+  if (!paymentId || !PayerID || !serviceId || !payUser || !receiveUser) {
+    return { status: "failed", message: "Missing required query parameters." };
+  }
 
   try {
-    const execute_payment_json = {
-      "payer_id": PayerID,
-    };
+    const execute_payment_json = { payer_id: PayerID };
 
     const paymentResult = await new Promise((resolve, reject) => {
       paypal.payment.execute(paymentId, execute_payment_json, async (error, payment) => {
         if (error) {
-          return reject({ status: "failed", message: "Payment execution failed" });
+          console.error('PayPal Payment Execution Error:', error);
+          return reject({ status: "failed", message: "Payment execution failed", details: error });
         }
- 
+
         if (payment.state !== 'approved') {
-          return reject({ status: "failed", message: "Payment not approved" });
+          return reject({ status: "failed", message: "Payment not approved." });
         }
 
         const service = await Services.findById(serviceId);
         if (!service) {
           return reject({
             status: "failed",
-            message: "Service not found!",
-            text: "Payment is Success! but the service you are could not be found. Please contact support"
+            message: "Service not found.",
+            text: "Payment succeeded, but the service could not be located. Please contact support."
           });
         }
 
@@ -305,10 +302,10 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
 
         const transactionData = {
           serviceId,
-          payUser: payUser,
-          payUserType: payUserType,
-          receiveUser: receiveUser,
-          receiveUserType: receiveUserType,
+          payUser,
+          payUserType,
+          receiveUser,
+          receiveUserType,
           paymentMethod: 'PayPal',
           amount: Number(payment.transactions[0].amount.total),
           paymentStatus: "Completed",
@@ -326,16 +323,18 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
         resolve({ status: "success", result: newTransaction });
       });
     });
-    return paymentResult
 
+    return paymentResult;
   } catch (error) {
     console.error('Error processing PayPal payment:', error);
-    return { status: "failed", message: "Payment execution failed" };;
+    return { status: "failed", message: "Payment processing encountered an error." };
   }
 };
+
 const paymentStatusCancel = async (req, res) => {
   return { status: "canceled" }
 }
+
 //Paypal Refund Payment ------------
 const paypalRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
@@ -402,6 +401,7 @@ const paypalRefundPayment = async (req, res) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
 };
+
 //Stripe Refund Payment ------------
 const stripeRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
@@ -454,6 +454,9 @@ const stripeRefundPayment = async (req, res) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message || "Failed to process refund.");
   }
 };
+
+
+
 const stripeTransferPayment = (req, res) => {
   // Implement Bank Transfer Payment logic here  
   return

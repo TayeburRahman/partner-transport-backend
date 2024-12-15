@@ -1,59 +1,61 @@
+const QueryBuilder = require("../../../builder/queryBuilder");
 const ApiError = require("../../../errors/ApiError");
 const { ENUM_SOCKET_EVENT, ENUM_USER_ROLE } = require("../../../utils/enums");
+const Admin = require("../admin/admin.model");
 const Auth = require("../auth/auth.model");
-const { sendNotificationOnesignal } = require("../one-signal/onesignal.notifications"); 
+const { sendNotificationOnesignal } = require("../one-signal/onesignal.notifications");
 const Partner = require("../partner/partner.model");
 const User = require("../user/user.model");
 const Notification = require("./notification.model");
 
- 
+
 
 const handleNotification = async (receiverId, role, socket, io) => {
-    // get all notifications 
-    socket.on(ENUM_SOCKET_EVENT.NOTIFICATION, async (data) => { 
-      console.log("get all notification:", role , receiverId);
+  // get all notifications 
+  socket.on(ENUM_SOCKET_EVENT.NOTIFICATION, async (data) => {
+    console.log("get all notification:", role, receiverId);
 
-      const filter = role === ENUM_USER_ROLE.USER 
-        ? { userId: receiverId } 
-        : role === ENUM_USER_ROLE.DRIVER 
-          ? { driverId: receiverId } 
-          : null; 
+    const filter = role === ENUM_USER_ROLE.USER
+      ? { userId: receiverId }
+      : role === ENUM_USER_ROLE.DRIVER
+        ? { driverId: receiverId }
+        : null;
 
-        console.log("filter:", filter)
-    
-      if (filter) {  
-        const notifications = await Notification.find(filter);
-        console.log(notifications)
+    console.log("filter:", filter)
 
-        io.to(receiverId).emit(ENUM_SOCKET_EVENT.NOTIFICATION, notifications);
-      } else { 
-        console.error("Invalid role provided:", role);
-      }
-    });
+    if (filter) {
+      const notifications = await Notification.find(filter);
+      console.log(notifications)
+
+      io.to(receiverId).emit(ENUM_SOCKET_EVENT.NOTIFICATION, notifications);
+    } else {
+      console.error("Invalid role provided:", role);
+    }
+  });
 
   // update seen notifications 
-  socket.on(ENUM_SOCKET_EVENT.SEEN_NOTIFICATION, async (data) => { 
-    console.log("seen notification:", role , receiverId);
-    const filter = role === ENUM_USER_ROLE.USER 
-      ? { userId: receiverId } 
-      : role === ENUM_USER_ROLE.DRIVER 
-        ? { driverId: receiverId } 
-        : null; 
+  socket.on(ENUM_SOCKET_EVENT.SEEN_NOTIFICATION, async (data) => {
+   
+    const filter = role === ENUM_USER_ROLE.USER
+      ? { userId: receiverId }
+      : role === ENUM_USER_ROLE.DRIVER
+        ? { driverId: receiverId }
+        : null;
 
-    if (filter) { 
+    if (filter) {
       await Notification.updateMany(filter, { $set: { seen: true } });
       const notifications = await Notification.find(filter);
 
       io.to(receiverId).emit(ENUM_SOCKET_EVENT.NOTIFICATION, notifications);
-    } else { 
+    } else {
       console.error("Invalid role provided:", role);
     }
   });
- 
+
 };
-  
-const sendNotification = async ({ title, message, user, userType, getId, types }) => {
-  try {  
+
+const sendNotification = async ({ title, message, user, userType, getId, types, notice }) => {
+  try {
     const notification = await Notification.create({
       title,
       user,
@@ -61,10 +63,11 @@ const sendNotification = async ({ title, message, user, userType, getId, types }
       getId,
       userType,
       types,
+      notice
     });
 
     let authId;
- 
+
     if (userType === "User") {
       const userDb = await User.findById(user);
       if (!userDb) {
@@ -79,7 +82,14 @@ const sendNotification = async ({ title, message, user, userType, getId, types }
         return;
       }
       authId = partnerDb.authId;
-    } else {
+    } else if(userType === "Admin") {
+      const partnerDb = await Admin.findById(user);
+      if (!partnerDb) {
+        console.error(`Partner with ID ${user} not found`);
+        return;
+      }
+      authId = partnerDb.authId; 
+    }else{
       console.error(`Invalid userType: ${userType}`);
       return;
     }
@@ -94,11 +104,9 @@ const sendNotification = async ({ title, message, user, userType, getId, types }
     if (!playerIds || playerIds.length === 0) {
       console.error(`No player IDs found for auth ID ${authId}`);
       return;
-    } 
-    
-
+    }
     // Send notification via OneSignal
-    await sendNotificationOnesignal(playerIds, title, message, types, getId);
+    await sendNotificationOnesignal(playerIds, title, message, types, getId, notice);
 
     return notification;
   } catch (error) {
@@ -114,35 +122,52 @@ const sendNotification = async ({ title, message, user, userType, getId, types }
     });
   }
 };
-
 const emitNotification = (receiver, notification) => {
   if (global.io) {
     const socketIo = global.io;
-    socketIo.to(receiver.toString()).emit(ENUM_SOCKET_EVENT.NEW_NOTIFICATION, notification); 
+    socketIo.to(receiver.toString()).emit(ENUM_SOCKET_EVENT.NEW_NOTIFICATION, notification);
   } else {
     console.error('Socket.IO is not initialized');
   }
 };
 
 const getUserNotification = async (req) => {
-    const { userId, role } = req.user;
-    let notifications;
-    if(role === ENUM_USER_ROLE.USER){
-      notifications = await Notification.find({ user:userId });
-    }else if(role === ENUM_USER_ROLE.PARTNER){
-      notifications = await Notification.find({ user: userId });
-    }else{
-      console.error('Invalid role provided');
-      throw new ApiError(400,'Invalid role provided');
-    }
-    return notifications;
+  const { userId, role } = req.user;
+  const query = req.query;
+  let notifications;
+  if (role === ENUM_USER_ROLE.USER) {
+    notifications = new QueryBuilder(Notification.find({ user: userId }), query)
+      .sort()
+      .paginate()
+  } else if (role === ENUM_USER_ROLE.PARTNER) {
+    notifications = new QueryBuilder(Notification.find({ user: userId }), query)
+      .sort()
+      .paginate()
+  } else {
+    console.error('Invalid role provided');
+    throw new ApiError(400, 'Invalid role provided');
+  }
+
+  const result = await notifications.modelQuery;
+  const meta = await notifications.countTotal();
+
+  return { result, meta };
 };
 
-const NotificationService = { 
-   handleNotification,
-   sendNotification, 
-   emitNotification, 
-   getUserNotification
-  };
-  
-module.exports = {NotificationService}
+const getNoticeNotification = async (req, res) => { 
+  const { id } = req.params;
+
+  const notice = await Notification.findById(id);
+
+  return notice
+}
+
+const NotificationService = {
+  handleNotification,
+  sendNotification,
+  emitNotification,
+  getUserNotification,
+  getNoticeNotification
+};
+
+module.exports = { NotificationService}

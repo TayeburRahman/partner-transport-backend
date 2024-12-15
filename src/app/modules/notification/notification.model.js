@@ -31,6 +31,7 @@ const notificationSchema = new Schema(
     },
     notice:{
       type: String,
+      default: null,
     },
     types: {
       type: String,

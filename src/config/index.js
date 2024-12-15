@@ -62,7 +62,7 @@ const config = {
   onesignal:{
     app_id: process.env.ONESIGNAL_APP_ID,
     api_key: process.env.ONESIGNAL_API_KEY,
-    user_auth_key: process.env.ONESIGNAL_USER_AUTH_KEY,
+    onesignal_url: process.env.ONESIGNAL_URL,
     headings: {
       en: "New Notification"
     }

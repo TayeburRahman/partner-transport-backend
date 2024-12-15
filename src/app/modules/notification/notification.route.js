@@ -6,6 +6,13 @@ const checkAdminAccess = require("../../middlewares/checkAdminAccess");
 
 const router = express.Router();
 
+
+router.get(
+  "/get-notice/:id",
+  auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
+  notificationController.getNoticeNotification
+);
+
 router.get(
   "/get-user-partner",
   auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),

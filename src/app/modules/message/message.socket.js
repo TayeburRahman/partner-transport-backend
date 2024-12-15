@@ -1,4 +1,6 @@
 const { ENUM_SOCKET_EVENT, ENUM_USER_ROLE } = require("../../../utils/enums");
+const Admin = require("../admin/admin.model");
+const { NotificationService } = require("../notification/notification.service");
 const Partner = require("../partner/partner.model");
 // const Partner = require("../Partner/Partner.model");
 const User = require("../user/user.model");
@@ -44,10 +46,22 @@ const handleMessageData = async (receiverId, role, socket, io) => {
     },
     );
 
+    const getUserRoleType = async (senderId) => {
+        const models = [User, Partner, Admin];
+        for (const model of models) {
+            const user = await model.findOne({ _id: senderId });
+            if (user) {
+                return model.modelName;
+            }
+        }
+        return null;
+    };
+
+
     // Create a new chat message and send it to both participants.
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_NEW, async (data) => {
-        const { senderId, text } = data;
-        // console.log("=================", senderId, text );
+        const { senderId, text, userType } = data;
+
         if (!senderId || !text) {
             socket.emit('error', {
                 message: 'SenderId Or text not found!',
@@ -67,6 +81,32 @@ const handleMessageData = async (receiverId, role, socket, io) => {
             conversation = await Conversation.create({
                 participants: [senderId, receiverId],
             });
+
+            let userRoleType = null;
+
+            const user = await User.findOne({ _id: senderId });
+            if (user) {
+                userRoleType = "User";
+            } else {
+                const partner = await Partner.findOne({ _id: senderId });
+                if (partner) {
+                    userRoleType = "Partner";
+                } else {
+                    const admin = await Admin.findOne({ _id: senderId });
+                    if (admin) {
+                        userRoleType = "Admin";
+                    }
+                }
+            }
+            await NotificationService.sendNotification({
+                title: `New Message from ${userRoleType || "Unknown"}`,
+                message: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
+                user: senderId,
+                userType: userRoleType,
+                getId: receiverId,
+                types: 'new-message'
+            })
+
         }
 
         const newMessage = new Message({
@@ -75,7 +115,6 @@ const handleMessageData = async (receiverId, role, socket, io) => {
             text,
             conversationId: conversation._id,
         });
-
         conversation.messages.push(newMessage._id);
         await Promise.all([conversation.save(), newMessage.save()]);
 
@@ -97,8 +136,8 @@ const handleMessageData = async (receiverId, role, socket, io) => {
                     limit: 1,
                 },
             });
-             // const update = await Conversation.update({ })
-             
+            // const update = await Conversation.update({ })
+
             const updatedConversations = conversations.map(convo => {
                 const filteredParticipants = convo.participants.filter(
                     participantId => participantId.toString() !== receiverId

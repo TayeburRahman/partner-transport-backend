@@ -37,9 +37,8 @@ const getUserPostHistory = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Update post successfully",
-    meta: result.meta,
-    data: result.data,
+    message: "Update post successfully", 
+    data: result,
   });
 });
 

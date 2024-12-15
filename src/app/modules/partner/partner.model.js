@@ -31,7 +31,7 @@ const PartnerSchema = new Schema(
     email: {
       type: String,
       required: true,
-    }, 
+    },
     city: {
       type: String,
       default: null,
@@ -47,7 +47,7 @@ const PartnerSchema = new Schema(
     neighborhood: {
       type: String,
       default: null,
-    }, 
+    },
     phone_number: {
       type: String,
       default: null,
@@ -92,17 +92,41 @@ const PartnerSchema = new Schema(
       type: String,
       default: null,
     },
-    bankAccountNumber: {
+    bank_holder_name: {
       type: String,
+      default: null,
     },
-    bankName: {
+    bank_holder_type: {
       type: String,
+      default: null,
     },
-    routingNumber: {
+    bank_account_number: {
       type: String,
+      default: null,
     },
-    accountHolderName: {
+    routing_number: {
       type: String,
+      default: null,
+    },
+    date_of_birth: {
+      type: Date,
+      default: null,
+    },
+    address_line: {
+      type: String,
+      default: null,
+    },
+    address_city: {
+      type: String,
+      default: null,
+    },
+    address_state: {
+      type: String,
+      default: null,
+    },
+    address_postal_code: {
+      type: String,
+      default: null,
     },
     paypalEmail: {
       type: String,
@@ -116,7 +140,7 @@ const PartnerSchema = new Schema(
       enum: ["pending", "approved", "declined"],
       default: "pending",
     },
-    wallet:{
+    wallet: {
       type: Number,
       default: 0,
     },

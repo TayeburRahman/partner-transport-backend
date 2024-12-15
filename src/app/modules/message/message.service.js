@@ -19,11 +19,7 @@ const getMessages = async (query) => {
     },
   });
 
-  if (!conversation) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Conversation not found");
-  }
-
-  return { count: conversation.messages.length, conversation };
+  return { count: conversation?.messages?.length, conversation};
 };
 
 const conversationUser = async (payload) => {
@@ -66,7 +62,7 @@ const conversationUser = async (payload) => {
     [...users, ...partner].forEach((participant) => {
       participantMap[participant._id.toString()] = {
         ...participant.toObject(),
-        type: participant instanceof User ? "User" : "Driver",
+        type: participant instanceof User ? "User" : "Partner",
       };
     });
 

@@ -16,6 +16,19 @@ router
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),  
     SupportController.repliedTicket
   )
+  .get(
+    "/get-ticket",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
+    SupportController.getTicketDb
+  )
+  .get(
+    "/get-ticket-details/:id",
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER), 
+    SupportController.getTicketDetails
+  )
+
+
+   
    
 
 

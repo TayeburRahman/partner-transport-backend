@@ -1,16 +1,16 @@
-const mongoose = require("mongoose");
 const { model } = require("mongoose");
+const mongoose = require("mongoose");
 
 const ticketSchema = new mongoose.Schema(
-  { 
-    userType:{
+  {
+    userType: {
       type: String,
-      enum: ['User', 'Partner'],
+      enum: ["User", "Partner"],  
       required: true,
     },
-    user:{
+    user: {
       type: mongoose.Schema.Types.ObjectId,
-      refPath: 'userType',
+      refPath: "userType", 
       required: true,
     },
     description: {
@@ -25,43 +25,25 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    replied:{
+    replied: {
       type: String,
+      default: null,  
     },
     status: {
       type: String,
-      enum: ['Pending', 'Replied'],
-      default: 'Pending',
-    }
+      enum: ["Pending", "Replied"],  
+      default: "Pending", 
+    },
   },
   {
-    timestamps: true,
+    timestamps: true, 
   }
 );
 
-// const privacySchema = new mongoose.Schema(
-//   {
-//     description: {
-//       type: String,
-//       required: true,
-//     },
-//   },
-//   {
-//     timestamps: true,
-//   }
-// );
-
-// const contactSchema = new mongoose.Schema(
-//   {
-//     contact: {
-//       type: String,
-//       required: true,
-//     },
-//   } 
-// );
+// Add indexes to improve query performance
+ticketSchema.index({ userType: 1, user: 1 });
+ticketSchema.index({ status: 1 });
 
 module.exports = {
-  Tickets: model("Ticket", ticketSchema),
-  // PrivacyPolicy: model("PrivacyPolicy", privacySchema),
-  // TermsConditions: model("TermsConditions", termsAndConditionsSchema),
-};
+  Tickets: model("Ticket", ticketSchema), 
+}
