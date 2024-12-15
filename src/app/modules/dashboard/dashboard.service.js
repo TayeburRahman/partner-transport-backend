@@ -920,19 +920,24 @@ const sendNoticePartner = async (req, res) => {
 
   return  { massage: "Notification(s) sent successfully." };
    
-};
-// =Transactions History=================
-const getTransactionsHistory = async (req) => {
-  const query = req.query; 
+}; 
 
-  console.log("Getting", query)
+const getTransactionsHistory = async (req) => {
+  const query = req.query;  
   try {  
     const servicesQuery = new QueryBuilder(Transaction.find()
     .populate("receiveUser", "name email profile_image") 
     .populate("payUser", "name email profile_image") 
-    .populate("serviceId", "service category price")
+    .populate({
+      path: "serviceId", 
+      select: "service category price",
+      populate: {
+        path: "category",
+        select: "_id category",
+      },
+    })
     , query) 
-    .search(["payUser.name", "receiveUser.name"])
+    .search(["paymentStatus", "transactionId"])  
     .filter()
     .sort()
     .paginate()
@@ -958,23 +963,31 @@ const getTransactionsDetails = async (req) => {
     if (!id) {
       throw new ApiError(400, "Transaction ID is required.");
     }
+
+    console.log("Fetching transaction details for ID:", id);
  
     const result = await Transaction.findById(id)
-      .populate("userId")  
-      .populate("partnerId") 
-      .populate("serviceId"); 
-
+      .populate("receiveUser", "name email profile_image")  
+      .populate("payUser", "name email profile_image")  
+      .populate({
+        path: "serviceId",
+        select: "service category price",
+        populate: {
+          path: "category",
+          select: "_id category",
+        },
+      }); 
     if (!result) {
       throw new ApiError(404, "Transaction not found.");
     }
 
     return result;
   } catch (error) {
-    console.error("Error fetching transaction details:", error);
+    console.error("Error fetching transaction details:", error.message || error);
     throw new ApiError(500, "Internal Server Error");
   }
 };
- 
+
  
 const DashboardService = {
   getAllUsers,

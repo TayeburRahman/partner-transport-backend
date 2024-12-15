@@ -66,6 +66,10 @@ const transitionsHistory = async (req, res) => {
       select: "name email profile_image phone_number"
     })
     .populate({
+      path: "category",
+      select: "_id category",
+    })
+    .populate({
       path: "payUser",
       select: "name email profile_image phone_number"
     }), query)

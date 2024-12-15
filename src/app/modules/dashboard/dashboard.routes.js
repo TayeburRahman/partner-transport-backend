@@ -204,12 +204,17 @@ router
     // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_FILE_CLAIM_MANAGE),
     BidController.updateStatusFileClaim
   )
-
   .patch(
     '/penalty',
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     BidController.applyPenaltyPercent
   )
+  .get(
+    '/get-file-claim',
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    BidController.getAllFileClaims
+  )
+ 
  
 
   // variable ========================

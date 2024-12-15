@@ -122,6 +122,17 @@ const statusServicesDetails = catchAsync(async (req, res) => {
   });
 });
 
+const getAllFileClaims = catchAsync(async (req, res) => {
+  const result = await BidService.getAllFileClaims(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Get successfully!",
+    data: result,
+  });
+});
+ 
+
 const BidController = {
   partnerBidPost,
   partnerAllBids,
@@ -135,6 +146,7 @@ const BidController = {
   updateStatusFileClaim,
   applyPenaltyPercent,
   statusServicesDetails,
+  getAllFileClaims,
 };
 
 module.exports = { BidController };

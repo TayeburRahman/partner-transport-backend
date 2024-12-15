@@ -8,6 +8,7 @@ const { Review, Bids, FileClaim } = require("./bid.model");
 const { Transaction } = require("../payment/payment.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
+const QueryBuilder = require("../../../builder/queryBuilder");
 // const Bids = require("./bid.model");
 
 const partnerBidPost = async (req) => {
@@ -362,6 +363,29 @@ const updateStatusFileClaim = async (req, res) => {
   return result;
 };
 
+const getAllFileClaims = async (req, res) => {
+  const query = req.query;
+ 
+    const resultQuery = new QueryBuilder(FileClaim.find()
+    .populate('serviceId')
+    .populate('user')
+    , query)
+      .search(["serviceId", "status"])   
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+ 
+    const result = await resultQuery.modelQuery;
+    const meta = await resultQuery.countTotal();
+ 
+    return  {
+      data: result,
+      meta,
+    }; 
+};
+
+
 //cut-amount---
 const applyPenaltyPercent = async (req, res) => {
   const { serviceId, amountPercent, reason } = req.query;
@@ -463,7 +487,8 @@ const BidService = {
   createFileClaim,
   updateStatusFileClaim,
   applyPenaltyPercent,
-  statusServicesDetails
+  statusServicesDetails,
+  getAllFileClaims
 };
 
 module.exports = { BidService };

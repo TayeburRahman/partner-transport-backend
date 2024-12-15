@@ -9,7 +9,7 @@ class QueryBuilder {
     if (searchTerm) {
       this.modelQuery = this.modelQuery
         .find({
-          $or: searchableFields.map((field) => ({
+          $or: searchableFields.map((field) => ({ 
             [field]: { $regex: searchTerm, $options: "i" },
           })),
         })
