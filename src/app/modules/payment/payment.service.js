@@ -71,7 +71,8 @@ const createCheckoutSessionStripe = async (req) => {
         payUser: userId,
         payUserType: payUserRole,
         receiveUser: receiveUser.toHexString(),
-        receiveUserType: receiveUserRole
+        receiveUserType: receiveUserRole,
+        serviceId: serviceId,
       },
       line_items: [
         {
@@ -98,6 +99,8 @@ const createCheckoutSessionStripe = async (req) => {
 const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
   const sessionId = req.query.session_id;
 
+  console.log('stripeCheckAndUpdateStatusSuccess', sessionId)
+
   if (!sessionId) {
     return { status: "failed", message: "Missing session ID in the request." };
   }
@@ -113,7 +116,8 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       return { status: "failed", message: "Payment not approved." };
     }
 
-    const { receiveUser, payUser, payUserType, receiveUserType, serviceId } = session.metadata;
+    const { receiveUser, payUser, payUserType, receiveUserType, serviceId} = session.metadata;
+    // console.log("=====",receiveUser, payUser, payUserType, receiveUserType, serviceId)
 
     const service = await Services.findById(serviceId);
     if (!service) {
@@ -185,7 +189,7 @@ const createCheckoutSessionPaypal = async (req, res) => {
       payUserRole = 'Admin'
     }
 
-    const service = await Services.findById(serviceId).populate('user').populate('confirmedPartner')
+    const service = await Services.findById(serviceId)
     if (!service) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service ID.');
     }
@@ -261,6 +265,8 @@ const createCheckoutSessionPaypal = async (req, res) => {
 
 const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
   const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query;
+
+  console.log("===", paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType )
 
   if (!paymentId || !PayerID || !serviceId || !payUser || !receiveUser) {
     return { status: "failed", message: "Missing required query parameters." };

@@ -172,7 +172,7 @@ const updateSellServicesStatusPartner = catchAsync(async (req, res) => {
   })
 }) 
 
-updateSellServicesStatusUser
+ 
 
  
 

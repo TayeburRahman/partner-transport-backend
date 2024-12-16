@@ -63,56 +63,124 @@ const eventsCreationRate = async (query) => {
       serviceCounts
     };
   };
+ 
+   
 
+const getMostCreatedUsers = async (req) => {
+  try {
+    const {searchQuery = '', page = 1, pageSize = 10} = req.query 
+    const sanitizedSearchQuery = searchQuery ? String(searchQuery) : '';
+ 
+    const mostCreatedUsers = await Services.aggregate([
+      { 
+        $lookup: {
+          from: "users", // User collection name
+          localField: "user", // Field in Services collection (user ID)
+          foreignField: "_id", // Field in User collection (user ID)
+          as: "userDetails", // Output array field containing user details
+        },
+      },
+      {
+        // Unwind the userDetails array to work with single user details
+        $unwind: "$userDetails",
+      },
+      {
+        // Match users by name using regex if searchQuery is not empty
+        $match: sanitizedSearchQuery
+          ? {
+              "userDetails.name": { $regex: sanitizedSearchQuery, $options: "i" },
+            }
+          : {}, // Empty object if no search query is provided, so it returns all users
+      },
+      {
+        // Group by user and count the number of services each user has created
+        $group: {
+          _id: "$user", // Group by user ID
+          serviceCount: { $sum: 1 }, // Count the number of services created by each user
+        },
+      },
+      {
+        // Sort by the number of services created in descending order
+        $sort: { serviceCount: -1 },
+      },
+      {
+        // Skip the results based on the current page and pageSize
+        $skip: (page - 1) * pageSize, // Skip the results for previous pages
+      },
+      {
+        // Limit the result to the current page's size
+        $limit: pageSize, // Limit the number of users per page
+      },
+      {
+        // Lookup again to fetch user details (name, email, etc.)
+        $lookup: {
+          from: "users", // User collection name
+          localField: "_id", // User ID from previous group stage
+          foreignField: "_id", // User ID from User collection
+          as: "userDetails", // Output array field containing user details
+        },
+      },
+      {
+        // Unwind userDetails to flatten the structure
+        $unwind: "$userDetails",
+      },
+      {
+        // Project the desired fields: user name, email, and service count
+        $project: {
+            name: "$userDetails.name",
+            email: "$userDetails.email",
+            image: "$userDetails.image",
+          serviceCount: 1,
+        },
+      },
+    ]);
 
-  const getMostCreatedUsers = async (limit = 10) => {
-    try {
-      // Aggregation pipeline to count services per user
-      const mostCreatedUsers = await Services.aggregate([
-        {
-          // Group by user and count the number of services
-          $group: {
-            _id: "$user", // Group by user ID
-            serviceCount: { $sum: 1 }, // Count the number of services created by each user
-          },
+    // Get the total count of users that match the search query (for pagination)
+    const totalUsersCount = await Services.aggregate([
+      {
+        // Lookup to get user details based on the user ID
+        $lookup: {
+          from: "users", // User collection name
+          localField: "user", // Field in Services collection (user ID)
+          foreignField: "_id", // Field in User collection (user ID)
+          as: "userDetails", // Output array field containing user details
         },
-        {
-          // Sort users by service count in descending order
-          $sort: { serviceCount: -1 },
+      },
+      {
+        // Unwind the userDetails array to work with single user details
+        $unwind: "$userDetails",
+      },
+      {
+        // Match users by name using regex if searchQuery is not empty
+        $match: sanitizedSearchQuery
+          ? {
+              "userDetails.name": { $regex: sanitizedSearchQuery, $options: "i" },
+            }
+          : {}, // Empty object if no search query is provided, so it returns all users
+      },
+      {
+        // Group by user and count the number of services each user has created
+        $group: {
+          _id: "$user", // Group by user ID
         },
-        {
-          // Limit the result to the top `limit` users
-          $limit: limit,
-        },
-        {
-          // Populate user details from the User collection
-          $lookup: {
-            from: "users", // Collection name of the User model
-            localField: "_id", // Field from the Services collection (user ID)
-            foreignField: "_id", // Field in the User collection (user ID)
-            as: "userDetails", // Output array field containing user details
-          },
-        },
-        {
-          // Unwind the userDetails array to get the user as a single object
-          $unwind: "$userDetails",
-        },
-        {
-          // Project the desired fields (user details and service count)
-          $project: {
-            user: "$userDetails.name", // User's name
-            email: "$userDetails.email", // User's email
-            serviceCount: 1, // Service count for the user
-          },
-        },
-      ]);
-  
-      return mostCreatedUsers;
-    } catch (error) {
-      console.error("Error fetching most created users:", error);
-      throw new ApiError(400, "Failed to fetch most created users:" + error.message);
-    }
-  };
+      },
+    ]);
+
+    const totalCount = totalUsersCount.length;
+    const totalPages = Math.ceil(totalCount / pageSize); // Calculate total pages
+
+    return {
+      totalUsers: totalCount,
+      totalPages: totalPages,
+      currentPage: page,
+      users: mostCreatedUsers,
+    };
+  } catch (error) {
+    console.error("Error fetching most created users:", error);
+    throw error;
+  }
+}; 
+
   
   
 

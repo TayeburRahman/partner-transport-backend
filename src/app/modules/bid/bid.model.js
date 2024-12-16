@@ -69,7 +69,7 @@ const fileClaimSchema = new Schema(
     },
     user:{
       type: mongoose.Schema.ObjectId,
-      refPath: "againstType",
+      refPath: "userType",
       required: true, 
     },
     userType:{

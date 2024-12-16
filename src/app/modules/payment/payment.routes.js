@@ -66,10 +66,10 @@ router
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     PaymentController.withdrawSuccess
   )
-  .get("/withdraw-user-details",
-    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    PaymentController.userDetailsWithdraw
-  )
+  // .get("/withdraw-user-details",
+  //   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  //   PaymentController.userDetailsWithdraw
+  // )
   .get("/withdraw",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     PaymentController.getWithdraw

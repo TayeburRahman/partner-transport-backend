@@ -64,11 +64,7 @@ const transitionsHistory = async (req, res) => {
     .populate({
       path: "receiveUser",
       select: "name email profile_image phone_number"
-    })
-    .populate({
-      path: "category",
-      select: "_id category",
-    })
+    }) 
     .populate({
       path: "payUser",
       select: "name email profile_image phone_number"
@@ -126,8 +122,10 @@ const withdrawRequest = async (req, res) => {
 };
 
 const withdrawSuccess = async (req, res) => {
-  const { bankTransferId, withdrawId } = req.query;
+  const { bankTransferId, withdrawId } = req.body;
   const { userId, role } = req.user;
+
+  console.log("With", bankTransferId, withdrawId )
 
   if (!bankTransferId || !withdrawId) {
     throw new ApiError(400, "BankTransfer ID and Withdraw ID are required.");
@@ -186,40 +184,39 @@ const withdrawSuccess = async (req, res) => {
   return { message: "Withdraw request processed successfully." };
 };
 
-const userDetailsWithdraw = async (req) => {
-  const { withdrawId } = req.query;
+// const userDetailsWithdraw = async (req) => {
+//   const { withdrawId } = req.query;
 
-  if (!withdrawId) {
-    throw new ApiError(400, "Withdraw ID is required.");
-  }
+//   if (!withdrawId) {
+//     throw new ApiError(400, "Withdraw ID is required.");
+//   }
  
-  const withdraw = await Withdraw.findById(withdrawId);
+//   const withdraw = await Withdraw.findById(withdrawId);
 
-  if (!withdraw) {
-    throw new ApiError(404, "Withdraw request not found.");
-  }
+//   if (!withdraw) {
+//     throw new ApiError(404, "Withdraw request not found.");
+//   }
  
-  let user;
-  if (withdraw.userType === "Partner") {
-    user = await Partner.findById(withdraw.user).populate('authId');  
-  } else {
-    user = await User.findById(withdraw.user).populate('authId');   
-  }
+//   let user;
+//   if (withdraw.userType === "Partner") {
+//     user = await Partner.findById(withdraw.user).populate('authId');  
+//   } else {
+//     user = await User.findById(withdraw.user).populate('authId');   
+//   }
 
-  if (!user) {
-    throw new ApiError(404, "User not found.");
-  }
+//   if (!user) {
+//     throw new ApiError(404, "User not found.");
+//   }
  
-  return user;
-};
+//   return user;
+// };
 
 
 const getWithdraw = async (req) => {
   const query = req.query 
   const withdraw = new QueryBuilder( Withdraw.find()
   .populate({
-    path: "user",
-    select: "name email profile_image phone_number"
+    path: "user", 
   }), query)
     .search(['name'])
     .filter()
@@ -238,7 +235,7 @@ const TransitionsService = {
   paymentHistory,
   withdrawRequest,
   withdrawSuccess,
-  userDetailsWithdraw,
+  // userDetailsWithdraw,
   getWithdraw
 }
 

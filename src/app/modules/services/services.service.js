@@ -541,6 +541,10 @@ const getUserServicesWithinOneHour = async (req) => {
     .populate({
       path: "user",
       select: "name email profile_image phone_number rating",
+    })
+    .populate({
+      path: "category",
+      select: "_id category",
     });
 
   // console.log("Fetched services:", services);
@@ -725,7 +729,7 @@ const updateServicesStatusUser = async (req) => {
         message: `You have received a payment of ${transaction.amount} for the service.`,
         user: receivedUser._id,
         userType: transaction.receiveUserType,
-        types: "ongoing",
+        types: "complete-status",
         getId: serviceId,
       });
     }
@@ -900,14 +904,14 @@ const updateSellServicesStatusPartner = async (req) => {
       await receivedUser.save({ session });
 
       transaction.isFinish = true;
-      await transaction.save({ session });
-
+      await transaction.save({ session }); 
+      
       await NotificationService.sendNotification({
         title: "Payment Received",
         message: `You have received a payment of ${transaction.amount} for the service.`,
         user: receivedUser._id,
         userType: transaction.receiveUserType,
-        types: "service",
+        types: "complete-status",
         getId: serviceId,
       });
     }

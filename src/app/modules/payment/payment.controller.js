@@ -140,15 +140,15 @@ const withdrawSuccess = catchAsync(async (req, res) => {
  });
 })
 
-const userDetailsWithdraw = catchAsync(async (req, res) => {
-  const result = await TransitionsService.userDetailsWithdraw(req); 
-  sendResponse(res, {
-   statusCode: 200,
-   success: true,
-   message: "get successfully.",
-   data: result,
- });
-})
+// const userDetailsWithdraw = catchAsync(async (req, res) => {
+//   const result = await TransitionsService.userDetailsWithdraw(req); 
+//   sendResponse(res, {
+//    statusCode: 200,
+//    success: true,
+//    message: "get successfully.",
+//    data: result,
+//  });
+// })
 
 const getWithdraw = catchAsync(async (req, res) => {
   const result = await TransitionsService.getWithdraw(req); 
@@ -178,7 +178,7 @@ const getWithdraw = catchAsync(async (req, res) => {
     paymentHistory,
     withdrawRequest,
     withdrawSuccess,
-    userDetailsWithdraw,
+    // userDetailsWithdraw,
     getWithdraw
      
   };

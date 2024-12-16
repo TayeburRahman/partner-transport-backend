@@ -222,9 +222,9 @@ const orderDetailsPageFileClaim = async (req) => {
     })
     .populate({
       path: 'category',
-      select: '_id name'
+      select: '_id category'
     })
-    .select('_id category numberOfItems scheduleTime scheduleTime scheduleDate loadingAddress deadlineTime loadingLocation paymentStatus deadlineDate unloadingAddress unloadingLocation updatedAt image winBid deadlineTime')
+    // .select('_id category numberOfItems scheduleTime scheduleTime scheduleDate loadingAddress deadlineTime loadingLocation paymentStatus deadlineDate unloadingAddress unloadingLocation updatedAt image winBid deadlineTime')
   const payment = await Transaction.findOne({ serviceId }).select('amount paymentMethod',)
   return { service, payment }
 }
@@ -318,7 +318,7 @@ const createFileClaim = async (req, res) => {
   }
 
   const result = await FileClaim.create({
-    fileClaimImage: images ? images.path : '',
+    fileClaimImage: images ? images : '',
     user: userId,
     serviceId,
     description,
@@ -364,26 +364,45 @@ const updateStatusFileClaim = async (req, res) => {
 };
 
 const getAllFileClaims = async (req, res) => {
-  const query = req.query;
- 
-    const resultQuery = new QueryBuilder(FileClaim.find()
-    .populate('serviceId')
-    .populate('user')
-    , query)
-      .search(["serviceId", "status"])   
+  try {
+    const query = req.query;
+
+    const resultQuery = new QueryBuilder(
+      FileClaim.find()
+        .populate({
+          path: 'serviceId',
+          populate: [
+            { path: 'user', select: 'name email profile_image' },
+            { path: 'confirmedPartner', select: 'name email profile_image' },
+          ],
+        })
+        .populate({
+          path: 'user',
+          select: 'name email profile_image',
+        }),
+      query
+    )
+      .search(["serviceId", "status"])
       .filter()
       .sort()
       .paginate()
       .fields();
- 
+
     const result = await resultQuery.modelQuery;
     const meta = await resultQuery.countTotal();
- 
+
     return  {
+      success: true,
       data: result,
       meta,
-    }; 
+    };
+  } catch (error) {
+    console.error("Error fetching file claims:", error.message);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "An error occurred while fetching file claims.");
+  }
 };
+
+
 
 
 //cut-amount---
@@ -470,6 +489,12 @@ const statusServicesDetails = async (req, res) => {
       path: 'confirmedPartner',
       select: 'name email profile_image rating'
     })
+    .populate({
+      path: 'category',
+      select: '_id category'
+    })
+
+
   return service;
 };
 
