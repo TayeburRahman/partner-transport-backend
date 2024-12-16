@@ -148,6 +148,32 @@ const filterUserByHistory = catchAsync(async (req, res) => {
     data: result,
   })
 }) 
+
+
+const updateSellServicesStatusUser = catchAsync(async (req, res) => {
+  const result = await ServicesService.updateSellServicesStatusUser(req);
+   
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Status update successfully!",
+    data: result,
+  })
+}) 
+
+const updateSellServicesStatusPartner = catchAsync(async (req, res) => {
+  const result = await ServicesService.updateSellServicesStatusPartner(req);
+   
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Status update successfully!",
+    data: result,
+  })
+}) 
+
+updateSellServicesStatusUser
+
  
 
 const ServicesController = {
@@ -165,6 +191,8 @@ const ServicesController = {
   updateServicesStatusPartner,
   filterUserByHistory,
   updateServicesStatusUser,
+  updateSellServicesStatusUser,
+  updateSellServicesStatusPartner
    
 };
 

@@ -88,6 +88,10 @@ const withdrawSchema = new Schema({
     enum: ['User', 'Partner'],
     required: true,
   },
+  name: {
+    type: String, 
+    required: true,
+  },
   request_amount: {
     type: Number,
     required: true,

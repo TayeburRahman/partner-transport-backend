@@ -13,6 +13,8 @@ const PaymentRoutes = require("../modules/payment/payment.routes");
 const VariableRoutes = require("../modules/variable/variable.route");
 const SupportRoutes = require("../modules/support/support.router");
 const NotificationRoutes = require("../modules/notification/notification.route");
+const LogsDashboardRoutes = require("../modules/logs-dashboard/logsdashboard.router");
+ 
 
 const moduleRoutes = [
   {
@@ -31,6 +33,10 @@ const moduleRoutes = [
     path: "/dashboard",
     route: DashboardRoutes,
   },
+  {
+    path: "/logs-dashboard",
+    route: LogsDashboardRoutes,
+  },  
   {
     path: "/partner",
     route: PartnerRoutes,

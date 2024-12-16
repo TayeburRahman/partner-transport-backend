@@ -126,57 +126,57 @@ const handleMessageData = async (receiverId, role, socket, io) => {
 
     // get all conversation list with last message
     socket.on(ENUM_SOCKET_EVENT.CONVERSION, async (data) => {
-        try {
-            const conversations = await Conversation.find({
-                participants: { $in: [receiverId] },
-            }).populate({
-                path: 'messages',
-                options: {
-                    sort: { createdAt: -1 },
-                    limit: 1,
-                },
-            });
-            // const update = await Conversation.update({ })
+        // try {
+        //     const conversations = await Conversation.find({
+        //         participants: { $in: [receiverId] },
+        //     }).populate({
+        //         path: 'messages',
+        //         options: {
+        //             sort: { createdAt: -1 },
+        //             limit: 1,
+        //         },
+        //     });
+        //     // const update = await Conversation.update({ })
 
-            const updatedConversations = conversations.map(convo => {
-                const filteredParticipants = convo.participants.filter(
-                    participantId => participantId.toString() !== receiverId
-                );
+        //     const updatedConversations = conversations.map(convo => {
+        //         const filteredParticipants = convo.participants.filter(
+        //             participantId => participantId.toString() !== receiverId
+        //         );
 
-                return {
-                    ...convo.toObject(),
-                    participants: filteredParticipants,
-                };
-            });
+        //         return {
+        //             ...convo.toObject(),
+        //             participants: filteredParticipants,
+        //         };
+        //     });
 
-            const participantIds = updatedConversations.flatMap(convo => convo.participants);
-            // Fetch users and partner concurrently
-            const [users, partner] = await Promise.all([
-                User.find({ _id: { $in: participantIds } }).select('_id name email profile_image'),
-                Partner.find({ _id: { $in: participantIds } }).select('_id name email profile_image'),
-            ]);
+        //     const participantIds = updatedConversations.flatMap(convo => convo.participants);
+        //     // Fetch users and partner concurrently
+        //     const [users, partner] = await Promise.all([
+        //         User.find({ _id: { $in: participantIds } }).select('_id name email profile_image'),
+        //         Partner.find({ _id: { $in: participantIds } }).select('_id name email profile_image'),
+        //     ]);
 
-            // Build a map of participants
-            const participantMap = {};
-            [...users, ...partner].forEach(participant => {
-                participantMap[participant._id.toString()] = {
-                    ...participant.toObject(),
-                    type: participant instanceof User ? 'User' : 'Partner',
-                };
-            });
+        //     // Build a map of participants
+        //     const participantMap = {};
+        //     [...users, ...partner].forEach(participant => {
+        //         participantMap[participant._id.toString()] = {
+        //             ...participant.toObject(),
+        //             type: participant instanceof User ? 'User' : 'Partner',
+        //         };
+        //     });
 
-            const conversationsWithParticipants = updatedConversations.map(convo => ({
-                ...convo,
-                participants: convo.participants.map(
-                    participantId => participantMap[participantId.toString()]
-                ),
-            }));
+        //     const conversationsWithParticipants = updatedConversations.map(convo => ({
+        //         ...convo,
+        //         participants: convo.participants.map(
+        //             participantId => participantMap[participantId.toString()]
+        //         ),
+        //     }));
 
 
-            await emitMassage(receiverId, conversationsWithParticipants, ENUM_SOCKET_EVENT.CONVERSION);
-        } catch (error) {
-            console.error('Error fetching conversations or emitting message:', error);
-        }
+        //     await emitMassage(receiverId, conversationsWithParticipants, ENUM_SOCKET_EVENT.CONVERSION);
+        // } catch (error) {
+        //     console.error('Error fetching conversations or emitting message:', error);
+        // }
     });
 
 }

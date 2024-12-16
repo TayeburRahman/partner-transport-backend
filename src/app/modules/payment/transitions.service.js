@@ -118,6 +118,7 @@ const withdrawRequest = async (req, res) => {
     request_amount: amount,
     user: userId,
     userType: userType,
+    name: user.name
   });
   await withdraw.save();
 
@@ -213,12 +214,32 @@ const userDetailsWithdraw = async (req) => {
 };
 
 
+const getWithdraw = async (req) => {
+  const query = req.query 
+  const withdraw = new QueryBuilder( Withdraw.find()
+  .populate({
+    path: "user",
+    select: "name email profile_image phone_number"
+  }), query)
+    .search(['name'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields()
+
+    
+  const result = await withdraw.modelQuery; 
+  const meta = await withdraw.countTotal();  
+  return { result: result, meta };
+}
+
 const TransitionsService = {
   transitionsHistory,
   paymentHistory,
   withdrawRequest,
   withdrawSuccess,
-  userDetailsWithdraw
+  userDetailsWithdraw,
+  getWithdraw
 }
 
 module.exports = TransitionsService;

@@ -71,6 +71,21 @@ router
     auth(ENUM_USER_ROLE.PARTNER),
     ServicesController.updateServicesStatusPartner
   )
+  .patch(
+    "/update-move-users",
+    auth(ENUM_USER_ROLE.USER),
+    ServicesController.updateSellServicesStatusUser
+  )
+  .patch(
+    "/update-move-partner",
+    auth(ENUM_USER_ROLE.PARTNER),
+    ServicesController.updateSellServicesStatusPartner
+  )
+   
+
+
+
+   
   .get(
     "/user/within_one_hour",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),

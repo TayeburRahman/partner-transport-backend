@@ -13,7 +13,7 @@ const getMessages = catchAsync(async (req, res) => {
 });
 
 const conversationUser = catchAsync(async (req, res) => {
-  const result = await MessageService.conversationUser(req);
+  const result = await MessageService.conversationUser(req.query);
   sendResponse(res, {
     statusCode: 200,
     success: true,

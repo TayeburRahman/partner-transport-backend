@@ -4,6 +4,7 @@ const Conversation = require("./conversation.model");
 const ApiError = require("../../../errors/ApiError");
 const User = require("../user/user.model");
 const Partner = require("../partner/partner.model");
+const Admin = require("../admin/admin.model");
 
 const getMessages = async (query) => {
   const { senderId, receiverId, page = 1, limit = 20 } = query;
@@ -24,60 +25,64 @@ const getMessages = async (query) => {
 
 const conversationUser = async (payload) => {
   try {
-    const conversations = await Conversation.find({}).populate({
-      path: "messages",
-      options: {
-        // sort: { createdAt: -1 },
-        // limit: 3,
-      },
-    });
-
-    const updatedConversations = conversations.map((convo) => {
-      const filteredParticipants = convo.participants.filter((participantId) =>
-        participantId.toString()
-      );
-
-      return {
-        ...convo.toObject(),
-        participants: filteredParticipants,
-      };
-    });
-
-    const participantIds = updatedConversations.flatMap(
-      (convo) => convo.participants
+    const { searchTerm } = payload;
+ 
+    const conversations = await Conversation.find({});
+ 
+    const participantIds = conversations.flatMap((convo) =>
+      convo.participants.map((participantId) => participantId.toString())
     );
-
-    const [users, partner] = await Promise.all([
+ 
+    const [users, partners, admins] = await Promise.all([
       User.find({ _id: { $in: participantIds } }).select(
         "_id name email profile_image"
       ),
       Partner.find({ _id: { $in: participantIds } }).select(
         "_id name email profile_image"
       ),
-    ]);
+      Admin.find({ _id: { $in: participantIds } }).select(
+        "_id name email profile_image"
+      ),
+    ]); 
 
-    // Build a map of participants
     const participantMap = {};
 
-    [...users, ...partner].forEach((participant) => {
+    [...users, ...partners, ...admins].forEach((participant) => {
       participantMap[participant._id.toString()] = {
         ...participant.toObject(),
-        type: participant instanceof User ? "User" : "Partner",
+        type:
+          participant instanceof User
+            ? "User"
+            : participant instanceof Partner
+            ? "Partner"
+            : "Admin",
       };
     });
-
-    const conversationsWithParticipants = updatedConversations.map((convo) => ({
-      ...convo,
+ 
+    const conversationsWithParticipants = conversations.map((convo) => ({
+      ...convo.toObject(),
+      messages: undefined, 
       participants: convo.participants.map(
         (participantId) => participantMap[participantId.toString()]
       ),
     }));
+ 
+    const filteredConversations = searchTerm
+      ? conversationsWithParticipants.filter((convo) =>
+          convo.participants.some((participant) =>
+            participant.name.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        )
+      : conversationsWithParticipants;
 
-    return conversationsWithParticipants;
+    return filteredConversations;
   } catch (error) {
-    console.error("Error fetching conversations or emitting message:", error);
+    console.error("Error fetching conversations:", error);
+    throw new Error("Failed to fetch conversations");
   }
 };
+
+
 
 const MessageService = {
   getMessages,

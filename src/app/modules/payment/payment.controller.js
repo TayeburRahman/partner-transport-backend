@@ -149,6 +149,16 @@ const userDetailsWithdraw = catchAsync(async (req, res) => {
    data: result,
  });
 })
+
+const getWithdraw = catchAsync(async (req, res) => {
+  const result = await TransitionsService.getWithdraw(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "get successfully.",
+   data: result,
+ });
+})
  
  
  
@@ -168,7 +178,8 @@ const userDetailsWithdraw = catchAsync(async (req, res) => {
     paymentHistory,
     withdrawRequest,
     withdrawSuccess,
-    userDetailsWithdraw
+    userDetailsWithdraw,
+    getWithdraw
      
   };
   

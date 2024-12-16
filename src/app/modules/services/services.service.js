@@ -169,8 +169,8 @@ const getDetails = async (req) => {
   const { serviceId } = req.params;
 
   const result = await Services.findById(serviceId)
-  .populate({
-      path: "category", 
+    .populate({
+      path: "category",
       select: "_id category",
     })
     .populate({
@@ -200,11 +200,11 @@ const getUserPostHistory = async (req) => {
   const query = req.query;
 
   const dataQuery = new QueryBuilder(Services.find({ user: userId })
-  .populate({
-    path: "category",
-    select: "_id category",
-  })
-  , query)
+    .populate({
+      path: "category",
+      select: "_id category",
+    })
+    , query)
     .search([])
     .filter()
     .sort()
@@ -216,7 +216,7 @@ const getUserPostHistory = async (req) => {
 
   const pisoVariable = await VariableCount.getPisoVariable();
 
-  return {piso: pisoVariable, result, meta };
+  return { piso: pisoVariable, result, meta };
 };
 
 const deletePostDB = async (req) => {
@@ -401,7 +401,7 @@ const searchNearby = async (req) => {
         mainService: 1,
         category: 1,
         image: 1,
-        createdAt: 1, 
+        createdAt: 1,
         scheduleDate: 1,
         scheduleTime: 1,
         deadlineDate: 1,
@@ -410,8 +410,8 @@ const searchNearby = async (req) => {
         loadingLocation: 1,
       },
     },
-  ]) 
- 
+  ])
+
 
   const populatedServices = await Services.populate(nearbyServices, 'category');
 
@@ -594,7 +594,7 @@ const filterUserByHistory = async (req) => {
   const meta = await filtered.countTotal();
 
   const pisoVariable = await VariableCount.getPisoVariable();
-  return { result, meta, piso: pisoVariable};
+  return { result, meta, piso: pisoVariable };
 };
 // Status===========================
 const updateServicesStatusPartner = async (req) => {
@@ -848,20 +848,17 @@ const updateSellServicesStatusUser = async (req) => {
 const updateSellServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;
 
-  // Validate input
   if (!serviceId || !status) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Service ID and status are required."
-    );
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required.");
   }
 
   const service = await Services.findById(serviceId);
   if (!service) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
+    throw new ApiError(httpStatus.NOT_FOUND, `Service with ID "${serviceId}" not found.`);
   }
+
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
+    throw new ApiError(httpStatus.BAD_REQUEST, `Invalid status "${status}" provided.`);
   }
 
   const STATUS_TRANSITIONS = {
@@ -891,10 +888,7 @@ const updateSellServicesStatusPartner = async (req) => {
   ).findById(transaction.receiveUser);
 
   if (!receivedUser) {
-    throw new ApiError(
-      httpStatus.NOT_FOUND,
-      "Recipient user not found for the transaction."
-    );
+    throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
   }
 
   const session = await mongoose.startSession();
@@ -902,7 +896,7 @@ const updateSellServicesStatusPartner = async (req) => {
 
   try {
     if (status === "delivery-confirmed") {
-      receivedUser.wallet += transaction.amount;
+      receivedUser.wallet = (receivedUser.wallet || 0) + transaction.amount;
       await receivedUser.save({ session });
 
       transaction.isFinish = true;
@@ -920,8 +914,8 @@ const updateSellServicesStatusPartner = async (req) => {
 
     const updatedServiceStatus =
       status === "arrived" ? "in-progress" :
-        status === "delivery-confirmed" ? "completed" :
-          service.status;
+      status === "delivery-confirmed" ? "completed" :
+      service.status;
 
     const result = await Services.findOneAndUpdate(
       { _id: serviceId },
@@ -942,11 +936,13 @@ const updateSellServicesStatusPartner = async (req) => {
     return result;
   } catch (error) {
     await session.abortTransaction();
+    console.error("Transaction failed:", error);
     throw error;
   } finally {
     session.endSession();
   }
 };
+
 
 
 // Status===========================

@@ -18,14 +18,10 @@ const socket = async (io) => {
     // Add the user to the online users set
     onlineUsers.add(currentUserId);
     io.emit("onlineUser", Array.from(onlineUsers));
-
     console.log("A user connected======", onlineUsers);
 
     // Handle massage events
     await handleMessageData(currentUserId, role, socket, io)
-
-    // Handle notifications events
-    // await handleNotification(currentUserId, role, socket, io);
 
     // Handle partner events
     await handlePartnerData(currentUserId, role, socket, io)
