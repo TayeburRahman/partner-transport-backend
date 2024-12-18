@@ -3,7 +3,7 @@ const sendResponse = require("../../../shared/sendResponse");
 const CategoryService = require("./category.service");
 
 const createCategory = catchAsync(async (req, res) => {
-  const result = await CategoryService.createCategory(req.body);
+  const result = await CategoryService.createCategory(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -13,7 +13,7 @@ const createCategory = catchAsync(async (req, res) => {
 });
 
 const updateCategory = catchAsync(async (req, res) => {
-  const result = await CategoryService.updateCategory(req.body);
+  const result = await CategoryService.updateCategory(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -23,7 +23,7 @@ const updateCategory = catchAsync(async (req, res) => {
 });
 
 const deleteCategory = catchAsync(async (req, res) => {
-  const result = await CategoryService.deleteCategory(req.query);
+  const result = await CategoryService.deleteCategory(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,

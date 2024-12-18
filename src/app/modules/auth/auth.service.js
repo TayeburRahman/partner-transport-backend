@@ -151,7 +151,7 @@ const activateAccount = async (payload) => {
   if (!existAuth.playerIds) {
     existAuth.playerIds = [];
   }
-   existAuth.playerIds.push(playerId);
+  existAuth.playerIds.push(playerId);
   await existAuth.save();
   // ------------
 
@@ -160,13 +160,14 @@ const activateAccount = async (payload) => {
       authId: existAuth._id,
       role: existAuth.role,
       userId: result._id,
+      emailAuth: result.email
     },
     config.jwt.secret,
     config.jwt.expires_in
   );
 
   const refreshToken = jwtHelpers.createToken(
-    { authId: existAuth._id, userId: result._id, role: existAuth.role },
+    { authId: existAuth._id, userId: result._id, role: existAuth.role, emailAuth: result.email },
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
   );
@@ -233,17 +234,17 @@ const loginAccount = async (payload) => {
     isAuth.playerIds.shift();
   }
   await isAuth.save();
-  
+
   // ------------
 
   const accessToken = jwtHelpers.createToken(
-    { authId, role, userId: userDetails._id },
+    { authId, role, userId: userDetails._id, emailAuth: userDetails.email },
     config.jwt.secret,
     config.jwt.expires_in
   );
 
   const refreshToken = jwtHelpers.createToken(
-    { authId, role, userId: userDetails._id },
+    { authId, role, userId: userDetails._id, emailAuth: userDetails.email },
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
   );
@@ -257,38 +258,50 @@ const loginAccount = async (payload) => {
 };
 
 const forgotPass = async (payload) => {
-  const user = await Auth.findOne(
-    { email: payload.email },
-    { _id: 1, role: 1, email: 1, name: 1 }
-  );
-
-  if (!user.email) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "User does not found!");
-  }
-
-  const verifyCode = createActivationToken().activationCode;
-  const verifyExpire = new Date(Date.now() + 15 * 60 * 1000);
-  user.verifyCode = verifyCode;
-  user.verifyExpire = verifyExpire;
-
-  await user.save();
-
-  const data = {
-    name: user.name,
-    verifyCode,
-    verifyExpire: Math.round((verifyExpire - Date.now()) / (60 * 1000)),
-  };
-
   try {
-    sendEmail({
-      email: payload.email,
-      subject: "Password reset code",
-      html: resetEmailTemplate(data),
-    });
+    if (!payload?.email) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Email is required!");
+    }
+
+    const user = await Auth.findOne(
+      { email: payload.email },
+      { _id: 1, role: 1, email: 1, name: 1 }
+    );
+
+    if (!user) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
+    }
+
+    const verifyCode = createActivationToken().activationCode;
+    const verifyExpire = new Date(Date.now() + 15 * 60 * 1000);
+
+    user.verifyCode = verifyCode;
+    user.verifyExpire = verifyExpire;
+
+    await user.save();
+
+    const data = {
+      name: user.name,
+      verifyCode,
+      verifyExpire: Math.round((verifyExpire - Date.now()) / (60 * 1000)),
+    };
+
+    try {
+      await sendEmail({
+        email: payload.email,
+        subject: "Password reset code",
+        html: resetEmailTemplate(data),
+      });
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to send email.");
+    }
   } catch (error) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+    console.error("Error in forgotPass:", error);
+    throw error;
   }
 };
+
 
 const checkIsValidForgetActivationCode = async (payload) => {
   const account = await Auth.findOne({ email: payload.email });
@@ -645,6 +658,7 @@ const generateTokens = (authUser, userDetails) => {
       authId: authUser._id,
       role: authUser.role,
       userId: userDetails._id,
+      emailAuth: authUser.email
     },
     config.jwt.secret,
     config.jwt.expires_in
@@ -655,6 +669,7 @@ const generateTokens = (authUser, userDetails) => {
       authId: authUser._id,
       role: authUser.role,
       userId: userDetails._id,
+      emailAuth: authUser.email
     },
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
@@ -667,7 +682,6 @@ const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-10);
 };
 // --------------
-
 
 // ---------------------
 

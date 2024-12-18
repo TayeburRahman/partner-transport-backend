@@ -41,9 +41,6 @@ const validateInputs = (data, image) => {
   };
 
   const validServiceForMain = validServices[data.mainService];
-  if (!validServiceForMain) {
-    throw new ApiError(400, 'Invalid mainService');
-  }
   if (!validServiceForMain.includes(data.service)) {
     throw new ApiError(400, `For ${data.mainService}, you must choose between ${validServiceForMain.join(' or ')}.`);
   }
@@ -74,19 +71,19 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-function formatTimeTo12hr(date) {
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
-  return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-}
+// function formatTimeTo12hr(date) {
+//   let hours = date.getHours();
+//   const minutes = String(date.getMinutes()).padStart(2, '0');
+//   const ampm = hours >= 12 ? 'PM' : 'AM';
+//   hours = hours % 12 || 12;
+//   return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+// }
 
-function formatTimeTo24hr(date) {
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${String(hours).padStart(2, '0')}:${minutes}`;
-}
+// function formatTimeTo24hr(date) {
+//   let hours = date.getHours();
+//   const minutes = String(date.getMinutes()).padStart(2, '0');
+//   return `${String(hours).padStart(2, '0')}:${minutes}`;
+// }
 
 const createPostDB = async (req) => {
   try {
@@ -95,6 +92,11 @@ const createPostDB = async (req) => {
     const data = req.body;
 
     const images = validateInputs(data, image);
+    
+    const distance = Number(data.distance);
+    const formattedDistance = parseFloat(distance?.toFixed(3));
+
+    console.log(`d`, data.weightKG, formattedDistance, data.loadFloorNo, data.unloadFloorNo)
 
     const serviceData = {
       user: userId,
@@ -129,10 +131,11 @@ const createPostDB = async (req) => {
         ],
       },
       price: data.price,
-      distance: data.distance,
+      distance: formattedDistance
     };
 
     const newService = new Services(serviceData);
+    console.log(newService)
     return await newService.save();
 
   } catch (error) {
@@ -358,6 +361,7 @@ const rescheduledPostUser = async (req) => {
 
   return result;
 };
+
 // =PARTNER=================================
 const searchNearby = async (req) => {
   const { longitude, latitude, service } = req.query;
@@ -420,6 +424,7 @@ const searchNearby = async (req) => {
     populatedServices,
   };
 };
+
 const rescheduledAction = async (req) => {
   const { serviceId, rescheduledStatus } = req.query;
 
@@ -428,13 +433,12 @@ const rescheduledAction = async (req) => {
       httpStatus.BAD_REQUEST,
       "serviceId and rescheduledStatus are required in the query!"
     );
-  }
+  } 
 
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found!");
-  }
-
+  } 
 
   // Validate rescheduledStatus
   if (!["accepted", "decline"].includes(rescheduledStatus)) {
@@ -512,9 +516,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const formattedStartTime = formatTimeTo12hrs(now);
 
   const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000);
-  const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
-
-  console.log("Fetched services:", formattedStartRange,)
+  const formattedStartRange = formatTimeTo12hrs(oneHourBefore); 
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
@@ -550,6 +552,7 @@ const getUserServicesWithinOneHour = async (req) => {
   // console.log("Fetched services:", services);
   return services;
 };
+
 function formatTimeTo12hrs(date) {
   let hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -557,6 +560,7 @@ function formatTimeTo12hrs(date) {
   hours = hours % 12 || 12;
   return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
 }
+
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
   const { userId } = req.user;
@@ -600,6 +604,7 @@ const filterUserByHistory = async (req) => {
   const pisoVariable = await VariableCount.getPisoVariable();
   return { result, meta, piso: pisoVariable };
 };
+
 // Status===========================
 const updateServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;
@@ -905,7 +910,7 @@ const updateSellServicesStatusPartner = async (req) => {
 
       transaction.isFinish = true;
       await transaction.save({ session }); 
-      
+
       await NotificationService.sendNotification({
         title: "Payment Received",
         message: `You have received a payment of ${transaction.amount} for the service.`,
@@ -946,8 +951,6 @@ const updateSellServicesStatusPartner = async (req) => {
     session.endSession();
   }
 };
-
-
 
 // Status===========================
 

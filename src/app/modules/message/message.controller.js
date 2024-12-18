@@ -3,7 +3,7 @@ const sendResponse = require("../../../shared/sendResponse");
 const { MessageService } = require("./message.service");
 
 const getMessages = catchAsync(async (req, res) => {
-  const result = await MessageService.getMessages(req.query);
+  const result = await MessageService.getMessages(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,

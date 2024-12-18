@@ -1,9 +1,29 @@
 const ApiError = require("../../../errors/ApiError");
 const Services = require("../services/services.model");
+const { LogAdmin } = require("./logsdashboard.model");
 
+// ---------
+const createTaskDB = async ({ admin, email, description, types, activity, status }) => {
+  // console.log("Creating", admin, email, description, types, activity, status)
+    try { 
+      const task = new LogAdmin({
+        admin,
+        email, 
+        description,
+        types,
+        activity,
+        status,
+      });
+      await task.save();
+      console.log("Task created successfully!");
+    } catch (error) { 
+      throw new ApiError(`Failed to create task: ${error?.message}`);    
+    }
+  };
+  
+// Audit Dashboards ================================
 const eventsCreationRate = async (query) => {
     const { year, month = "all", service } = query;
-    
     const filter = {};
     let startDate, endDate;
    
@@ -37,8 +57,8 @@ const eventsCreationRate = async (query) => {
     const serviceCounts = {
       Goods: 0,
       Waste: 0,
-      "Second-hand items": 0,
-      "Recyclable materials": 0,
+      "Second_hand_items": 0,
+      "Recyclable_materials": 0,
     };
   
     events.forEach((event) => {
@@ -62,70 +82,61 @@ const eventsCreationRate = async (query) => {
       eventsCreationRate,
       serviceCounts
     };
-  };
- 
-   
+  }; 
 
 const getMostCreatedUsers = async (req) => {
   try {
-    const {searchQuery = '', page = 1, pageSize = 10} = req.query 
+    const {searchQuery = '', page = 1, limit = 50} = req.query 
+    const pageSize = parseInt(limit, 10);
     const sanitizedSearchQuery = searchQuery ? String(searchQuery) : '';
  
     const mostCreatedUsers = await Services.aggregate([
       { 
         $lookup: {
-          from: "users", // User collection name
-          localField: "user", // Field in Services collection (user ID)
-          foreignField: "_id", // Field in User collection (user ID)
-          as: "userDetails", // Output array field containing user details
+          from: "users", 
+          localField: "user",  
+          foreignField: "_id",  
+          as: "userDetails", 
         },
       },
-      {
-        // Unwind the userDetails array to work with single user details
+      { 
         $unwind: "$userDetails",
       },
-      {
-        // Match users by name using regex if searchQuery is not empty
+      { 
         $match: sanitizedSearchQuery
           ? {
               "userDetails.name": { $regex: sanitizedSearchQuery, $options: "i" },
             }
-          : {}, // Empty object if no search query is provided, so it returns all users
+          : {},  
       },
-      {
-        // Group by user and count the number of services each user has created
+      { 
         $group: {
-          _id: "$user", // Group by user ID
-          serviceCount: { $sum: 1 }, // Count the number of services created by each user
+          _id: "$user", 
+          serviceCount: { $sum: 1 },  
         },
       },
-      {
-        // Sort by the number of services created in descending order
+      { 
         $sort: { serviceCount: -1 },
       },
-      {
-        // Skip the results based on the current page and pageSize
-        $skip: (page - 1) * pageSize, // Skip the results for previous pages
+      { 
+        $skip: (page - 1) * pageSize,  
       },
-      {
-        // Limit the result to the current page's size
-        $limit: pageSize, // Limit the number of users per page
+      { 
+        $limit: pageSize,  
       },
-      {
-        // Lookup again to fetch user details (name, email, etc.)
+      { 
         $lookup: {
-          from: "users", // User collection name
-          localField: "_id", // User ID from previous group stage
-          foreignField: "_id", // User ID from User collection
-          as: "userDetails", // Output array field containing user details
+          from: "users", 
+          localField: "_id", 
+          foreignField: "_id",  
+          as: "userDetails",  
         },
       },
-      {
-        // Unwind userDetails to flatten the structure
+      { 
         $unwind: "$userDetails",
       },
       {
-        // Project the desired fields: user name, email, and service count
+         
         $project: {
             name: "$userDetails.name",
             email: "$userDetails.email",
@@ -134,40 +145,35 @@ const getMostCreatedUsers = async (req) => {
         },
       },
     ]);
-
-    // Get the total count of users that match the search query (for pagination)
+ 
     const totalUsersCount = await Services.aggregate([
-      {
-        // Lookup to get user details based on the user ID
+      { 
         $lookup: {
-          from: "users", // User collection name
-          localField: "user", // Field in Services collection (user ID)
-          foreignField: "_id", // Field in User collection (user ID)
-          as: "userDetails", // Output array field containing user details
+          from: "users", 
+          localField: "user",  
+          foreignField: "_id", 
+          as: "userDetails",  
         },
       },
-      {
-        // Unwind the userDetails array to work with single user details
+      { 
         $unwind: "$userDetails",
       },
-      {
-        // Match users by name using regex if searchQuery is not empty
+      { 
         $match: sanitizedSearchQuery
           ? {
               "userDetails.name": { $regex: sanitizedSearchQuery, $options: "i" },
             }
-          : {}, // Empty object if no search query is provided, so it returns all users
+          : {},  
       },
-      {
-        // Group by user and count the number of services each user has created
+      { 
         $group: {
-          _id: "$user", // Group by user ID
+          _id: "$user",  
         },
       },
     ]);
 
     const totalCount = totalUsersCount.length;
-    const totalPages = Math.ceil(totalCount / pageSize); // Calculate total pages
+    const totalPages = Math.ceil(totalCount / pageSize); 
 
     return {
       totalUsers: totalCount,
@@ -180,15 +186,41 @@ const getMostCreatedUsers = async (req) => {
     throw error;
   }
 }; 
-
-  
-  
-
-
+// ===============================================
+   
 
 const LogsDashboardService = {
     eventsCreationRate, 
-    getMostCreatedUsers
+    getMostCreatedUsers,
+    createTaskDB
   };
   
   module.exports = { LogsDashboardService };
+
+
+
+    //   // log=====
+    //   const newTask = {
+    //     admin: userId,
+    //     email: emailAuth,
+    //     description: `Refund successful: Service ID ${serviceId} refunded an amount of $${amount} via PayPal.`,
+    //     types: "Refund",
+    //     activity: "task",
+    //     status: "Success",
+    //   }; 
+    //   await LogsDashboardService.createTaskDB(newTask)
+    //   // =====
+
+
+    //       // log=====
+    // const newTask = {
+    //   admin: userId,
+    //   email: emailAuth,
+    //   description: `Refund failed: Service ID ${serviceId},  ${error.message || "An unexpected error occurred"}.`,
+    //   types: "Failed",
+    //   activity: "task",
+    //   status: "Error",
+    // }; 
+    // await LogsDashboardService.createTaskDB(newTask)
+    // // =====
+

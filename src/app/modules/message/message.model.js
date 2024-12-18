@@ -12,17 +12,10 @@ const messageSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       // ref: 'User',
       required: true,
-    },
-    // conversationId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: 'Conversation',
-    //   required: true,
-    // },
-
+    }, 
     text: {
       type: String,
-    },
-
+    }, 
     image: {
       type: String,
     },
@@ -30,6 +23,10 @@ const messageSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    isAdmin: {
+      type: Boolean, 
+      default: false,
+    }, 
   },
   {
     toJSON: {

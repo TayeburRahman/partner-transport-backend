@@ -29,7 +29,6 @@ const bidsSchema = new Schema(
     timestamps: true,
   }
 );
- 
 
 const reviewSchema = new Schema(
   {
@@ -76,6 +75,14 @@ const fileClaimSchema = new Schema(
       type: String,
       enum: ["User", "Partner"],
       required: true, 
+    },
+    name:{
+      type: String,
+      required: true,
+    },
+    orderId: {
+      type: String,
+      required: true,
     },
     description:{
       type: String,

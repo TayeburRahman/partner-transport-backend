@@ -9,6 +9,8 @@ const { Transaction } = require("./payment.model");
 // const { assign } = require("nodemailer/lib/shared");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const paypal = require('paypal-rest-sdk');
+const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
+const Admin = require("../admin/admin.model");
 // const express = require('express');
 
 const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
@@ -32,7 +34,7 @@ const createCheckoutSessionStripe = async (req) => {
       user = await Partner.findById(userId)
       payUserRole = 'Partner'
     } else if (role === ENUM_USER_ROLE.ADMIN) {
-      user = await Partner.findById(userId)
+      user = await Admin.findById(userId)
       payUserRole = 'Admin'
     }
     const service = await Services.findById(serviceId)
@@ -116,7 +118,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       return { status: "failed", message: "Payment not approved." };
     }
 
-    const { receiveUser, payUser, payUserType, receiveUserType, serviceId} = session.metadata;
+    const { receiveUser, payUser, payUserType, receiveUserType, serviceId } = session.metadata;
     // console.log("=====",receiveUser, payUser, payUserType, receiveUserType, serviceId)
 
     const service = await Services.findById(serviceId);
@@ -185,7 +187,7 @@ const createCheckoutSessionPaypal = async (req, res) => {
       user = await Partner.findById(userId)
       payUserRole = 'Partner'
     } else if (role === ENUM_USER_ROLE.ADMIN) {
-      user = await Partner.findById(userId)
+      user = await Admin.findById(userId)
       payUserRole = 'Admin'
     }
 
@@ -266,8 +268,6 @@ const createCheckoutSessionPaypal = async (req, res) => {
 const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
   const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query;
 
-  console.log("===", paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType )
-
   if (!paymentId || !PayerID || !serviceId || !payUser || !receiveUser) {
     return { status: "failed", message: "Missing required query parameters." };
   }
@@ -343,10 +343,11 @@ const paymentStatusCancel = async (req, res) => {
 
 //Paypal Refund Payment ------------
 const paypalRefundPayment = async (req, res) => {
+  const { userId, emailAuth, role } = req.user;
   const { saleId, amount, serviceId } = req.body;
   try {
 
-    if (!paymentIntentId || !amount || !serviceId) {
+    if (!saleId || !amount || !serviceId) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Missing required parameters!");
     }
 
@@ -369,6 +370,32 @@ const paypalRefundPayment = async (req, res) => {
         currency: "USD",
       }
     };
+
+    let user;
+    let payUserRole;
+    if (role === ENUM_USER_ROLE.USER) {
+      user = await User.findById(userId)
+      payUserRole = 'User'
+    } else if (role === ENUM_USER_ROLE.PARTNER) {
+      user = await Partner.findById(userId)
+      payUserRole = 'Partner'
+    } else if (role === ENUM_USER_ROLE.ADMIN) {
+      user = await Admin.findById(userId)
+      payUserRole = 'Admin'
+    }
+
+    let receiveUser;
+    let receiveUserRole;
+    if (service.mainService === "sell") {
+      receiveUser = service.confirmedPartner;
+      receiveUserRole = 'User';
+    } else if (service.mainService === "move") {
+      receiveUser = service.user;
+      receiveUserRole = 'Partner';
+    } else {
+      throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
+    }
+
     const refund = await new Promise((resolve, reject) => {
       paypal.sale.refund(saleId, refundData, (error, refund) => {
         if (error) {
@@ -384,8 +411,11 @@ const paypalRefundPayment = async (req, res) => {
 
     const transactionData = {
       serviceId,
-      userId: service.user,
-      partnerId: service.confirmedPartner,
+      payUser: user._id,
+      payUserType: payUserRole,
+      receiveUser,
+      receiveUserType: receiveUserRole,
+      isFinish: true,
       paymentMethod: 'PayPal',
       amount: Number(refund.amount.total),
       paymentStatus: "Refunded",
@@ -399,11 +429,33 @@ const paypalRefundPayment = async (req, res) => {
 
     const newTransaction = await Transaction.create(transactionData);
 
+    // log=====
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Refund successful: Service ID ${serviceId} refunded an amount of $${amount} via PayPal.`,
+      types: "Refund",
+      activity: "task",
+      status: "Success",
+    }; 
+    await LogsDashboardService.createTaskDB(newTask)
+    // =====
+
     // Return success response
     return { success: true, transaction: newTransaction };
 
   } catch (error) {
-    // console.error("Refund error:", error);
+    // log=====
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Refund failed: Service ID ${serviceId},  ${error.message || "An unexpected error occurred"}.`,
+      types: "Failed",
+      activity: "task",
+      status: "Error",
+    }; 
+    await LogsDashboardService.createTaskDB(newTask)
+    // =====
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
 };
@@ -411,6 +463,7 @@ const paypalRefundPayment = async (req, res) => {
 //Stripe Refund Payment ------------
 const stripeRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
+  const { userId, emailAuth, role } = req.user;
 
   try {
     if (!saleId || !amount || !serviceId) {
@@ -419,14 +472,32 @@ const stripeRefundPayment = async (req, res) => {
     const service = await Services.findById(serviceId);
     if (!service) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Service not found!");
+    } 
+ 
+    let user;
+    let payUserRole;
+    if (role === ENUM_USER_ROLE.USER) {
+      user = await User.findById(userId)
+      payUserRole = 'User'
+    } else if (role === ENUM_USER_ROLE.PARTNER) {
+      user = await Partner.findById(userId)
+      payUserRole = 'Partner'
+    } else if (role === ENUM_USER_ROLE.ADMIN) {
+      user = await Admin.findById(userId)
+      payUserRole = 'Admin'
     }
-    if (service.paymentStatus === 'refunded') {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Service is already refunded!");
+
+    let receiveUser;
+    let receiveUserRole;
+    if (service.mainService === "sell") {
+      receiveUser = service.confirmedPartner;
+      receiveUserRole = 'User';
+    } else if (service.mainService === "move") {
+      receiveUser = service.user;
+      receiveUserRole = 'Partner';
+    } else {
+      throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
     }
-    if (service.paymentStatus !== 'paid') {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Service is not paid!");
-    }
-    // const takeFee = (4 / 100) * Number(amount)
 
     const refund = await stripe.refunds.create({
       payment_intent: saleId,
@@ -436,11 +507,15 @@ const stripeRefundPayment = async (req, res) => {
 
     service.paymentStatus = 'refunded';
     await service.save();
+ 
 
     const transactionData = {
       serviceId,
-      userId: service.user,
-      partnerId: service.confirmedPartner,
+      payUser: user._id,
+      payUserType: payUserRole,
+      receiveUser,
+      receiveUserType: receiveUserRole,
+      isFinish: true,
       paymentMethod: 'Stripe',
       amount: Number(refund.amount) / 100,
       paymentStatus: "Refunded",
@@ -453,10 +528,32 @@ const stripeRefundPayment = async (req, res) => {
 
     const newTransaction = await Transaction.create(transactionData);
 
+    // log=====
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Refund successful: Service ID ${serviceId} refunded an amount of $${amount} via Stripe.`,
+      types: "Refund",
+      activity: "task",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    //=====
+
     return { success: true, transaction: newTransaction };
 
   } catch (error) {
-    console.error("Refund error:", error);
+    // Log =====
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Refund failed: Service ID ${serviceId},  ${error.message || "An unexpected error occurred"}.`,
+      types: "Failed",
+      activity: "task",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    // =====
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message || "Failed to process refund.");
   }
 };

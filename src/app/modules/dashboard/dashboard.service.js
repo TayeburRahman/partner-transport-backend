@@ -18,13 +18,13 @@ const Notification = require("../notification/notification.model");
 const auth = require("../../middlewares/auth");
 const { NotificationService } = require("../notification/notification.service");
 const VariableCount = require("../variable/variable.count");
+const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 
 const getYearRange = (year) => {
   const startDate = new Date(`${year}-01-01`);
   const endDate = new Date(`${year}-12-31`);
   return { startDate, endDate };
 };
-
 // =User Partner Admin Management ========================
 const getAllUsers = async (query) => {
   const userQuery = new QueryBuilder(User.find().populate("authId"), query)
@@ -76,42 +76,69 @@ const deleteUser = async (query) => {
   return await Auth.deleteOne({ email });
 };
 
-const blockUnblockUserPartnerAdmin = async (payload) => {
-  const { role, email, is_block } = payload;
+const blockUnblockUserPartnerAdmin = async (req) => {
+  const { role, email, is_block } = req.body;
+  const { emailAuth, userId } = req.user;
+  try {
+    const updatedAuth = await Auth.findOneAndUpdate(
+      { email: email, role: role },
+      { $set: { is_block } },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("role name email is_block");
 
-  const updatedAuth = await Auth.findOneAndUpdate(
-    { email: email, role: role },
-    { $set: { is_block } },
-    {
-      new: true,
-      runValidators: true,
+    if (!updatedAuth) {
+      throw new ApiError(httpStatus.NOT_FOUND, "User not found");
     }
-  ).select("role name email is_block");
+    // log=====
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `User with email ${email} and role ${role} was successfully ${is_block ? "blocked" : "unblocked"}.`,
+      types: "Update",
+      activity: "reglue",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    // =====
 
-  if (!updatedAuth) {
-    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    return updatedAuth;
+
+  } catch (error) {
+    // log=====
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `An unexpected error ${is_block ? "block" : "unblock"} user with email ${email} and role ${role}: ${error.message}.`,
+      types: "Failed",
+      activity: "reglue",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    // =====
+    throw new ApiError(httpStatus.NOT_FOUND, "An unexpected error" + " " + error.message);
   }
-
-  return updatedAuth;
 };
 
 const getPaddingPartner = async (query) => {
   const aggregationPipeline = [
-    { 
+    {
       $match: {
         authId: { $ne: null },
       },
     },
-    { 
+    {
       $lookup: {
-        from: "auths",  
+        from: "auths",
         localField: "authId",
         foreignField: "_id",
         as: "authId",
       },
     },
     {
-     
+
       $match: {
         "authId.isActive": false,
       },
@@ -120,15 +147,15 @@ const getPaddingPartner = async (query) => {
       $unwind: "$authId",
     },
     // { 
-      // $project: {
-      //   _id: 1,
-      //   name: 1,
-      //   email: 1,
-      //   "authData._id": 1,
-      //   "authData.name": 1,
-      //   "authData.profile_image": 1,
-      //   "authData.email": 1,
-      // },
+    // $project: {
+    //   _id: 1,
+    //   name: 1,
+    //   email: 1,
+    //   "authData._id": 1,
+    //   "authData.name": 1,
+    //   "authData.profile_image": 1,
+    //   "authData.email": 1,
+    // },
     // },
   ];
 
@@ -308,7 +335,7 @@ const approveDeclinePartner = async (payload) => {
 
   await Auth.findOneAndUpdate(
     { email: partnerEmail },
-    { isActive:  status === "approved"? true : false },
+    { isActive: status === "approved" ? true : false },
     {
       new: true,
       runValidators: true,
@@ -336,7 +363,7 @@ const approveDeclinePartner = async (payload) => {
   }
 
   return active;
-}; 
+};
 
 const addTermsConditions = async (payload) => {
   const checkIsExist = await TermsConditions.findOne();
@@ -414,11 +441,11 @@ const getAllAuctions = async (query) => {
     Services.find(
       searchTerm
         ? {
-            $or: [
-              { "user.name": { $regex: searchTerm, $options: "i" } },
-              { "confirmedPartner.name": { $regex: searchTerm, $options: "i" } },
-            ],
-          }
+          $or: [
+            { "user.name": { $regex: searchTerm, $options: "i" } },
+            { "confirmedPartner.name": { $regex: searchTerm, $options: "i" } },
+          ],
+        }
         : {}
     )
       .populate('user')
@@ -433,7 +460,7 @@ const getAllAuctions = async (query) => {
 
   // Execute the query
   const result = await servicesQuery.modelQuery;
-  const meta = await servicesQuery.countTotal(); 
+  const meta = await servicesQuery.countTotal();
 
   return {
     meta,
@@ -472,8 +499,8 @@ const editMinMaxBidAmount = async (payload) => {
 //=Overview ========================
 const getMonthlyRegistrations = async (query) => {
   const year = Number(query.year);
-  const startOfYear = new Date(year, 0, 1); 
-  const endOfYear = new Date(year + 1, 0, 1); 
+  const startOfYear = new Date(year, 0, 1);
+  const endOfYear = new Date(year + 1, 0, 1);
 
   const months = Array.from({ length: 12 }, (_, i) =>
     new Date(0, i).toLocaleString("en", { month: "long" })
@@ -560,63 +587,63 @@ const parseDateTime = (date, time) => {
   const [month, day, year] = date.split('/').map(Number);
   const [hours, minutes] = time.split(':').map((part, index) => {
     if (index === 0) {
-      return parseInt(part, 10);  
+      return parseInt(part, 10);
     }
-    return parseInt(part, 10); 
+    return parseInt(part, 10);
   });
 
   let adjustedHours = hours;
   if (time.includes("PM") && hours < 12) {
-    adjustedHours += 12;   
+    adjustedHours += 12;
   } else if (time.includes("AM") && hours === 12) {
-    adjustedHours = 0;  
+    adjustedHours = 0;
   }
 
   return new Date(year, month - 1, day, adjustedHours, minutes);
 };
 const filterAndSortServices = async (req, res) => {
   const {
-    service,      
-    sortBy ,
-    sortOrder, 
+    service,
+    sortBy,
+    sortOrder,
     page,
     serviceStatus,
     limit
   } = req.query;
 
-  const categories = req.body.categories || [];  
+  const categories = req.body.categories || [];
 
-  const filterQuery = {}; 
-    if (service) {
-      filterQuery.service = { $regex: service, $options: "i" };
-    }
-    if (categories.length > 0) {
-      filterQuery.category = { $in: categories };
-    } 
-    if (serviceStatus) {
-      filterQuery.status = { $in: serviceStatus };
-    } 
+  const filterQuery = {};
+  if (service) {
+    filterQuery.service = { $regex: service, $options: "i" };
+  }
+  if (categories.length > 0) {
+    filterQuery.category = { $in: categories };
+  }
+  if (serviceStatus) {
+    filterQuery.status = { $in: serviceStatus };
+  }
 
-    filterQuery.page = page
-    filterQuery.limit = limit
+  filterQuery.page = page
+  filterQuery.limit = limit
 
   const result = new QueryBuilder(
-    Services.find({}) 
-  .populate({
-    path: "category",
-    select: "_id category"
-  }) 
-  , filterQuery)
-  .search(["service"])
-  .filter()
-  .sort()
-  .paginate()
-  .fields();
+    Services.find({})
+      .populate({
+        path: "category",
+        select: "_id category"
+      })
+    , filterQuery)
+    .search(["service"])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
 
- 
-  const services  = await result.modelQuery;
+
+  const services = await result.modelQuery;
   const meta = await result.countTotal();
-  
+
   const getRelevantDate = (service) => {
     if (sortBy === 'deadline' && service.deadlineDate && service.deadlineTime) {
       return parseDateTime(service.deadlineDate, service.deadlineTime);
@@ -625,66 +652,66 @@ const filterAndSortServices = async (req, res) => {
     }
     return null;
   };
- 
+
   const sortedServices = services.sort((a, b) => {
     const dateA = getRelevantDate(a);
     const dateB = getRelevantDate(b);
 
-    if (!dateA || !dateB) return 0;  
- 
+    if (!dateA || !dateB) return 0;
+
     if (sortOrder === "endSoon") {
       return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
     }
- 
+
     if (sortOrder === "laterFast") {
       return dateA > dateB ? -1 : dateA < dateB ? 1 : 0;
     }
 
-    return 0;  
+    return 0;
   });
-   const pisoVariable = await VariableCount.getPisoVariable();
+  const pisoVariable = await VariableCount.getPisoVariable();
 
-  return {sortedServices,meta, piso: pisoVariable};
+  return { sortedServices, meta, piso: pisoVariable };
 };
 
 //=Total Income/User/Auction ========================
 const getTotalIncomeUserAuction = async (req, res) => {
- 
-      const resultIncome = await Transaction.aggregate([
-          {
-              $match: {
-                  paymentStatus: "Completed",  
-              },
-          },
-          {
-              $group: {
-                  _id: null, 
-                  totalIncome: { $sum: "$amount" },  
-              },
-          },
-      ]);
 
-      const usersResult = await User.find({})
-      const partnerResult = await Partner.find({})
-      const servicesResult = await Services.find({})
+  const resultIncome = await Transaction.aggregate([
+    {
+      $match: {
+        paymentStatus: "Completed",
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalIncome: { $sum: "$amount" },
+      },
+    },
+  ]);
 
-      // Check if resultIncome is empty
-      const income = resultIncome.length > 0 ? resultIncome[0].totalIncome : 0;
-      const users = usersResult.length ? usersResult.length : 0;
-      const services = servicesResult.length ? servicesResult.length : 0;
-      const partner = partnerResult.length ? partnerResult.length : 0;
+  const usersResult = await User.find({})
+  const partnerResult = await Partner.find({})
+  const servicesResult = await Services.find({})
 
-       
+  // Check if resultIncome is empty
+  const income = resultIncome.length > 0 ? resultIncome[0].totalIncome : 0;
+  const users = usersResult.length ? usersResult.length : 0;
+  const services = servicesResult.length ? servicesResult.length : 0;
+  const partner = partnerResult.length ? partnerResult.length : 0;
 
-      return { income, users, services, partner };
- 
+
+
+  return { income, users, services, partner };
+
 };
 
 //=Overview ==========================  
 const incomeOverview = async (year) => {
   try {
     const currentYear = new Date().getFullYear();
-    const selectedYear = year || currentYear; 
+    const selectedYear = year || currentYear;
     const startDate = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
     const endDate = new Date(`${selectedYear + 1}-01-01T00:00:00.000Z`);
 
@@ -692,13 +719,13 @@ const incomeOverview = async (year) => {
       {
         $match: {
           createdAt: { $gte: startDate, $lt: endDate },
-          paymentStatus: "Completed", 
+          paymentStatus: "Completed",
         },
       },
       {
         $group: {
-          _id: { month: { $month: "$createdAt" } }, 
-          totalIncome: { $sum: "$amount" }, 
+          _id: { month: { $month: "$createdAt" } },
+          totalIncome: { $sum: "$amount" },
         },
       },
       {
@@ -709,10 +736,10 @@ const incomeOverview = async (year) => {
         },
       },
       {
-        $sort: { month: 1 }, 
+        $sort: { month: 1 },
       },
     ]);
-    
+
     const months = [
       "Jan",
       "Feb",
@@ -747,10 +774,10 @@ const incomeOverview = async (year) => {
     };
   } catch (error) {
     console.error("Error in getIncomeOverviewByYear function:", error);
- 
+
     throw new ApiError(httpStatus.BAD_REQUEST, "Service not found:", error.message);
   }
-}; 
+};
 
 const getUserGrowth = async (year) => {
   try {
@@ -766,7 +793,7 @@ const getUserGrowth = async (year) => {
             $gte: startDate,
             $lt: endDate,
           },
-          role: { $in: ['USER', 'PARTNER'] }, 
+          role: { $in: ['USER', 'PARTNER'] },
         },
       },
       {
@@ -825,7 +852,7 @@ const getUserGrowth = async (year) => {
       data: result,
     };
   } catch (error) {
-    console.error('Error in getUserGrowth function: ', error);  
+    console.error('Error in getUserGrowth function: ', error);
     throw new ApiError(httpStatus.BAD_REQUEST, "Service not found:", error.message);
   }
 };
@@ -833,15 +860,16 @@ const getUserGrowth = async (year) => {
 // =Send Notice=====================
 const sendNoticeUsers = async (req, res) => {
   const { userId, all_user } = req.query;
-  const { title,message } = req.body;
+  const { title, message } = req.body;
+  const { userId: admin, emailAuth } = req.user;
 
-  if ( !title|| !message) { 
+  if (!title || !message) {
     throw new ApiError(400, 'Title and message are required.');
-  }  
-  try { 
+  }
+  try {
     if (all_user) {
       const users = await User.find({});
-       
+
       const notifications = users.map(user => ({
         title: title,
         user: user._id,
@@ -851,105 +879,148 @@ const sendNoticeUsers = async (req, res) => {
         notice: message,
         types: 'notice',
         getId: null,
-      })); 
+      }));
 
       await Notification.insertMany(notifications);
-    } else { 
-      if (!userId) { 
-        throw new ApiError(404,'User ID is required.');
-      }
+    } else {
+      if (!userId) {
+        throw new ApiError(404, 'User ID is required.');
+      } 
 
- 
-
-      await NotificationService.sendNotification({ 
-        title: title, 
-        message: 'We have made some updates to improve your experience.', 
-        user: userId, 
-        userType: 'User',  
-        getId: null, 
+      await NotificationService.sendNotification({
+        title: title,
+        message: 'We have made some updates to improve your experience.',
+        user: userId,
+        userType: 'User',
+        getId: null,
         notice: message,
         types: 'notice',
       });
     }
 
-    return  { massage: "Notification(s) sent successfully." };
+    // log=====
+    const newTask = {
+      admin: admin,
+      email: emailAuth,
+      description: `Notification was successfully sent to user with ${all_user ? "all User" : `ID ${userId}`}.`,
+      types: "Create",
+      activity: "reglue",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    // ====
+    return { massage: "Notification(s) sent successfully." };
   } catch (error) {
-    console.error("Error sending notifications:", error);
-    throw new ApiError(500,"An error occurred while sending notifications." );
+    // log=====
+    const newTask = {
+      admin: admin,
+      email: emailAuth,
+      description: `An error occurred while sending partner notifications: ${error.message || "Unknown error"}.`,
+      types: "Failed",
+      activity: "reglue",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    // ====
+    throw new ApiError(500, "An error occurred while sending notifications.");
   }
 };
 
 const sendNoticePartner = async (req, res) => {
   const { userId, all_user } = req.query;
-  const { title, message } = req.body; 
-
-  if (!title || !message) { 
+  const { title, message } = req.body;
+  const { userId: admin, emailAuth } = req.user;
+  try {
+  if (!title || !message) {
     throw new ApiError(400, 'Title and message are required.');
-  } 
- 
-    if (all_user) { 
-      const users = await Partner.find({}); 
-       const notifications = users.map(user => ({
-         title: title, 
-         message: 'We have made some updates to improve your experience.', 
-         user: user._id, 
-         userType: 'Partner',  
-         getId: null, 
-         notice: message,
-         types: 'notice',
-       }));
-        
-       await Notification.insertMany(notifications);
-    } else { 
+  }
 
-      if (!userId) { 
-        throw new ApiError(404,'User ID is required.');
-      }
+  if (all_user) {
+    const users = await Partner.find({});
+    const notifications = users.map(user => ({
+      title: title,
+      message: 'We have made some updates to improve your experience.',
+      user: user._id,
+      userType: 'Partner',
+      getId: null,
+      notice: message,
+      types: 'notice',
+    }));
 
-      await NotificationService.sendNotification({ 
-        title: title, 
-        message: 'We have made some updates to improve your experience.', 
-        user: userId, 
-        userType: 'Partner',  
-        getId: null, 
-        notice: message,
-        types: 'notice',
-      }); 
+    await Notification.insertMany(notifications);
+  } else {
 
+    if (!userId) {
+      throw new ApiError(404, 'User ID is required.');
     }
 
-  return  { massage: "Notification(s) sent successfully." };
-   
-}; 
+    await NotificationService.sendNotification({
+      title: title,
+      message: 'We have made some updates to improve your experience.',
+      user: userId,
+      userType: 'Partner',
+      getId: null,
+      notice: message,
+      types: 'notice',
+    });
+
+  }
+ // log=====
+ const newTask = {
+  admin: admin,
+  email: emailAuth,
+  description: `Notification was successfully sent to partner with ${all_user ? "all partner" : `ID ${userId}`}.`,
+  types: "Create",
+  activity: "reglue",
+  status: "Success",
+};
+await LogsDashboardService.createTaskDB(newTask)
+// ====
+  return { massage: "Notification(s) sent successfully." };
+} catch (error) {
+  // log=====
+  const newTask = {
+    admin: admin,
+    email: emailAuth,
+    description: `An error occurred while sending partner notifications: ${error.message || "Unknown error"}.`,
+    types: "Failed",
+    activity: "reglue",
+    status: "Error",
+  };
+  await LogsDashboardService.createTaskDB(newTask)
+  // ====
+  throw new ApiError(500, "An error occurred while sending notifications.");
+}
+};
 
 const getTransactionsHistory = async (req) => {
-  const query = req.query;  
-  try {  
+  const query = req.query;
+  try {
     const servicesQuery = new QueryBuilder(Transaction.find()
-    .populate("receiveUser", "name email profile_image") 
-    .populate("payUser", "name email profile_image") 
-    .populate({
-      path: "serviceId", 
-      select: "service category price",
-      populate: {
-        path: "category",
-        select: "_id category",
-      },
-    })
-    , query) 
-    .search(["paymentStatus", "transactionId"])  
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
-    
+      .populate("receiveUser", "name email profile_image")
+      .populate("payUser", "name email profile_image")
+      .populate({
+        path: "serviceId",
+        select: "service category price",
+        populate: {
+          path: "category",
+          select: "_id category",
+        },
+      })
+      , query)
+      .search(["paymentStatus", "transactionId"])
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
     servicesQuery.modelQuery
-  
 
-  const result = await servicesQuery.modelQuery; 
-  const meta = await servicesQuery.countTotal();
 
-    return {result, meta};
+    const result = await servicesQuery.modelQuery;
+    const meta = await servicesQuery.countTotal();
+
+    return { result, meta };
   } catch (error) {
     console.error("Error fetching transactions history:", error);
     throw new ApiError(500, "Internal Server Error");
@@ -959,16 +1030,16 @@ const getTransactionsHistory = async (req) => {
 const getTransactionsDetails = async (req) => {
   const { id } = req.params;
 
-  try { 
+  try {
     if (!id) {
       throw new ApiError(400, "Transaction ID is required.");
     }
 
     console.log("Fetching transaction details for ID:", id);
- 
+
     const result = await Transaction.findById(id)
-      .populate("receiveUser", "name email profile_image")  
-      .populate("payUser", "name email profile_image")  
+      .populate("receiveUser", "name email profile_image")
+      .populate("payUser", "name email profile_image")
       .populate({
         path: "serviceId",
         select: "service category price",
@@ -976,7 +1047,7 @@ const getTransactionsDetails = async (req) => {
           path: "category",
           select: "_id category",
         },
-      }); 
+      });
     if (!result) {
       throw new ApiError(404, "Transaction not found.");
     }
@@ -988,7 +1059,7 @@ const getTransactionsDetails = async (req) => {
   }
 };
 
- 
+
 const DashboardService = {
   getAllUsers,
   getUserDetails,
@@ -1011,7 +1082,7 @@ const DashboardService = {
   getAllAuctions,
   editMinMaxBidAmount,
   totalOverview,
-  getMonthlyRegistrations, 
+  getMonthlyRegistrations,
   filterAndSortServices,
   getTotalIncomeUserAuction,
   incomeOverview,

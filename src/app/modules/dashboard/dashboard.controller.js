@@ -24,11 +24,12 @@ const getUserDetails = catchAsync(async (req, res) => {
 });
 
 const blockUnblockUserPartnerAdmin = catchAsync(async (req, res) => {
-  const result = await DashboardService.blockUnblockUserPartnerAdmin(req.body);
+  const { is_block } = req.body;
+  const result = await DashboardService.blockUnblockUserPartnerAdmin(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Blocked successfully",
+    message: `${is_block ? "Blocked" : "Unblocked"} successfully`,
     data: result,
   });
 });
