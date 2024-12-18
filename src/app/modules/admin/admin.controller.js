@@ -33,10 +33,23 @@ const deleteMyAccount = catchAsync(async (req, res) => {
   });
 });
 
+const getAllAdmin = catchAsync(async (req, res) => { 
+  const result = await AdminService.getAllAdmin();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Get all successfully",
+    data: result,
+  });
+});
+
+ 
+
 const AdminController = {
   updateProfile,
   myProfile,
   deleteMyAccount,
+  getAllAdmin
 };
 
 module.exports = { AdminController };

@@ -1,6 +1,19 @@
 const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 
+// Helper function to format time
+const formatTime = () => {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+    timeZoneName: "short",
+  });
+
+  return formatter.format(now); 
+};
+
 const logAdminSchema = new Schema(
   {
     admin: {
@@ -31,12 +44,16 @@ const logAdminSchema = new Schema(
     },
     date: {
       type: String,  
-      default: () => new Date().toISOString().split('T')[0], 
+      default: () => new Date().toISOString().split('T')[0],  
+    },
+    time: {
+      type: String,
+      default: formatTime,  
     },
   },
   {
-    toJSON: { getters: true }, // Enable getters in JSON output
-    toObject: { getters: true }, // Enable getters in object output
+    toJSON: { getters: true },  
+    toObject: { getters: true },  
   }
 );
 

@@ -80,10 +80,18 @@ const deleteMyAccount = async (payload) => {
   return await Auth.deleteOne({ email });
 };
 
+const getAllAdmin = async () => { 
+  const admin = Auth.find({isActive: true, role: "ADMIN"}).select("name email");
+  return  admin
+};
+
+ 
+
 const AdminService = {
   updateProfile,
   myProfile,
   deleteMyAccount,
+  getAllAdmin
 };
 
 module.exports = { AdminService };

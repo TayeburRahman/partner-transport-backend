@@ -22,6 +22,11 @@ router
     "/delete_account",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     AdminController.deleteMyAccount
+  )
+  .get(
+    "/get-all",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    AdminController.getAllAdmin
   );
 
 module.exports = router;
