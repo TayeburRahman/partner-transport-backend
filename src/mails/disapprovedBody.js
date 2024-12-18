@@ -66,13 +66,11 @@ const disapprovedBody = (data) =>
                <p>We regret to inform you that your application for the partner profile has not been approved at this time.</p>
                <p>If you have any questions or need further clarification, please feel free to contact our support team. We encourage you to review our guidelines and reapply after making the necessary adjustments.</p>
                <div class="btn-container">
-                   <a href="https://bdcalling.com" class="btn">
-                        <span class="btn-text">Contact Support</span>
-                   </a>
+                    
                </div>
                <p>We value your interest and look forward to the possibility of working with you in the future.</p>
                <div class="footer">
-                   <p>&copy; ${new Date().getFullYear()} bdCalling. All rights reserved.</p>
+                   <p>&copy; ${new Date().getFullYear()}Xmoveit. All rights reserved.</p>
                </div>
            </div>
        </body>

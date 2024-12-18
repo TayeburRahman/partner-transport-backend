@@ -1,10 +1,10 @@
+const QueryBuilder = require("../../../builder/queryBuilder");
 const ApiError = require("../../../errors/ApiError");
 const Services = require("../services/services.model");
 const { LogAdmin } = require("./logsdashboard.model");
 
-// ---------
-const createTaskDB = async ({ admin, email, description, types, activity, status }) => {
-  // console.log("Creating", admin, email, description, types, activity, status)
+//Create logs  ==
+const createTaskDB = async ({ admin, email, description, types, activity, status }) => { 
     try { 
       const task = new LogAdmin({
         admin,
@@ -185,42 +185,72 @@ const getMostCreatedUsers = async (req) => {
     console.error("Error fetching most created users:", error);
     throw error;
   }
-}; 
-// ===============================================
-   
+  }; 
+
+// Active Log==================================
+const getActivityLog = async (req) => {
+  const { type, status, date, email, searchTerm, page = 1, limit = 10, sort = "-date" } = req.query;
+
+  // Build the filter query
+  const filterQuery = {};
+
+  if (type) filterQuery.types = type;
+  if (status) filterQuery.status = status;
+
+  // Handle date filtering
+  if (date) {
+    const formattedDate =  date; 
+    console.log("formattedDate", formattedDate)
+    filterQuery.date = formattedDate;
+  }
+
+  if (email) filterQuery.email = email;
+
+  // Handle searchTerm for email
+  if (searchTerm) {
+    filterQuery.email = { $regex: searchTerm, $options: "i" };
+  }
+
+  // Pagination and sorting
+  const skip = (Number(page) - 1) * Number(limit);
+
+  try {
+    // Query the database with filters, sorting, and pagination
+    const data = await LogAdmin.find(filterQuery)
+      .sort(sort)
+      .skip(skip)
+      .limit(Number(limit))
+      .select("-__v");
+
+    // Count total documents for metadata
+    const total = await LogAdmin.countDocuments(filterQuery);
+
+    // Calculate total pages
+    const totalPage = Math.ceil(total / limit);
+
+    // Return the result with meta info
+    return {
+      meta: {
+        total,
+        totalPage,
+        page: Number(page),
+        limit: Number(limit),
+      },
+      data,
+    };
+  } catch (error) {
+    throw new ApiError(500, `An error occurred while fetching activity logs: ${error.message}`);
+  }
+};
+
+  
 
 const LogsDashboardService = {
     eventsCreationRate, 
     getMostCreatedUsers,
-    createTaskDB
+    createTaskDB,
+    getActivityLog
   };
   
   module.exports = { LogsDashboardService };
-
-
-
-    //   // log=====
-    //   const newTask = {
-    //     admin: userId,
-    //     email: emailAuth,
-    //     description: `Refund successful: Service ID ${serviceId} refunded an amount of $${amount} via PayPal.`,
-    //     types: "Refund",
-    //     activity: "task",
-    //     status: "Success",
-    //   }; 
-    //   await LogsDashboardService.createTaskDB(newTask)
-    //   // =====
-
-
-    //       // log=====
-    // const newTask = {
-    //   admin: userId,
-    //   email: emailAuth,
-    //   description: `Refund failed: Service ID ${serviceId},  ${error.message || "An unexpected error occurred"}.`,
-    //   types: "Failed",
-    //   activity: "task",
-    //   status: "Error",
-    // }; 
-    // await LogsDashboardService.createTaskDB(newTask)
-    // // =====
-
+ 

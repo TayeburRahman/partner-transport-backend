@@ -57,11 +57,11 @@ const convertPesoToDollar = catchAsync(async (req, res) => {
 });
 
 const changeContactNumber = catchAsync(async (req, res) => {
-    const result = await VariableCount.changeContactNumber(req.body);
+    const result = await VariableCount.changeContactNumber(req);
     sendResponse(res, {
         statusCode: 200,
         success: true,
-        message: "Get successfully",
+        message: "Update successfully",
         data: result,
     });
 });

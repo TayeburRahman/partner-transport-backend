@@ -87,7 +87,7 @@ const getAllPendingPartners = catchAsync(async (req, res) => {
 });
 
 const approveDeclinePartner = catchAsync(async (req, res) => {
-  const result = await DashboardService.approveDeclinePartner(req.body);
+  const result = await DashboardService.approveDeclinePartner(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -137,7 +137,7 @@ const deleteUser = catchAsync(async (req, res) => {
 });
 
 const addTermsConditions = catchAsync(async (req, res) => {
-  const result = await DashboardService.addTermsConditions(req.body);
+  const result = await DashboardService.addTermsConditions(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -167,7 +167,7 @@ const deleteTermsConditions = catchAsync(async (req, res) => {
 });
 
 const addPrivacyPolicy = catchAsync(async (req, res) => {
-  const result = await DashboardService.addPrivacyPolicy(req.body);
+  const result = await DashboardService.addPrivacyPolicy(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,

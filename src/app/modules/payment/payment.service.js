@@ -558,8 +558,6 @@ const stripeRefundPayment = async (req, res) => {
   }
 };
 
-
-
 const stripeTransferPayment = (req, res) => {
   // Implement Bank Transfer Payment logic here  
   return

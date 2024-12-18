@@ -9,13 +9,13 @@ const router = express.Router();
 router 
   .post(
     "/create",
-    auth(ENUM_USER_ROLE.ADMIN),
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     uploadFile(),
     VariableController.createVariable
   )
   .patch(
     "/update",
-    auth(ENUM_USER_ROLE.ADMIN),
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     VariableController.updateVariable
   )
   .get(
@@ -31,7 +31,8 @@ router
     VariableController.convertPesoToDollar
   )  
   .post(
-    "/contact-number",  
+    "/contact-number", 
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
     VariableController.changeContactNumber
   ) 
 

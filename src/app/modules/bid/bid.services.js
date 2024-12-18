@@ -10,6 +10,7 @@ const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
 const QueryBuilder = require("../../../builder/queryBuilder");
 const httpStatus = require("http-status");
+const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 // const Bids = require("./bid.model");
 
 const partnerBidPost = async (req) => {
@@ -348,6 +349,7 @@ const createFileClaim = async (req, res) => {
 
 const updateStatusFileClaim = async (req, res) => {
   const { claimId, status } = req.body;
+  const { userId, emailAuth } = req.user;
 
   if (!claimId || !mongoose.isValidObjectId(claimId)) {
     throw new ApiError(400, "Invalid or missing claimId.");
@@ -358,28 +360,58 @@ const updateStatusFileClaim = async (req, res) => {
     throw new ApiError(400, `Invalid or missing status. Allowed values: ${allowedStatuses.join(", ")}`);
   }
 
-  const result = await FileClaim.findByIdAndUpdate(
-    claimId,
-    { status },
-    { new: true }
-  );
+  try { 
+    const result = await FileClaim.findByIdAndUpdate(
+      claimId,
+      { status },
+      { new: true }
+    );
 
-  if (!result) {
-    throw new ApiError(404, "File claim not found.");
+    if (!result) {
+      throw new ApiError(404, "File claim not found.");
+    }
+ 
+    if (status === "resolved") {
+      await NotificationService.sendNotification({
+        title: "File Claim Resolved.",
+        message: `Your claim against ${result?.userType === "User" ? 'partner' : 'user'} has been resolved.`,
+        user: result.user,
+        userType: result.userType,
+        types: 'none',
+      });
+    }
+
+    // Log success
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `File claim with ID ${claimId} successfully updated to status '${status}'.`,
+      types: "Update",
+      activity: status === "resolved"? "task":"progressing",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    return result;
+  } catch (error) {
+    // Log failure
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Failed to update file claim with ID ${claimId}: ${error.message || "Unknown error"}.`,
+      types: "Failed",
+      activity: status === "resolved"? "task":"progressing",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    throw new ApiError(
+      error.status || httpStatus.INTERNAL_SERVER_ERROR,
+      error.message || "An error occurred while updating the file claim status."
+    );
   }
-
-  if (status === "resolved") {
-    await NotificationService.sendNotification({
-      title: "File Claim Resolved.",
-      message: `Your claim against ${result?.userType === "User" ? 'partner' : 'user'} has been resolved.`,
-      user: result.user,
-      userType: result.userType,
-      types: 'none',
-    });
-  }
-
-  return result;
 };
+
 
 const getAllFileClaims = async (req, res) => {
   try {

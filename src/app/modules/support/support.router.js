@@ -13,7 +13,7 @@ router
   )
   .patch(
     "/reply-ticket/:ticketId",
-    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),  
+    auth( ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),  
     SupportController.repliedTicket
   )
   .get(

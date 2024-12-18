@@ -104,9 +104,7 @@ const handleMessageData = async (receiverId, role, socket, io) => {
        
           const [sender] = await Promise.all([ 
             findParticipant(senderId),
-          ]);
-
-          console.log("user", sender)
+          ]); 
        
           const getRole = (user) => { 
             if (!user) return null;
@@ -116,8 +114,7 @@ const handleMessageData = async (receiverId, role, socket, io) => {
           };
           
           const senderRole = getRole(sender);
-
-          console.log("senderRole", senderRole)
+ 
     
         const newMessage = new Message({
             senderId,

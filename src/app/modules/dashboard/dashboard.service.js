@@ -308,79 +308,149 @@ const getAllPendingPartners = async (query) => {
   };
 };
 
-const approveDeclinePartner = async (payload) => {
-  const { partnerEmail, status } = payload;
+const approveDeclinePartner = async (req) => {
+  const { partnerEmail, status } = req.body;
+  const { userId, emailAuth } = req.user;
 
   if (!partnerEmail || !status) {
-    throw new ApiError(400, "Partner email and status is required");
+    throw new ApiError(400, "Partner email and status are required.");
   }
-
-  const [existPartner, existAuth] = await Promise.all([
-    Partner.findOne({ email: partnerEmail }),
-    Auth.findOne({ email: partnerEmail }),
-  ]);
-
-  if (!existPartner || !existAuth) {
-    throw new ApiError(400, "Partner not found");
-  }
-
-  const active = await Partner.findOneAndUpdate(
-    { email: partnerEmail },
-    { status: status },
-    {
-      new: true,
-      runValidators: true,
-    }
-  ).select("email status");
-
-  await Auth.findOneAndUpdate(
-    { email: partnerEmail },
-    { isActive: status === "approved" ? true : false },
-    {
-      new: true,
-      runValidators: true,
-    }
-  ).select("email status");
-
-  const data = {
-    name: existPartner.name,
-  };
 
   try {
-    sendEmail({
-      email: partnerEmail,
-      subject:
-        status === ENUM_PARTNER_AC_STATUS.APPROVED
-          ? "Partner Profile Approved"
-          : "Partner Profile Declined",
-      html:
-        status === ENUM_PARTNER_AC_STATUS.APPROVED
-          ? approvedBody(data)
-          : disapprovedBody(data),
-    });
-  } catch (error) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
-  }
+    const [existPartner, existAuth] = await Promise.all([
+      Partner.findOne({ email: partnerEmail }),
+      Auth.findOne({ email: partnerEmail }),
+    ]);
 
-  return active;
+    if (!existPartner || !existAuth) {
+      throw new ApiError(404, "Partner not found.");
+    }
+
+    const active = await Partner.findOneAndUpdate(
+      { email: partnerEmail },
+      { status: status },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("email status");
+
+    await Auth.findOneAndUpdate(
+      { email: partnerEmail },
+      { isActive: status === "approved" ? true : false },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("email isActive");
+
+    const data = {
+      name: existPartner.name,
+    };
+
+    try {
+      // Send notification email to the partner
+      sendEmail({
+        email: partnerEmail,
+        subject:
+          status === ENUM_PARTNER_AC_STATUS.APPROVED
+            ? "Partner Profile Approved"
+            : "Partner Profile Declined",
+        html:
+          status === ENUM_PARTNER_AC_STATUS.APPROVED
+            ? approvedBody(data)
+            : disapprovedBody(data),
+      });
+    } catch (emailError) {
+      throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, emailError.message);
+    }
+
+    // Log success
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Partner with email ${partnerEmail} has been ${status} by ${emailAuth}.`,
+      types: "Update",
+      activity: "task",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    return active;
+  } catch (error) {
+    // Log failure
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Failed to update partner status for ${partnerEmail} by ${emailAuth}: ${error.message || "Unknown error"}.`,
+      types: "Failed",
+      activity: "task",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    throw new ApiError(
+      error.status || httpStatus.INTERNAL_SERVER_ERROR,
+      error.message || "An error occurred while updating the partner's status."
+    );
+  }
 };
 
-const addTermsConditions = async (payload) => {
-  const checkIsExist = await TermsConditions.findOne();
-  if (checkIsExist) {
-    const result = await TermsConditions.findOneAndUpdate({}, payload, {
-      new: true,
-      runValidators: true,
-    });
+const addTermsConditions = async (req) => {
+  const { userId, emailAuth } = req.user;
+  const payload = req.body
+
+  try {
+    const checkIsExist = await TermsConditions.findOne();
+
+    let result;
+    let message;
+
+    if (checkIsExist) {
+      result = await TermsConditions.findOneAndUpdate({}, payload, {
+        new: true,
+        runValidators: true,
+      });
+      message = "Terms & conditions updated successfully";
+    } else {
+      result = await TermsConditions.create(payload);
+      message = "Terms & conditions added successfully";
+    }
+
+    // Log success
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `${message} by ${emailAuth}.`,
+      types: checkIsExist ? "Update" : "Create",
+      activity: "reglue",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
 
     return {
-      message: "Terms & conditions updated",
+      message,
       result,
     };
-  } else {
-    return await TermsConditions.create(payload);
+  } catch (error) {
+    // Log failure
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Failed to update or add terms & conditions by ${emailAuth}: ${error.message || "Unknown error"}.`,
+      types: "Failed",
+      activity: "reglue",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    throw new ApiError(
+      error.status || httpStatus.INTERNAL_SERVER_ERROR,
+      error.message || "An error occurred while updating or adding terms & conditions."
+    );
   }
 };
+
 
 const getTermsConditions = async () => {
   return await TermsConditions.findOne();
@@ -398,23 +468,65 @@ const deleteTermsConditions = async (query) => {
   return result;
 };
 
-const addPrivacyPolicy = async (payload) => {
-  const checkIsExist = await PrivacyPolicy.findOne();
+const addPrivacyPolicy = async (req) => {
+  const { userId, emailAuth } = req.user;
+  const payload = req.body;
 
-  if (checkIsExist) {
-    const result = await PrivacyPolicy.findOneAndUpdate({}, payload, {
-      new: true,
-      runValidators: true,
-    });
+  if (!payload || Object.keys(payload).length === 0) {
+    throw new ApiError(400, "Payload is required to add or update privacy policy.");
+  }
+
+  try {
+    const checkIsExist = await PrivacyPolicy.findOne();
+
+    let result;
+    let message;
+
+    if (checkIsExist) {
+      result = await PrivacyPolicy.findOneAndUpdate({}, payload, {
+        new: true,
+        runValidators: true,
+      });
+      message = "Privacy policy updated successfully";
+    } else {
+      result = await PrivacyPolicy.create(payload);
+      message = "Privacy policy added successfully";
+    }
+
+    // Log success
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `${message} by ${emailAuth}.`,
+      types: checkIsExist ? "Update" : "Create",
+      activity: "reglue",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
 
     return {
-      message: "Privacy policy updated",
+      message,
       result,
     };
-  } else {
-    return await PrivacyPolicy.create(payload);
+  } catch (error) {
+    // Log failure
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Failed to update or add privacy policy by ${emailAuth}: ${error.message || "Unknown error"}.`,
+      types: "Failed",
+      activity: "reglue",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    throw new ApiError(
+      error.status || httpStatus.INTERNAL_SERVER_ERROR,
+      error.message || "An error occurred while updating or adding the privacy policy."
+    );
   }
 };
+
 
 const getPrivacyPolicy = async () => {
   return await PrivacyPolicy.findOne();

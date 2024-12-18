@@ -6,26 +6,26 @@ const checkAdminAccess = require("../../middlewares/checkAdminAccess");
 const { BidController } = require("../bid/bid.controller");
 
 const router = express.Router();
- 
+
 router
-// home -----------------
-.get(
-  "/total-counts",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
-  DashboardController.getTotalIncomeUserAuction
-)
-.get(
-  "/income-overview",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
-  DashboardController.incomeOverview
-)
-.get(
-  "/user-growth",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
-  DashboardController.getUserGrowth
-)
- 
-// user ========================
+  // home -----------------
+  .get(
+    "/total-counts",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.getTotalIncomeUserAuction
+  )
+  .get(
+    "/income-overview",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.incomeOverview
+  )
+  .get(
+    "/user-growth",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.getUserGrowth
+  )
+  
+  // user ========================
   .get(
     "/get_all_user",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
@@ -62,8 +62,8 @@ router
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.getPaddingPartner
-  ) 
-   
+  )
+
   .get(
     "/get_partner_details",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
@@ -84,7 +84,7 @@ router
   .patch(
     "/approve_decline_partner",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE),
     DashboardController.approveDeclinePartner
   )
 
@@ -110,9 +110,9 @@ router
     "/block-unblock-user-partner-admin",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE,
-       ENUM_ADMIN_ACCESS.ACC_TO_USER_MANAGE, 
-       ENUM_ADMIN_ACCESS.ACC_TO_ADMIN_MANAGE,  
-       ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+      ENUM_ADMIN_ACCESS.ACC_TO_USER_MANAGE,
+      ENUM_ADMIN_ACCESS.ACC_TO_ADMIN_MANAGE,
+      ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.blockUnblockUserPartnerAdmin
   )
 
@@ -120,27 +120,27 @@ router
   .post(
     "/add-terms-conditions",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.addTermsConditions
   )
   .get("/get-terms-conditions", DashboardController.getTermsConditions)
   .delete(
     "/delete-terms-conditions",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SETTINGS, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SETTINGS, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.deleteTermsConditions
   )
   .post(
     "/add-privacy-policy",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SETTINGS, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SETTINGS, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.addPrivacyPolicy
   )
   .get("/get-privacy-policy", DashboardController.getPrivacyPolicy)
   .delete(
     "/delete-privacy-policy",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SETTINGS, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SETTINGS, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.deletePrivacyPolicy
   )
 
@@ -185,20 +185,19 @@ router
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.sendNoticePartner
   )
-
- .get(
+  .get(
     '/transactions',
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.getTransactionsHistory
-)
-.get(
-  '/transaction/:id',
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  DashboardController.getTransactionsDetails
-)
+  )
+  .get(
+    '/transaction/:id',
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.getTransactionsDetails
+  )
 
-// =File Claim================================
- .patch(
+  // =File Claim================================
+  .patch(
     "/status-file-claim",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_FILE_CLAIM_MANAGE),
@@ -214,10 +213,7 @@ router
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     BidController.getAllFileClaims
   )
- 
- 
+// variable ========================
 
-  // variable ========================
- 
 
 module.exports = router;

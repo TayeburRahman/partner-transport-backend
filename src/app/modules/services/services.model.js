@@ -35,7 +35,7 @@ const ServicesSchema = new Schema(
       required: [true, "Service type is required"],
     },
     category: {
-      type: [String],
+      type: [mongoose.Schema.ObjectId],
       ref: "Category",
       required: [true, "Category is required"],
     },

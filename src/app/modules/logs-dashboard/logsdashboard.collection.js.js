@@ -21,12 +21,25 @@ const eventsCreationRate = catchAsync(async (req, res) => {
       data: result,
     });
   });
+  
+  const getActivityLog = catchAsync(async (req, res) => {
+    const result = await LogsDashboardService.getActivityLog(req);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Success",
+      data: result,
+    });
+  });
+   
+
    
 
 
   const LogsDashboardController = {
     eventsCreationRate, 
     getMostCreatedUsers,
+    getActivityLog
   };
   
   module.exports = { LogsDashboardController };

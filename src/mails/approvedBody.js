@@ -66,14 +66,12 @@ const approvedBody = (data) =>
                <p>We are excited to inform you that your application for the partner profile has been approved!</p>
                <p>We appreciate your interest in joining our community, and we look forward to your valuable contribution. You can now access your account and begin exploring the available opportunities.</p>
                <div class="btn-container">
-                   <a href="https://bdcalling.com" class="btn">
-                        <span class="btn-text">Go to Your Dashboard</span>
-                   </a>
+                  
                </div>
                <p>If you have any questions or need further assistance, feel free to contact our support team at any time.</p>
-               <p>Thank you for choosing bdCalling!</p>
+               <p>Thank you for choosingXmoveit!</p>
                <div class="footer">
-                   <p>&copy; ${new Date().getFullYear()} bdCalling. All rights reserved.</p>
+                   <p>&copy; ${new Date().getFullYear()}Xmoveit. All rights reserved.</p>
                </div>
            </div>
        </body>

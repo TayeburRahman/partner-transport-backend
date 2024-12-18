@@ -18,7 +18,11 @@ router
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     LogsDashboardController.getMostCreatedUsers
   )
-
+  .get(
+    "/get-activity-log",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    LogsDashboardController.getActivityLog
+  )
    
 
 module.exports = router;

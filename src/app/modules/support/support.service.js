@@ -4,6 +4,7 @@ const ApiError = require("../../../errors/ApiError");
 const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const { NotificationService } = require("../notification/notification.service");
 const { Tickets } = require("./support.model");
+const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 
 // ==============================
 //  Tickets 
@@ -38,34 +39,73 @@ const createTicket = async (req) => {
     return ticket;
   };
   
-  const repliedTicket = async(req) =>{
-    const { reply } = req.body
+  const repliedTicket = async (req) => {
+    const { reply } = req.body;
     const { ticketId } = req.params;
-    const { userId } = req.user;
-
-    const ticketDb = await Tickets.findById(ticketId);
-
-    const ticket = await Tickets.findByIdAndUpdate(
-         ticketId, 
-        {replied: reply, status: "Replied"}, 
-        { new: true }
-    );
-    if (!ticket) {
-        throw new ApiError(404,"Ticket not found");
+    const { userId, emailAuth } = req.user;
+  
+    if (!reply || !ticketId) {
+      throw new ApiError(400, "Reply content and ticket ID are required.");
     }
-    await NotificationService.sendNotification({ 
-        title: "Ticket Reply Notification", 
-        message: "Your ticket has been replied to. Please review the response at your earliest convenience.", 
-        user: userId, 
-        userType: ticketDb.userType,   
+  
+    try {
+      const ticketDb = await Tickets.findById(ticketId);
+  
+      if (!ticketDb) {
+        throw new ApiError(404, "Ticket not found.");
+      }
+  
+      const ticket = await Tickets.findByIdAndUpdate(
+        ticketId,
+        { replied: reply, status: "Replied" },
+        { new: true }
+      );
+  
+      if (!ticket) {
+        throw new ApiError(404, "Ticket update failed.");
+      }
+  
+      // Send notification to the user
+      await NotificationService.sendNotification({
+        title: "Ticket Reply Notification",
+        message: "Your ticket has been replied to. Please review the response at your earliest convenience.",
+        user: ticketDb.user,
+        userType: ticketDb.userType,
         getId: ticket._id,
-        types: 'ticket'
-    })
-
-    return ticket;
-
-  }
-
+        types: "ticket",
+      });
+  
+      // Log success
+      const newTask = {
+        admin: userId,
+        email: emailAuth,
+        description: `Ticket with ID ${ticketId} successfully replied to.`,
+        types: "Update",
+        activity: "task",
+        status: "Success",
+      };
+      await LogsDashboardService.createTaskDB(newTask);
+  
+      return ticket;
+    } catch (error) {
+      // Log failure
+      const newTask = {
+        admin: userId,
+        email: emailAuth,
+        description: `Failed to reply to ticket with ID ${ticketId}: ${error.message || "Unknown error"}.`,
+        types: "Failed",
+        activity: "task",
+        status: "Error",
+      };
+      await LogsDashboardService.createTaskDB(newTask);
+  
+      throw new ApiError(
+        error.status || httpStatus.INTERNAL_SERVER_ERROR,
+        error.message || "An error occurred while replying to the ticket."
+      );
+    }
+  };
+  
   const getTicketDb = async (req) => {
     try {
       const { page = 1, limit = 10, searchTerm } = req.query;

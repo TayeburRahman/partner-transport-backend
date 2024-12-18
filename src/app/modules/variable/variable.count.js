@@ -1,4 +1,5 @@
 const ApiError = require("../../../errors/ApiError");
+const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const { ContactNumber } = require("../manage/manage.model");
 const Variable = require("./variable.model");
 
@@ -69,33 +70,66 @@ const convertPesoToDollar = async (price) => {
   return { dollarCost };
 };
 
-const changeContactNumber = async ({ contactNumber }) => {
+const changeContactNumber = async (req) => {
+  const { contactNumber } = req.body;
+  const { userId, emailAuth } = req.user;
+
   if (!contactNumber) {
-    throw new Error("Contact number is required!");
+    throw new ApiError(400, "Contact number is required!");
   }
 
-  const existingContact = await ContactNumber.findOne();
+  try {
+    const existingContact = await ContactNumber.findOne();
 
-  if (existingContact) {
-    const result = await ContactNumber.findOneAndUpdate(
-      {},
-      { contact: contactNumber },
-      { new: true, runValidators: true }
+    let result;
+    let message;
+
+    if (existingContact) {
+      result = await ContactNumber.findOneAndUpdate(
+        {},
+        { contact: contactNumber },
+        { new: true, runValidators: true }
+      );
+      message = "Contact number updated successfully";
+    } else {
+      result = await ContactNumber.create({ contact: contactNumber });
+      message = "Contact number added successfully";
+    }
+
+    // Log success
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `${message} by ${emailAuth}. New contact number: ${contactNumber}.`,
+      types: existingContact ? "Update" : "Create",
+      activity: "reglue",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    return {
+      message,
+      result,
+    };
+  } catch (error) {
+    // Log failure
+    const newTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Failed to change contact number by ${emailAuth}: ${error.message || "Unknown error"}.`,
+      types: "Failed",
+      activity: "reglue",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask);
+
+    throw new ApiError(
+      error.status || httpStatus.INTERNAL_SERVER_ERROR,
+      error.message || "An error occurred while changing the contact number."
     );
-
-    return {
-      message: "Contact number updated successfully",
-      result,
-    };
-  } else {
-    const result = await ContactNumber.create({ contact: contactNumber });
-
-    return {
-      message: "Contact number added successfully",
-      result,
-    };
   }
 };
+
 
 const getContactNumber = async () => {
   return ContactNumber.findOne({})

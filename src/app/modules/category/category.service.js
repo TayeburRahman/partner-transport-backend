@@ -139,10 +139,7 @@ const getAllCategory = async (query) => {
 
   const result = await categoryQuery.modelQuery;
   const meta = await categoryQuery.countTotal();
-
-  if (!result) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Category not found");
-  }
+ 
 
   return {
     meta,
