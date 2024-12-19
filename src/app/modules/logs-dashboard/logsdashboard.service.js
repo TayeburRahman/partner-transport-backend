@@ -413,8 +413,7 @@ const getTaskCompleted = async (req) => {
 
   const total = totalDocuments[0]?.total || 0;
   const totalPages = Math.ceil(total / limit);
-
-  // Return the result with meta info
+ 
   return {
     meta: {
       total,
@@ -453,15 +452,12 @@ const getTaskSummary = async () => {
       Tickets.countDocuments({ status: "Replied" }),
     ]);
 
-
-    // Calculate totals
+ 
     const totalTasks = totalFileClaims + totalWithdraws + totalTickets;
     const completedTasks = resolvedFileClaims + completedWithdraws + repliedTickets;
     const tasksInProgress = inProgressFileClaims;
     const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0;
-
-
-    // Return the summary
+ 
     return {
       totalTasks,
       completedTasks,

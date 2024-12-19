@@ -131,13 +131,8 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
         await emitMassage(receiverId, newMessage, ENUM_SOCKET_EVENT.MESSAGE_NEW)
 
     },
-    );
-
-    // get all conversation list with last message
-    socket.on(ENUM_SOCKET_EVENT.ACTIVE_ADMIN, async (data) => {
-      console.log("onlineUsers", onlineUsers)
-       
-    });
+    ); 
+      
 }
 
 const emitMassage = (receiver, data, emit_massage) => {
