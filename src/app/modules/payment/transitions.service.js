@@ -191,6 +191,7 @@ const withdrawSuccess = async (req, res) => {
       types: "Withdraw",
       activity: "task",
       status: "Success",
+      attended: "withdraw"
     };
     await LogsDashboardService.createTaskDB(newTask);
 

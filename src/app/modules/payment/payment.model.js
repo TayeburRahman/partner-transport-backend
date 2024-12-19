@@ -109,7 +109,8 @@ const withdrawSchema = new Schema({
 }, { timestamps: true });
 
 // Registering the model
-const Transaction = mongoose.model('Transaction', transactionSchema); 
 const Withdraw = mongoose.model('Withdraw', withdrawSchema); 
+const Transaction = mongoose.model('Transaction', transactionSchema); 
+ 
 
 module.exports = { Transaction, Withdraw};

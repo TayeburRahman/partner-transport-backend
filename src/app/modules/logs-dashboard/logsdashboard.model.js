@@ -38,6 +38,11 @@ const logAdminSchema = new Schema(
       type: String,
       enum: ['reglue', 'task', 'progressing'],
     },
+    attended: {
+        type: String,
+        enum: ['reglue', 'tickets', 'complaints', "withdraw"],
+        default: 'reglue',
+      },
     status: {
       type: String,
       enum: ['Success', 'Error', 'Warning'],

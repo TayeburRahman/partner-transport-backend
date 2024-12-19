@@ -3,6 +3,7 @@ const { ENUM_SOCKET_EVENT } = require('../utils/enums');
 const {handleNotification} = require('../app/modules/notification/notification.service');
 const { handlePartnerData } = require('../app/modules/partner/partner.socket');
 const { handleMessageData } = require('../app/modules/message/message.socket');
+const Admin = require('../app/modules/admin/admin.model');
    
  
 // Set to keep track of online users
@@ -17,11 +18,20 @@ const socket = async (io) => {
 
     // Add the user to the online users set
     onlineUsers.add(currentUserId);
-    io.emit("onlineUser", Array.from(onlineUsers));
+
+    // io.emit("onlineUser", Array.from(onlineUsers));
     console.log("A user connected======", onlineUsers);
+    
+    socket.on(ENUM_SOCKET_EVENT.ACTIVE_ADMIN, async (data) => {
+      console.log("onlineUsers", onlineUsers)
+
+      const activeAdmin = await Admin.find({_id: onlineUsers })
+       
+      io.emit(ENUM_SOCKET_EVENT.ACTIVE_ADMIN, Array.from(onlineUsers)); 
+    })
 
     // Handle massage events
-    await handleMessageData(currentUserId, role, socket, io)
+    await handleMessageData(currentUserId, role, socket, io, onlineUsers)
 
     // Handle partner events
     await handlePartnerData(currentUserId, role, socket, io)

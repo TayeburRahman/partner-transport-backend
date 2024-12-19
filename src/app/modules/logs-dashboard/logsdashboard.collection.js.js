@@ -42,6 +42,29 @@ const eventsCreationRate = catchAsync(async (req, res) => {
     });
   });
 
+  const getTaskCompleted = catchAsync(async (req, res) => {
+    const result = await LogsDashboardService.getTaskCompleted(req);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Success",
+      data: result,
+    });
+  });
+  
+  const getTaskSummary = catchAsync(async (req, res) => {
+    const result = await LogsDashboardService.getTaskSummary(req);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Success",
+      data: result,
+    });
+  });
+
+
+   
+
 
    
    
@@ -53,7 +76,10 @@ const eventsCreationRate = catchAsync(async (req, res) => {
     eventsCreationRate, 
     getMostCreatedUsers,
     getAdminTaskCompted,
-    getActivityLog
+    getActivityLog,
+    getTaskCompleted,
+    getTaskSummary
+    
   };
   
   module.exports = { LogsDashboardController };

@@ -389,6 +389,7 @@ const updateStatusFileClaim = async (req, res) => {
       types: "Update",
       activity: status === "resolved"? "task":"progressing",
       status: "Success",
+      attended:"complaints"
     };
     await LogsDashboardService.createTaskDB(newTask);
 

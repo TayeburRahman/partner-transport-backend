@@ -83,6 +83,7 @@ const createTicket = async (req) => {
         types: "Update",
         activity: "task",
         status: "Success",
+        attended:"tickets"
       };
       await LogsDashboardService.createTaskDB(newTask);
   
