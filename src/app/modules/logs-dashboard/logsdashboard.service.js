@@ -187,6 +187,77 @@ const getMostCreatedUsers = async (req) => {
   }
   }; 
 
+  const getAdminTaskCompted = async (req) => {
+    const { page = 1, limit = 10, searchTerm } = req.query;
+   
+    const matchStage = {
+      activity: "task",
+      status: "Success",
+    };
+   
+    if (searchTerm) {
+      matchStage.email = { $regex: searchTerm, $options: "i" }; 
+    }
+  
+    const skip = (Number(page) - 1) * Number(limit);
+  
+    const summary = await LogAdmin.aggregate([ 
+      { $match: matchStage }, 
+      {
+        $group: {
+          _id: "$admin",  
+          email: { $first: "$email" }, 
+          totalTasksCompleted: { $sum: 1 },  
+        },
+      }, 
+      {
+        $lookup: {
+          from: "admins",  
+          localField: "_id",
+          foreignField: "_id",
+          as: "adminDetails",
+        },
+      }, 
+      { $unwind: "$adminDetails" }, 
+      {
+        $project: {
+          _id: 0,  
+          adminId: "$_id",
+          name: "$adminDetails.name",
+          email: 1,
+          totalTasksCompleted: 1,
+        },
+      }, 
+      { $sort: { totalTasksCompleted: -1 } }, 
+      { $skip: skip },
+      { $limit: Number(limit) },
+    ]);
+   
+    const totalDocuments = await LogAdmin.aggregate([
+      { $match: matchStage }, 
+      {
+        $group: {
+          _id: "$admin",
+        },
+      },
+      { $count: "total" },
+    ]);
+  
+    const total = totalDocuments[0]?.total || 0;
+    const totalPage = Math.ceil(total / limit);
+   
+    return {
+      meta: {
+        total,
+        totalPage,
+        page: Number(page),
+        limit: Number(limit),
+      },
+      data: summary,
+    };
+  };
+  
+
 // Active Log==================================
 const getActivityLog = async (req) => {
   const { type, status, date, email, searchTerm, page = 1, limit = 10, sort = "-date" } = req.query;
@@ -217,6 +288,7 @@ const getActivityLog = async (req) => {
   try {
     // Query the database with filters, sorting, and pagination
     const data = await LogAdmin.find(filterQuery)
+      .populate('admin')
       .sort(sort)
       .skip(skip)
       .limit(Number(limit))
@@ -248,8 +320,10 @@ const getActivityLog = async (req) => {
 const LogsDashboardService = {
     eventsCreationRate, 
     getMostCreatedUsers,
+    getAdminTaskCompted,
     createTaskDB,
-    getActivityLog
+    getActivityLog,
+
   };
   
   module.exports = { LogsDashboardService };

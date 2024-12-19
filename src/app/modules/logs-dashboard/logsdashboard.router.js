@@ -19,6 +19,13 @@ router
     LogsDashboardController.getMostCreatedUsers
   )
   .get(
+    "/most-admin-tasks",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    LogsDashboardController.getAdminTaskCompted
+  )
+
+   
+  .get(
     "/get-activity-log",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     LogsDashboardController.getActivityLog

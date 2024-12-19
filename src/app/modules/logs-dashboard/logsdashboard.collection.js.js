@@ -31,6 +31,19 @@ const eventsCreationRate = catchAsync(async (req, res) => {
       data: result,
     });
   });
+
+  const getAdminTaskCompted = catchAsync(async (req, res) => {
+    const result = await LogsDashboardService.getAdminTaskCompted(req);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Success",
+      data: result,
+    });
+  });
+
+
+   
    
 
    
@@ -39,6 +52,7 @@ const eventsCreationRate = catchAsync(async (req, res) => {
   const LogsDashboardController = {
     eventsCreationRate, 
     getMostCreatedUsers,
+    getAdminTaskCompted,
     getActivityLog
   };
   
