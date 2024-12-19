@@ -16,7 +16,14 @@ router
   .post("/forgot-password", AuthController.forgotPass)
   .post("/forgot-resend", AuthController.resendCodeForgotAccount)
   .post("/verify-otp", AuthController.checkIsValidForgetActivationCode)
-  .post("/reset-password", AuthController.resetPassword)
+  .post("/reset-password",
+    // auth(
+    //   ENUM_USER_ROLE.USER,
+    //   ENUM_USER_ROLE.PARTNER,
+    //   ENUM_USER_ROLE.ADMIN,
+    //   ENUM_USER_ROLE.SUPER_ADMIN
+    // ),
+     AuthController.resetPassword)
   .patch(
     "/change-password",
     auth(

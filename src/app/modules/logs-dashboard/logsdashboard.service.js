@@ -330,33 +330,33 @@ const getActivityLog = async (req) => {
 // Supervision Dashboard
 const getTaskCompleted = async (req) => {
   const { page = 1, limit = 10, searchTerm } = req.query;
- 
+
   const matchStage = {
     activity: "task",
     status: "Success",
   };
- 
+
   if (searchTerm) {
     matchStage.$or = [
-      { description: { $regex: searchTerm, $options: "i" } }, 
-      { email: { $regex: searchTerm, $options: "i" } },  
-      { "adminDetails.name": { $regex: searchTerm, $options: "i" } },  
+      { description: { $regex: searchTerm, $options: "i" } },
+      { email: { $regex: searchTerm, $options: "i" } },
+      { "adminDetails.name": { $regex: searchTerm, $options: "i" } },
     ];
   }
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const results = await LogAdmin.aggregate([ 
-    { $match: matchStage }, 
+  const results = await LogAdmin.aggregate([
+    { $match: matchStage },
     {
       $lookup: {
-        from: "admins",  
+        from: "admins",
         localField: "admin",
         foreignField: "_id",
         as: "adminDetails",
       },
-    }, 
-    { $unwind: "$adminDetails" }, 
+    },
+    { $unwind: "$adminDetails" },
     ...(searchTerm
       ? [
         {
@@ -369,26 +369,26 @@ const getTaskCompleted = async (req) => {
           },
         },
       ]
-      : []), 
+      : []),
     {
-      $project: { 
-       _id: "$adminDetails._id",  
+      $project: {
+        _id: "$adminDetails._id",
         task: "$description",
         assignedAdmin: "$adminDetails.name",
-        image: "$adminDetails.profile_image", 
-        status: "Resolved", 
+        image: "$adminDetails.profile_image",
+        status: "Resolved",
       },
-    }, 
-    { $sort: { date: -1, time: -1 } }, 
+    },
+    { $sort: { date: -1, time: -1 } },
     { $skip: skip },
     { $limit: Number(limit) },
   ]);
- 
+
   const totalDocuments = await LogAdmin.aggregate([
-    { $match: matchStage },  
+    { $match: matchStage },
     {
       $lookup: {
-        from: "admins", 
+        from: "admins",
         localField: "admin",
         foreignField: "_id",
         as: "adminDetails",
@@ -413,7 +413,7 @@ const getTaskCompleted = async (req) => {
 
   const total = totalDocuments[0]?.total || 0;
   const totalPages = Math.ceil(total / limit);
- 
+
   return {
     meta: {
       total,
@@ -452,12 +452,12 @@ const getTaskSummary = async () => {
       Tickets.countDocuments({ status: "Replied" }),
     ]);
 
- 
+
     const totalTasks = totalFileClaims + totalWithdraws + totalTickets;
     const completedTasks = resolvedFileClaims + completedWithdraws + repliedTickets;
     const tasksInProgress = inProgressFileClaims;
     const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0;
- 
+
     return {
       totalTasks,
       completedTasks,
@@ -468,8 +468,6 @@ const getTaskSummary = async () => {
     throw new Error(`Failed to fetch task summary: ${error.message}`);
   }
 };
-
-
 
 
 const LogsDashboardService = {

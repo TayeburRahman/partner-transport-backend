@@ -259,6 +259,7 @@ const loginAccount = async (payload) => {
 
 const forgotPass = async (payload) => {
   try {
+    console.log(JSON.stringify(payload));
     if (!payload?.email) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Email is required!");
     }
@@ -330,6 +331,8 @@ const checkIsValidForgetActivationCode = async (payload) => {
 const resetPassword = async (req) => {
   const { email } = req.query;
   const { newPassword, confirmPassword } = req.body;
+
+  console.log(" ffdg", email, newPassword, confirmPassword);
 
   if (newPassword !== confirmPassword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Passwords do not match");

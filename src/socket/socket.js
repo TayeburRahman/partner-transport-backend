@@ -4,19 +4,38 @@ const { handleNotification } = require('../app/modules/notification/notification
 const { handlePartnerData } = require('../app/modules/partner/partner.socket');
 const { handleMessageData } = require('../app/modules/message/message.socket');
 const Admin = require('../app/modules/admin/admin.model');
+const { LogAdmin } = require('../app/modules/logs-dashboard/logsdashboard.model');
 
- 
+
 const onlineUsers = new Set();
 
 const socket = async (io) => {
   const emitActiveAdmins = async () => {
-    try {
-      // Fetch active admin details
-      const activeAdmins = await Admin.find({ _id: { $in: Array.from(onlineUsers) } });
-      // Emit the updated list of active admins
-      io.emit(ENUM_SOCKET_EVENT.ACTIVE_ADMIN, activeAdmins);
+    try { 
+      const onlineAdminIds = Array.from(onlineUsers);
+   
+      const activeAdmins = await Admin.find({ _id: { $in: onlineAdminIds } });
+   
+      const today = new Date().toISOString().split('T')[0];
+   
+      const activeAdminsWithTasks = await Promise.all(
+        activeAdmins.map(async (admin) => {
+          const todayCompletedTasks = await LogAdmin.countDocuments({
+            admin: admin._id, 
+            date: today,     
+            status: "Success",  
+          });
+  
+          return {
+            ...admin.toObject(),  
+            todayCompletedTasks,
+          };
+        })
+      );
+   
+      io.emit(ENUM_SOCKET_EVENT.ACTIVE_ADMIN, activeAdminsWithTasks);
     } catch (error) {
-      console.error('Error fetching active admins:', error.message);
+      console.error('Error fetching active admins or their completed tasks:', error.message);
     }
   };
 

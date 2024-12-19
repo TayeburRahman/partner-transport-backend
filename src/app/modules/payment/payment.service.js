@@ -5,13 +5,11 @@ const Services = require("../services/services.model");
 const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const config = require("../../../config");
 const ApiError = require("../../../errors/ApiError");
-const { Transaction } = require("./payment.model");
-// const { assign } = require("nodemailer/lib/shared");
+const { Transaction } = require("./payment.model"); 
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const paypal = require('paypal-rest-sdk');
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
-const Admin = require("../admin/admin.model");
-// const express = require('express');
+const Admin = require("../admin/admin.model"); 
 
 const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
 paypal.configure({
@@ -19,6 +17,7 @@ paypal.configure({
   'client_id': config.paypal.paypal_client_id,
   'client_secret': config.paypal.paypal_client_secret_key
 });
+
 //Stripe Payment -------------
 const createCheckoutSessionStripe = async (req) => {
   try {
@@ -436,8 +435,8 @@ const paypalRefundPayment = async (req, res) => {
       description: `Refund successful: Service ID ${serviceId} refunded an amount of $${amount} via PayPal.`,
       types: "Refund",
       activity: "task",
-      status: "Success", 
-    }; 
+      status: "Success",
+    };
     await LogsDashboardService.createTaskDB(newTask)
     // =====
 
@@ -453,7 +452,7 @@ const paypalRefundPayment = async (req, res) => {
       types: "Failed",
       activity: "task",
       status: "Error",
-    }; 
+    };
     await LogsDashboardService.createTaskDB(newTask)
     // =====
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error);
@@ -465,6 +464,8 @@ const stripeRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
   const { userId, emailAuth, role } = req.user;
 
+  console.log("fds", saleId, amount, serviceId)
+
   try {
     if (!saleId || !amount || !serviceId) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Missing required parameters!");
@@ -472,8 +473,8 @@ const stripeRefundPayment = async (req, res) => {
     const service = await Services.findById(serviceId);
     if (!service) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Service not found!");
-    } 
- 
+    }
+
     let user;
     let payUserRole;
     if (role === ENUM_USER_ROLE.USER) {
@@ -507,7 +508,7 @@ const stripeRefundPayment = async (req, res) => {
 
     service.paymentStatus = 'refunded';
     await service.save();
- 
+
 
     const transactionData = {
       serviceId,

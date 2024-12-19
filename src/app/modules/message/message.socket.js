@@ -13,7 +13,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
     // Get one to one - all conversation messages
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_GETALL, async (data) => {
         const { senderId, page } = data;
-    
+
         if (!senderId) {
             socket.emit('error', {
                 message: 'SenderId not found!',
@@ -42,7 +42,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
         }
     },
     );
- 
+
     // Create a new chat message and send it to both participants.
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_NEW, async (data) => {
         const { senderId, text, userType } = data;
@@ -90,49 +90,48 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
                 userType: userRoleType,
                 getId: receiverId,
                 types: 'new-message'
-            }) 
+            })
         }
-       
+
         // ---------------
         const findParticipant = async (id) => {
             let participant =
-              (await User.findOne({ _id: id })) ||
-              (await Partner.findOne({ _id: id })) ||
-              (await Admin.findOne({ _id: id }));
+                (await User.findOne({ _id: id })) ||
+                (await Partner.findOne({ _id: id })) ||
+                (await Admin.findOne({ _id: id }));
             return participant;
-          };
-       
-          const [sender] = await Promise.all([ 
+        };
+
+        const [sender] = await Promise.all([
             findParticipant(senderId),
-          ]); 
-       
-          const getRole = (user) => { 
+        ]);
+
+        const getRole = (user) => {
             if (!user) return null;
-            if (user instanceof Admin) return true;  
-            if (user instanceof Partner) return false;  
+            if (user instanceof Admin) return true;
+            if (user instanceof Partner) return false;
             return false;
-          };
-          
-          const senderRole = getRole(sender);
- 
-    
+        };
+
+        const senderRole = getRole(sender);
+
+
         const newMessage = new Message({
             senderId,
             receiverId,
-            text, 
+            text,
             isAdmin: senderRole,
             conversationId: conversation._id,
         });
 
         conversation.messages.push(newMessage._id);
-        await Promise.all([conversation.save(), newMessage.save()]); 
-     
+        await Promise.all([conversation.save(), newMessage.save()]);
+
         await emitMassage(senderId, newMessage, ENUM_SOCKET_EVENT.MESSAGE_NEW)
         await emitMassage(receiverId, newMessage, ENUM_SOCKET_EVENT.MESSAGE_NEW)
 
     },
-    ); 
-      
+    );
 }
 
 const emitMassage = (receiver, data, emit_massage) => {
