@@ -21,9 +21,16 @@ router.get(
 
 router.get(
   "/admin",
-  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.DRIVER, ENUM_USER_ROLE.USER),
-  checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_NOTIFICATION_MANAGE),
-  notificationController.getAllNotification
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN ),
+  // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_NOTIFICATION_MANAGE),
+  notificationController.getAdminNotification
+);
+
+router.delete(
+  "/admin-delete/:id",
+  auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN ),
+  // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_NOTIFICATION_MANAGE),
+  notificationController.deleteAdminNotification
 );
 
 module.exports = router;

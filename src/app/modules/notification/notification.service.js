@@ -3,6 +3,7 @@ const ApiError = require("../../../errors/ApiError");
 const { ENUM_SOCKET_EVENT, ENUM_USER_ROLE } = require("../../../utils/enums");
 const Admin = require("../admin/admin.model");
 const Auth = require("../auth/auth.model");
+const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const { sendNotificationOnesignal } = require("../one-signal/onesignal.notifications");
 const Partner = require("../partner/partner.model");
 const User = require("../user/user.model");
@@ -154,20 +155,65 @@ const getUserNotification = async (req) => {
   return { result, meta };
 };
 
+const getAdminNotification = async (req) => { 
+  const query = req.query;
+  const notifications = new QueryBuilder(Notification.find({ admin: true }), query) 
+  const result = await notifications.modelQuery;
+  const meta = await notifications.countTotal(); 
+  return { result, meta };
+};
+
 const getNoticeNotification = async (req, res) => { 
-  const { id } = req.params;
-
-  const notice = await Notification.findById(id);
-
+  const { id } = req.params; 
+  const notice = await Notification.findById(id); 
   return notice
 }
+
+const deleteAdminNotification = async (req) => {
+  const { id } = req.params;
+  const { userId, emailAuth } = req.user;
+ 
+  if (!id) {
+    throw new ApiError(400, "Notification ID is required.");
+  }
+ 
+  const deletedNotification = await Notification.findByIdAndDelete(id);
+  if (!deletedNotification) {
+    throw new ApiError(404, "Notification not found.");
+  }
+
+  // Log the deletion activity
+  try {
+    const logTask = {
+      admin: userId,
+      email: emailAuth,
+      description: `Admin email ${emailAuth} deleted notification with ID ${id}.`,
+      types: "Delete",
+      activity: "reglue",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(logTask);
+  } catch (logError) {
+    console.error("Failed to log activity:", logError);
+  }
+ 
+  return {
+    message: "Notification deleted successfully.",
+    deletedNotification,
+  };
+};
+
+
+ 
 
 const NotificationService = {
   handleNotification,
   sendNotification,
   emitNotification,
   getUserNotification,
-  getNoticeNotification
+  getNoticeNotification,
+  getAdminNotification,
+  deleteAdminNotification
 };
 
 module.exports = { NotificationService}
