@@ -11,6 +11,7 @@ const { NotificationService } = require("../notification/notification.service");
 const QueryBuilder = require("../../../builder/queryBuilder");
 const httpStatus = require("http-status");
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
+const Notification = require("../notification/notification.model");
 // const Bids = require("./bid.model");
 
 const partnerBidPost = async (req) => {
@@ -29,15 +30,24 @@ const partnerBidPost = async (req) => {
     throw new ApiError(404, "Service not found");
   }
 
-  const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
-
-  if (price < minimumBed || price > maximumBed) {
-    throw new ApiError(
-      400,
-      `Price must be greater than or equal to ${minimumBed} and less than or equal to ${maximumBed}`
-    );
-  }
-
+  if(foundService.mainService === "move"){
+    const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
+    if (price < minimumBed || price > maximumBed) {
+      throw new ApiError(
+        400,
+        `Price must be greater than or equal to ${minimumBed} and less than or equal to ${maximumBed}`
+      );
+    }
+  }else if(foundService.mainService === "sell"){
+    if (price < foundService.minPrice ) {
+      throw new ApiError(
+        400,
+        `Price must be greater than or equal to ${foundService.minPrice}.`
+      );
+    }
+  }else{
+    throw new ApiError(400, "Invalid service type, please try later.");
+  } 
 
   const existingBid = await Bids.findOne({
     service: serviceId,
@@ -342,7 +352,15 @@ const createFileClaim = async (req, res) => {
     serviceId,
     description,
     userType: role === "USER" ? "User" : "Partner"
-  })
+  }) 
+
+  await Notification.create({
+    title: "New File Claim Submitted",
+    message: `${user.name} has submitted a new file claim for Service ID: ${serviceId}. Please review the details.`,
+    userType:"Admin",
+    types: 'none',
+    admin: true,
+  });
 
   return result;
 }
@@ -413,7 +431,6 @@ const updateStatusFileClaim = async (req, res) => {
   }
 };
 
-
 const getAllFileClaims = async (req, res) => {
   try {
     const query = req.query;
@@ -457,16 +474,22 @@ const getAllFileClaims = async (req, res) => {
 //cut-amount---
 const applyPenaltyPercent = async (req, res) => {
   const { serviceId, amountPercent, reason, id } = req.body;
-
+  console.log("Inputs:", serviceId, amountPercent, reason, id);
+ 
   if (!serviceId || !mongoose.isValidObjectId(serviceId)) {
     throw new ApiError(400, "Invalid or missing serviceId.");
   }
-
+ 
+  const fileClaim = await FileClaim.findById(id);
+  if (!fileClaim) {
+    throw new ApiError(400, "Invalid or missing file claim 'id'.");
+  }
+ 
   const percentValue = parseFloat(amountPercent);
   if (isNaN(percentValue) || percentValue <= 0) {
-    throw new ApiError(400, "Invalid or missing cut amount.");
+    throw new ApiError(400, "Invalid or missing cut amount percentage.");
   }
-
+ 
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(404, "Service not found.");
@@ -476,22 +499,31 @@ const applyPenaltyPercent = async (req, res) => {
   if (!transaction) {
     throw new ApiError(404, "No transactions found for this service.");
   }
-
+ 
   const { amount } = transaction;
-  const cutAmount = Number(amount) - (Number(amount) * (percentValue / 100))
-
-  transaction.amount = cutAmount;
-  transaction.payType = 'fine';
-  transaction.finePercent = percentValue;
-  transaction.fineReason = reason;
-
+  const cutAmount = Number(amount) * (percentValue / 100);
+ 
+  const fineTransaction = {
+    ...transaction.toObject(),  
+    amount: cutAmount,
+    payType: 'fine',
+    finePercent: percentValue,
+    fineReason: reason,
+    fileClaimImage: fileClaim.fileClaimImage,
+  };
+  delete fineTransaction._id;
+  delete fineTransaction.createdAt;
+  delete fineTransaction.updatedAt;
+ 
   if (service.mainService === "sell") {
     const user = await User.findById(service.user);
     if (!user || user.wallet === undefined) {
       throw new ApiError(404, "User not found or wallet not initialized.");
     }
+
     user.wallet -= cutAmount;
     await user.save();
+ 
     await NotificationService.sendNotification({
       title: "Penalty Applied",
       message: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
@@ -505,8 +537,10 @@ const applyPenaltyPercent = async (req, res) => {
     if (!partner || partner.wallet === undefined) {
       throw new ApiError(404, "Partner not found or wallet not initialized.");
     }
+
     partner.wallet -= cutAmount;
     await partner.save();
+ 
     await NotificationService.sendNotification({
       title: "Penalty Applied",
       message: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
@@ -514,16 +548,13 @@ const applyPenaltyPercent = async (req, res) => {
       userType: 'Partner',
       types: 'none',
     });
+  } else {
+    throw new ApiError(400, "Unsupported service type.");
   }
-  await transaction.save();
+ 
+  const result = await Transaction.create(fineTransaction);
 
-  await FileClaim.findById(id, {
-    $set: { status: 'pending' }
-  })
-
-
-
-  return { service, transaction };
+  return { service, result };
 };
 
 const statusServicesDetails = async (req, res) => {

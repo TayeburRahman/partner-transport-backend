@@ -6,6 +6,7 @@ const User = require("../user/user.model");
 const { Transaction, Withdraw } = require("./payment.model");
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const httpStatus = require("http-status");
+const Notification = require("../notification/notification.model");
 
 const paymentHistory = async (req, res) => {
 
@@ -119,6 +120,14 @@ const withdrawRequest = async (req, res) => {
     name: user.name
   });
   await withdraw.save();
+
+  await Notification.create({
+    title: "Withdraw Request Submitted",
+    message: `${userType} ${user.email} has requested a withdrawal of $${amount}.`,
+    userType: "Admin", 
+    types: 'none',
+    admin: true,
+  });
 
   return { message: "Withdraw request sent successfully." };
 };

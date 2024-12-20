@@ -50,23 +50,34 @@ const ENUM_SERVICE_TYPE = {
 };
 
 const ENUM_ADMIN_ACCESS = {
-  ACC_TO_AUCTION_MANAGE: "accTo_auction_manage",
-  ACC_TO_USER_MANAGE: "accTo_user_manage",
-  ACC_TO_PARTNER_MANAGE: "accTo_partner_manage",
-  ACC_TO_TRANSACTION: "accTo_transaction",
-  ACC_TO_CATEGORY_MANAGE: "accTo_category_manage",
-  ACC_TO_REVIEW_CONVERSATION: "accTo_review_conversation",
-  ACC_TO_BANK_TRANSFER: "accTo_bank_transfer",
-  ACC_TO_VARIABLE_MANAGE: "accTo_variable_manage", //
-  ACC_TO_SUPPORT: "accTo_support",
-  ACC_TO_SETTINGS: "accTo_settings",
-  ACC_TO_EDIT: "accTo_editor",//
-  ACC_TO_ADMIN_MANAGE: "accTo_admin_manage",//
-  ACC_TO_NOTIFICATION_MANAGE: "accTo_notifications_manage",//
-  ACC_TO_AUDIT: "accTo_audit",//
-  ACC_TO_TERMS_CONDITIONS: "accTo_terms&conditions",//
-  ACC_TO_PRIVACY_POLICY: "accTo_privacyPolicy",//
-};
+  ACC_TO_AUCTION_MANAGE : "accTo_auction_manage",
+  ACC_TO_AUCTION_EDIT : "accTo_auction_edit",
+  ACC_TO_USER_MANAGE : "accTo_user_manage",
+  ACC_TO_USER_EDIT : "accTo_user_edit",
+  ACC_TO_PARTNER_MANAGE : "accTo_partner_manage",
+  ACC_TO_PARTNER_EDIT : "accTo_partner_edit",
+  ACC_TO_TRANSACTION : "accTo_transaction",
+  ACC_TO_TRANSACTION_EDIT : "accTo_transaction_edit",
+  ACC_TO_CATEGORY_MANAGE : "accTo_category_manage",
+  ACC_TO_CATEGORY_EDIT : "accTo_category_edit",
+  ACC_TO_REVIEW_CONVERSATION : "accTo_review_conversation",
+  ACC_TO_REVIEW_CONVERSATION_EDIT : "accTo_review_conversation_edit",
+  ACC_TO_BANK_TRANSFER : "accTo_bank_transfer",
+  ACC_TO_BANK_TRANSFER_EDIT : "accTo_bank_transfer_edit",
+  ACC_TO_SUPPORT : "accTo_support",
+  ACC_TO_SUPPORT_EDIT : "accTo_support_edit",
+  ACC_TO_SETTINGS : "accTo_settings",
+  ACC_TO_SETTINGS_EDIT : "accTo_settings_edit",
+  ACC_TO_VARIABLE_MANAGE : "accTo_variable_manage",
+  ACC_TO_VARIABLE_MANAGE_EDIT : "accTo_variable_manage_edit",
+  ACC_TO_ADMIN_MANAGE : "accTo_admin_manage",
+  ACC_TO_ADMIN_MANAGE_EDIT : "accTo_admin_manage_edit",
+  ACC_TO_NOTIFICATIONS_MANAGE : "accTo_notifications_manage",
+  ACC_TO_NOTIFICATIONS_EDIT : "accTo_notifications_edit",
+  ACC_TO_AUDIT_DASHBOARD : "accTo_audit_dashboard",
+  ACC_TO_SUPERVISION_DASHBOARD : "accTo_supervition_dashboard",
+  ACC_TO_ACTIVITY_LOG : "accTo_activity_log",
+}
 
 const ENUM_NOTIFICATION_TYPE = {
   NEW_SERVICE: "service",

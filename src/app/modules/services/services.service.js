@@ -70,21 +70,7 @@ function formatDate(date) {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
-
-// function formatTimeTo12hr(date) {
-//   let hours = date.getHours();
-//   const minutes = String(date.getMinutes()).padStart(2, '0');
-//   const ampm = hours >= 12 ? 'PM' : 'AM';
-//   hours = hours % 12 || 12;
-//   return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-// }
-
-// function formatTimeTo24hr(date) {
-//   let hours = date.getHours();
-//   const minutes = String(date.getMinutes()).padStart(2, '0');
-//   return `${String(hours).padStart(2, '0')}:${minutes}`;
-// }
-
+ 
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
@@ -92,7 +78,7 @@ const createPostDB = async (req) => {
     const data = req.body;
 
     const images = validateInputs(data, image);
-    
+
     const distance = Number(data.distance);
     const formattedDistance = parseFloat(distance?.toFixed(3));
 
@@ -119,6 +105,7 @@ const createPostDB = async (req) => {
       unloadingAddress: data.unloadingAddress,
       image: images,
       doYouForWaste: data.doYouForWaste,
+      minPrice: data?.minPrice,
       bids: [],
       confirmedPartner: null,
       loadingLocation: {
@@ -433,12 +420,12 @@ const rescheduledAction = async (req) => {
       httpStatus.BAD_REQUEST,
       "serviceId and rescheduledStatus are required in the query!"
     );
-  } 
+  }
 
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found!");
-  } 
+  }
 
   // Validate rescheduledStatus
   if (!["accepted", "decline"].includes(rescheduledStatus)) {
@@ -470,44 +457,6 @@ const rescheduledAction = async (req) => {
   return result;
 };
 
-// ============================  
-// const getUserServicesWithinOneHour = async (req) => {
-//   const { userId, role } = req.user;
-//   const now = new Date();
-//   const formattedDate = formatDate(now); 
-//   const formattedStartTime = formatTimeTo12hr(now);
-//   const formattedEndTime = formatTimeTo12hr(new Date(now.getTime() + 60 * 60 * 1000));
-//    console.log('formattedDate, formattedStartTime', formattedEndTime)
-//   const query = {
-//     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
-//     scheduleDate: {
-//       $gte: formattedDate
-//     },  
-//     scheduleTime: { 
-//       $gte: formattedStartTime, 
-//       $lt: formattedEndTime
-//     }
-//   };
-
-//   if (role === 'USER') {
-//     query.user = userId; 
-//   } else if (role === 'PARTNER') {
-//     query.confirmedPartner = userId; 
-//   } 
-//   const services = await Services.find(query)
-//     .populate({
-//       path: "confirmedPartner",
-//       select: "name email profile_image phone_number",
-//     })
-//     .populate({
-//       path: "user",
-//       select: "name email profile_image phone_number",
-//     }); 
-
-//   console.log("Fetched services:", services);
-//   return services;
-// };
-
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const now = new Date();
@@ -516,7 +465,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const formattedStartTime = formatTimeTo12hrs(now);
 
   const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000);
-  const formattedStartRange = formatTimeTo12hrs(oneHourBefore); 
+  const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
@@ -909,7 +858,7 @@ const updateSellServicesStatusPartner = async (req) => {
       await receivedUser.save({ session });
 
       transaction.isFinish = true;
-      await transaction.save({ session }); 
+      await transaction.save({ session });
 
       await NotificationService.sendNotification({
         title: "Payment Received",
@@ -923,8 +872,8 @@ const updateSellServicesStatusPartner = async (req) => {
 
     const updatedServiceStatus =
       status === "arrived" ? "in-progress" :
-      status === "delivery-confirmed" ? "completed" :
-      service.status;
+        status === "delivery-confirmed" ? "completed" :
+          service.status;
 
     const result = await Services.findOneAndUpdate(
       { _id: serviceId },

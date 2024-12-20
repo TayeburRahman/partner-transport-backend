@@ -1107,6 +1107,7 @@ await LogsDashboardService.createTaskDB(newTask)
 
 const getTransactionsHistory = async (req) => {
   const query = req.query;
+  console.log(query);
   try {
     const servicesQuery = new QueryBuilder(Transaction.find()
       .populate("receiveUser", "name email profile_image")
@@ -1124,13 +1125,16 @@ const getTransactionsHistory = async (req) => {
       .filter()
       .sort()
       .paginate()
-      .fields();
+      .fields()
+ 
 
     servicesQuery.modelQuery
 
 
     const result = await servicesQuery.modelQuery;
     const meta = await servicesQuery.countTotal();
+
+    console.log(result)
 
     return { result, meta };
   } catch (error) {
@@ -1145,16 +1149,13 @@ const getTransactionsDetails = async (req) => {
   try {
     if (!id) {
       throw new ApiError(400, "Transaction ID is required.");
-    }
-
-    console.log("Fetching transaction details for ID:", id);
+    } 
 
     const result = await Transaction.findById(id)
       .populate("receiveUser", "name email profile_image")
       .populate("payUser", "name email profile_image")
       .populate({
-        path: "serviceId",
-        select: "service category price",
+        path: "serviceId", 
         populate: {
           path: "category",
           select: "_id category",

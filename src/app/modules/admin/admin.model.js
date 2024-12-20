@@ -12,11 +12,7 @@ const AdminSchema = new Schema(
     name: {
       type: String,
       required: true,
-    },
-    // playerIds:{
-    //   type: [String],
-    //   default: null,
-    // },
+    }, 
     email: {
       type: String,
       required: true,
@@ -40,58 +36,33 @@ const AdminSchema = new Schema(
       type: String,
       default: null,
     },
-    accTo_auction_manage:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_user_manage:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_partner_manage:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_transaction:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_category_manage:{
-      type: Boolean,
-      default: false,
-    }, 
-    accTo_review_conversation:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_bank_transfer:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_support:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_settings:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_variable_manage:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_editor:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_admin_manage:{
-      type: Boolean,
-      default: false,
-    },
-    accTo_notifications_manage:{
-      type: Boolean,
-      default: false,
-    },
+    accTo_auction_manage: { type: Boolean, default: false },
+    accTo_auction_edit: { type: Boolean, default: false },
+    accTo_user_manage: { type: Boolean, default: false },
+    accTo_user_edit: { type: Boolean, default: false },
+    accTo_partner_manage: { type: Boolean, default: false },
+    accTo_partner_edit: { type: Boolean, default: false },
+    accTo_transaction: { type: Boolean, default: false },
+    accTo_transaction_edit: { type: Boolean, default: false },
+    accTo_category_manage: { type: Boolean, default: false },
+    accTo_category_edit: { type: Boolean, default: false },
+    accTo_review_conversation: { type: Boolean, default: false },
+    accTo_review_conversation_edit: { type: Boolean, default: false },
+    accTo_bank_transfer: { type: Boolean, default: false },
+    accTo_bank_transfer_edit: { type: Boolean, default: false },
+    accTo_support: { type: Boolean, default: false },
+    accTo_support_edit: { type: Boolean, default: false },
+    accTo_settings: { type: Boolean, default: false },
+    accTo_settings_edit: { type: Boolean, default: false },
+    accTo_variable_manage: { type: Boolean, default: false },
+    accTo_variable_manage_edit: { type: Boolean, default: false },
+    accTo_admin_manage: { type: Boolean, default: false },
+    accTo_admin_manage_edit: { type: Boolean, default: false },
+    accTo_notifications_manage: { type: Boolean, default: false },
+    accTo_notifications_edit: { type: Boolean, default: false },
+    accTo_audit_dashboard: { type: Boolean, default: false },
+    accTo_supervision_dashboard: { type: Boolean, default: false },
+    accTo_activity_log: { type: Boolean, default: false },
   },
   {
     timestamps: true,

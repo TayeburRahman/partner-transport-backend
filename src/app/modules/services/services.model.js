@@ -130,6 +130,10 @@ const ServicesSchema = new Schema(
     unloadingLocation: {
       type: locationSchema,
     },
+    minPrice:{
+      type: Number,
+      default: null
+    },
     bestBid: {
       type: Number,
       default: 0,

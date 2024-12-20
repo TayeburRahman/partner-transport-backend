@@ -75,6 +75,10 @@ const transactionSchema = new Schema({
       default: 'USD',
     },
   },
+  fileClaimImage:{
+    type: [String],
+    default: null,
+  }
 }, { timestamps: true });
 
 const withdrawSchema = new Schema({

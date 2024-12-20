@@ -5,6 +5,7 @@ const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const { NotificationService } = require("../notification/notification.service");
 const { Tickets } = require("./support.model");
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
+const Notification = require("../notification/notification.model");
 
 // ==============================
 //  Tickets 
@@ -36,6 +37,14 @@ const createTicket = async (req) => {
     if (!ticket) {
         throw new ApiError(400,"Failed to create ticket");
     }
+    await Notification.create({
+      title: "New Support Ticket",
+      message: `${type} with email ${email} has created a support ticket.`,
+      userType:"Admin",
+      types: 'none',
+      admin: true,
+    });
+
     return ticket;
   };
   

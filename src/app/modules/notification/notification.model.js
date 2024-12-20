@@ -38,6 +38,9 @@ const notificationSchema = new Schema(
       enum: ENUM_NOTIFICATION_TYPE,
       required: true,
     },
+    admin:{
+     type: Boolean,
+    },
     seen: {
       type: Boolean,
       default: false,
