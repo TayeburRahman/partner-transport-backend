@@ -36,7 +36,7 @@ const handleNotification = async (receiverId, role, socket, io) => {
 
   // update seen notifications 
   socket.on(ENUM_SOCKET_EVENT.SEEN_NOTIFICATION, async (data) => {
-   
+
     const filter = role === ENUM_USER_ROLE.USER
       ? { userId: receiverId }
       : role === ENUM_USER_ROLE.DRIVER
@@ -83,14 +83,14 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
         return;
       }
       authId = partnerDb.authId;
-    } else if(userType === "Admin") {
+    } else if (userType === "Admin") {
       const partnerDb = await Admin.findById(user);
       if (!partnerDb) {
         console.error(`Partner with ID ${user} not found`);
         return;
       }
-      authId = partnerDb.authId; 
-    }else{
+      authId = partnerDb.authId;
+    } else {
       console.error(`Invalid userType: ${userType}`);
       return;
     }
@@ -155,28 +155,28 @@ const getUserNotification = async (req) => {
   return { result, meta };
 };
 
-const getAdminNotification = async (req) => { 
+const getAdminNotification = async (req) => {
   const query = req.query;
-  const notifications = new QueryBuilder(Notification.find({ admin: true }), query) 
+  const notifications = new QueryBuilder(Notification.find({ admin: true }), query)
   const result = await notifications.modelQuery;
-  const meta = await notifications.countTotal(); 
+  const meta = await notifications.countTotal();
   return { result, meta };
 };
 
-const getNoticeNotification = async (req, res) => { 
-  const { id } = req.params; 
-  const notice = await Notification.findById(id); 
+const getNoticeNotification = async (req, res) => {
+  const { id } = req.params;
+  const notice = await Notification.findById(id);
   return notice
 }
 
 const deleteAdminNotification = async (req) => {
   const { id } = req.params;
   const { userId, emailAuth } = req.user;
- 
+
   if (!id) {
     throw new ApiError(400, "Notification ID is required.");
   }
- 
+
   const deletedNotification = await Notification.findByIdAndDelete(id);
   if (!deletedNotification) {
     throw new ApiError(404, "Notification not found.");
@@ -196,7 +196,7 @@ const deleteAdminNotification = async (req) => {
   } catch (logError) {
     console.error("Failed to log activity:", logError);
   }
- 
+
   return {
     message: "Notification deleted successfully.",
     deletedNotification,
@@ -204,7 +204,7 @@ const deleteAdminNotification = async (req) => {
 };
 
 
- 
+
 
 const NotificationService = {
   handleNotification,
@@ -216,4 +216,4 @@ const NotificationService = {
   deleteAdminNotification
 };
 
-module.exports = { NotificationService}
+module.exports = { NotificationService }

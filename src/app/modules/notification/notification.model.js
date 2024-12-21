@@ -4,16 +4,16 @@ const { ObjectId } = Schema.Types;
 
 const notificationSchema = new Schema(
   {
-     getId: {
-      type: Schema.Types.ObjectId,  
+    getId: {
+      type: Schema.Types.ObjectId,
     },
     user: {
-      type: Schema.Types.ObjectId, 
+      type: Schema.Types.ObjectId,
       refPath: 'userType',
       ref: "User",
     },
-     userType: {
-      type: String, 
+    userType: {
+      type: String,
       enum: ['User', 'Partner', 'Admin'],
       required: true,
     },
@@ -29,7 +29,7 @@ const notificationSchema = new Schema(
       type: String,
       required: true,
     },
-    notice:{
+    notice: {
       type: String,
       default: null,
     },
@@ -38,13 +38,13 @@ const notificationSchema = new Schema(
       enum: ENUM_NOTIFICATION_TYPE,
       required: true,
     },
-    admin:{
-     type: Boolean,
+    admin: {
+      type: Boolean,
     },
     seen: {
       type: Boolean,
       default: false,
-    }, 
+    },
   },
   {
     timestamps: true,

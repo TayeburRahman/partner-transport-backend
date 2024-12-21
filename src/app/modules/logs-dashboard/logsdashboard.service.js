@@ -1,4 +1,4 @@
-const QueryBuilder = require("../../../builder/queryBuilder"); 
+const QueryBuilder = require("../../../builder/queryBuilder");
 const ApiError = require("../../../errors/ApiError");
 const { FileClaim } = require("../bid/bid.model");
 const { Withdraw } = require("../payment/payment.model");

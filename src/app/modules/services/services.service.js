@@ -71,6 +71,7 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
  
+
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
@@ -81,8 +82,6 @@ const createPostDB = async (req) => {
 
     const distance = Number(data.distance);
     const formattedDistance = parseFloat(distance?.toFixed(3));
-
-    console.log(`d`, data.weightKG, formattedDistance, data.loadFloorNo, data.unloadFloorNo)
 
     const serviceData = {
       user: userId,

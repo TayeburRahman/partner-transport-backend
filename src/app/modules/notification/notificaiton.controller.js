@@ -1,5 +1,5 @@
 const catchAsync = require("../../../shared/catchasync");
-const sendResponse = require("../../../shared/sendResponse"); 
+const sendResponse = require("../../../shared/sendResponse");
 const { NotificationService } = require("./notification.service");
 
 const getUserNotification = catchAsync(async (req, res) => {
@@ -43,8 +43,8 @@ const deleteAdminNotification = catchAsync(async (req, res) => {
   });
 });
 
- 
- 
+
+
 
 const notificationController = {
   getUserNotification,

@@ -997,7 +997,7 @@ const sendNoticeUsers = async (req, res) => {
     } else {
       if (!userId) {
         throw new ApiError(404, 'User ID is required.');
-      } 
+      }
 
       await NotificationService.sendNotification({
         title: title,
@@ -1043,66 +1043,66 @@ const sendNoticePartner = async (req, res) => {
   const { title, message } = req.body;
   const { userId: admin, emailAuth } = req.user;
   try {
-  if (!title || !message) {
-    throw new ApiError(400, 'Title and message are required.');
-  }
-
-  if (all_user) {
-    const users = await Partner.find({});
-    const notifications = users.map(user => ({
-      title: title,
-      message: 'We have made some updates to improve your experience.',
-      user: user._id,
-      userType: 'Partner',
-      getId: null,
-      notice: message,
-      types: 'notice',
-    }));
-
-    await Notification.insertMany(notifications);
-  } else {
-
-    if (!userId) {
-      throw new ApiError(404, 'User ID is required.');
+    if (!title || !message) {
+      throw new ApiError(400, 'Title and message are required.');
     }
 
-    await NotificationService.sendNotification({
-      title: title,
-      message: 'We have made some updates to improve your experience.',
-      user: userId,
-      userType: 'Partner',
-      getId: null,
-      notice: message,
-      types: 'notice',
-    });
+    if (all_user) {
+      const users = await Partner.find({});
+      const notifications = users.map(user => ({
+        title: title,
+        message: 'We have made some updates to improve your experience.',
+        user: user._id,
+        userType: 'Partner',
+        getId: null,
+        notice: message,
+        types: 'notice',
+      }));
 
+      await Notification.insertMany(notifications);
+    } else {
+
+      if (!userId) {
+        throw new ApiError(404, 'User ID is required.');
+      }
+
+      await NotificationService.sendNotification({
+        title: title,
+        message: 'We have made some updates to improve your experience.',
+        user: userId,
+        userType: 'Partner',
+        getId: null,
+        notice: message,
+        types: 'notice',
+      });
+
+    }
+    // log=====
+    const newTask = {
+      admin: admin,
+      email: emailAuth,
+      description: `Notification was successfully sent to partner with ${all_user ? "all partner" : `ID ${userId}`}.`,
+      types: "Create",
+      activity: "reglue",
+      status: "Success",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    // ====
+    return { massage: "Notification(s) sent successfully." };
+  } catch (error) {
+    // log=====
+    const newTask = {
+      admin: admin,
+      email: emailAuth,
+      description: `An error occurred while sending partner notifications: ${error.message || "Unknown error"}.`,
+      types: "Failed",
+      activity: "reglue",
+      status: "Error",
+    };
+    await LogsDashboardService.createTaskDB(newTask)
+    // ====
+    throw new ApiError(500, "An error occurred while sending notifications.");
   }
- // log=====
- const newTask = {
-  admin: admin,
-  email: emailAuth,
-  description: `Notification was successfully sent to partner with ${all_user ? "all partner" : `ID ${userId}`}.`,
-  types: "Create",
-  activity: "reglue",
-  status: "Success",
-};
-await LogsDashboardService.createTaskDB(newTask)
-// ====
-  return { massage: "Notification(s) sent successfully." };
-} catch (error) {
-  // log=====
-  const newTask = {
-    admin: admin,
-    email: emailAuth,
-    description: `An error occurred while sending partner notifications: ${error.message || "Unknown error"}.`,
-    types: "Failed",
-    activity: "reglue",
-    status: "Error",
-  };
-  await LogsDashboardService.createTaskDB(newTask)
-  // ====
-  throw new ApiError(500, "An error occurred while sending notifications.");
-}
 };
 
 const getTransactionsHistory = async (req) => {
@@ -1126,7 +1126,7 @@ const getTransactionsHistory = async (req) => {
       .sort()
       .paginate()
       .fields()
- 
+
 
     servicesQuery.modelQuery
 
@@ -1149,13 +1149,13 @@ const getTransactionsDetails = async (req) => {
   try {
     if (!id) {
       throw new ApiError(400, "Transaction ID is required.");
-    } 
+    }
 
     const result = await Transaction.findById(id)
       .populate("receiveUser", "name email profile_image")
       .populate("payUser", "name email profile_image")
       .populate({
-        path: "serviceId", 
+        path: "serviceId",
         populate: {
           path: "category",
           select: "_id category",
