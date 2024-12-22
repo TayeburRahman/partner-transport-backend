@@ -22,7 +22,6 @@ const getAdminNotification = catchAsync(async (req, res) => {
   });
 });
 
-
 const getNoticeNotification = catchAsync(async (req, res) => {
   const result = await NotificationService.getNoticeNotification(req);
   sendResponse(res, {

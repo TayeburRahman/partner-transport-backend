@@ -37,7 +37,7 @@ const getUserPostHistory = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: "Update post successfully", 
+    message: "Update post successfully",
     data: result,
   });
 });
@@ -53,8 +53,8 @@ const deletePostDB = catchAsync(async (req, res) => {
 });
 
 // ----------Partner--------------------------------
- 
- 
+
+
 
 const searchNearby = catchAsync(async (req, res) => {
   const result = await ServicesService.searchNearby(req);
@@ -104,7 +104,7 @@ const updateServicesStatusPartner = catchAsync(async (req, res) => {
     message: "Status update successfully",
     data: result,
   });
-}); 
+});
 
 const updateServicesStatusUser = catchAsync(async (req, res) => {
   const result = await ServicesService.updateServicesStatusUser(req);
@@ -114,9 +114,9 @@ const updateServicesStatusUser = catchAsync(async (req, res) => {
     message: "Status update successfully",
     data: result,
   });
-}); 
+});
 
- 
+
 
 const rescheduledPostUser = catchAsync(async (req, res) => {
   const result = await ServicesService.rescheduledPostUser(req);
@@ -129,52 +129,45 @@ const rescheduledPostUser = catchAsync(async (req, res) => {
 });
 
 const rescheduledAction = catchAsync(async (req, res) => {
-   const result = await ServicesService.rescheduledAction(req); 
-   sendResponse(res, {
-     statusCode: 200,
-     success: true,
-     message: "Action requested successfully!",
-     data: result,
-   })
-})
-
-const filterUserByHistory = catchAsync(async (req, res) => {
-  const result = await ServicesService.filterUserByHistory(req);
-   
+  const result = await ServicesService.rescheduledAction(req);
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Action requested successfully!",
     data: result,
   })
-}) 
+})
+
+const filterUserByHistory = catchAsync(async (req, res) => {
+  const result = await ServicesService.filterUserByHistory(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Action requested successfully!",
+    data: result,
+  })
+})
 
 
 const updateSellServicesStatusUser = catchAsync(async (req, res) => {
   const result = await ServicesService.updateSellServicesStatusUser(req);
-   
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Status update successfully!",
     data: result,
   })
-}) 
+})
 
 const updateSellServicesStatusPartner = catchAsync(async (req, res) => {
   const result = await ServicesService.updateSellServicesStatusPartner(req);
-   
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Status update successfully!",
     data: result,
   })
-}) 
-
- 
-
- 
+})
 
 const ServicesController = {
   createPostDB,
@@ -182,7 +175,7 @@ const ServicesController = {
   deletePostDB,
   getDetails,
   getUserPostHistory,
-  searchNearby, 
+  searchNearby,
   conformPartner,
   getServicePostUser,
   getUserServicesWithinOneHour,
@@ -193,7 +186,7 @@ const ServicesController = {
   updateServicesStatusUser,
   updateSellServicesStatusUser,
   updateSellServicesStatusPartner
-   
+
 };
 
 module.exports = { ServicesController };

@@ -49,24 +49,24 @@ const ServicesSchema = new Schema(
     },
     rescheduledDate: {
       type: Date,
-      default:null
+      default: null
     },
     rescheduledTime: {
       type: String,
-      default:null
+      default: null
     },
-    doYouDestinationLocation:{
+    doYouDestinationLocation: {
       type: Boolean,
       // required: [true, "Do you have a destination location? is required"],
     },
     rescheduledReason: {
       type: String,
-      default:null
+      default: null
     },
     rescheduledStatus: {
       type: String,
       enum: ["pending", "accepted", "decline"],
-      default:null
+      default: null
     },
     numberOfItems: {
       type: Number,
@@ -75,7 +75,7 @@ const ServicesSchema = new Schema(
     weightMTS: {
       type: String,
       required: [true, "weight in MTS is required"],
-    }, 
+    },
     weightKG: {
       type: Number,
       required: [true, "weight in KG is required"],
@@ -130,7 +130,7 @@ const ServicesSchema = new Schema(
     unloadingLocation: {
       type: locationSchema,
     },
-    minPrice:{
+    minPrice: {
       type: Number,
       default: null
     },
@@ -140,7 +140,7 @@ const ServicesSchema = new Schema(
     },
     winBid: {
       type: Number,
-      default:null
+      default: null
     },
     status: {
       type: String,
@@ -162,7 +162,7 @@ const ServicesSchema = new Schema(
         "confirm-arrived",
         "goods-loaded",
         "partner-at-destination",
-        "delivery-confirmed" 
+        "delivery-confirmed"
       ],
       default: "pending",
     },
@@ -173,7 +173,7 @@ const ServicesSchema = new Schema(
         "arrived",
         "start-trip",
         "arrive-at-destination",
-        "delivered", 
+        "delivered",
       ],
       default: "pending",
     },
@@ -195,9 +195,9 @@ const ServicesSchema = new Schema(
     transactionId: {
       type: String,
       trim: true,
-      default:null
+      default: null
     },
-    isReviewed:{
+    isReviewed: {
       type: Boolean,
       default: false,
     },
