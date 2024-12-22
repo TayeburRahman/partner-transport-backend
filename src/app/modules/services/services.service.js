@@ -162,6 +162,10 @@ const getDetails = async (req) => {
       select: "_id category",
     })
     .populate({
+      path: "user",
+      select: "name profile_image email",
+    })
+    .populate({
       path: "bids",
       populate: [
         // {

@@ -49,7 +49,9 @@ const ENUM_SERVICE_TYPE = {
   RECYCLABLE_MATERIALS: "Recyclable materials",
 };
 
-const ENUM_ADMIN_ACCESS = {
+const ENUM_ADMIN_ACCESS = { 
+  ACC_TO_DASHBOARD_HOME: "accTo_dashboard_home",
+  ACC_TO_DASHBOARD_HOME_EDIT:"accTo_dashboard_home_edit",
   ACC_TO_AUCTION_MANAGE: "accTo_auction_manage",
   ACC_TO_AUCTION_EDIT: "accTo_auction_edit",
   ACC_TO_USER_MANAGE: "accTo_user_manage",

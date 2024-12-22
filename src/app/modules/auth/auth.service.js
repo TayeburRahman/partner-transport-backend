@@ -146,8 +146,7 @@ const activateAccount = async (payload) => {
     throw new ApiError(400, "Invalid role provided!");
   }
 
-  // --------------
-  console.log("playerId====", playerId)
+  // -------------- 
   if (!existAuth.playerIds) {
     existAuth.playerIds = [];
   }
@@ -302,7 +301,6 @@ const forgotPass = async (payload) => {
     throw error;
   }
 };
-
 
 const checkIsValidForgetActivationCode = async (payload) => {
   const account = await Auth.findOne({ email: payload.email });
@@ -683,10 +681,7 @@ const generateTokens = (authUser, userDetails) => {
 
 const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-10);
-};
-// --------------
-
-// ---------------------
+};  
 
 // Scheduled task to unset activationCode field
 cron.schedule("* * * * *", async () => {

@@ -252,13 +252,13 @@ const getAllAdmins = async (query) => {
 };
 
 const getAdminDetails = async (query) => {
-  const { email } = query;
+  const { id } = query;
 
-  if (!email) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Missing email");
+  if (!id) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Missing ID");
   }
 
-  const admin = await Admin.findOne({ email: email }).populate("authId");
+  const admin = await Admin.findOne({ _id: id }).populate("authId");
 
   if (!admin) {
     throw new ApiError(httpStatus.NOT_FOUND, "Admin not found");
@@ -270,16 +270,64 @@ const getAdminDetails = async (query) => {
 const deleteAdmin = async (query) => {
   const { email } = query;
   const isAdminExist = await Auth.isAuthExist(email);
+  const admin = await Admin.findOne({email})
 
-  if (!isAdminExist) {
+  if (!isAdminExist || !admin) {
     throw new ApiError(404, "Admin does not exist");
   }
   const [result, ,] = await Promise.all([
-    Auth.deleteOne({ _id: isUserExist._id }),
-    Admin.deleteOne({ authId: isUserExist._id }),
+    Auth.deleteOne({ _id: isAdminExist._id }),
+    Admin.deleteOne({ authId: admin._id }),
   ]);
-
   return result;
+};
+
+const updateProfile = async (req) => {
+  const { files } = req;
+  const { userId, authId } = req.query;
+
+  const data = req.body;
+  if (!data) {
+    throw new ApiError(400, "Data is missing in the request body!");
+  }
+
+  const checkUser = await Admin.findById(userId);
+  if (!checkUser) {
+    throw new ApiError(404, "User not found!");
+  }
+
+  const checkAuth = await Auth.findById(authId);
+  if (!checkAuth) {
+    throw new ApiError(403, "You are not authorized");
+  }
+
+  let profile_image;
+  if (files?.profile_image) {
+    profile_image = `/images/profile/${files.profile_image[0].filename}`;
+  }
+
+  let cover_image;
+  if (files?.cover_image) {
+    cover_image = `/images/cover/${files.cover_image[0].filename}`;
+  }
+
+  const updatedData = {
+    ...data,
+    ...(profile_image && { profile_image }),
+    ...(cover_image && { cover_image }),
+  };
+
+  await Auth.findOneAndUpdate(
+    { _id: authId },
+    { name: updatedData.name },
+    { new: true }
+  );
+
+  const updateUser = await Admin.findOneAndUpdate({ authId }, updatedData, {
+    new: true,
+  }).populate("authId");
+
+  return updateUser;
 };
 
 const getAllPendingPartners = async (query) => {
@@ -546,37 +594,55 @@ const deletePrivacyPolicy = async (query) => {
 
 //=Auction Management ========================
 const getAllAuctions = async (query) => {
-  const searchTerm = query.searchTerm;
+  const page = Number.isInteger(parseInt(query.page)) ? parseInt(query.page) : 1;
+  const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10;
 
-  // console.log(searchTerm);
-  const servicesQuery = new QueryBuilder(
-    Services.find(
-      searchTerm
+  const pipeline = [
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "partners",
+        localField: "confirmedPartner",
+        foreignField: "_id",
+        as: "confirmedPartner",
+      },
+    },
+    {
+      $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
+    },
+    {
+      $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true },
+    },
+    {
+      $match: query.searchTerm
         ? {
-          $or: [
-            { "user.name": { $regex: searchTerm, $options: "i" } },
-            { "confirmedPartner.name": { $regex: searchTerm, $options: "i" } },
-          ],
-        }
-        : {}
-    )
-      .populate('user')
-      .populate('confirmedPartner')
-      .populate("category"),
-    query
-  )
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
+            $or: [
+              { "user.name": { $regex: query.searchTerm, $options: "i" } },
+              { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
+            ],
+          }
+        : {},
+    },
+    {
+      $facet: {
+        data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+        meta: [{ $count: "total" }],
+      },
+    },
+  ];
 
-  // Execute the query
-  const result = await servicesQuery.modelQuery;
-  const meta = await servicesQuery.countTotal();
+  const [result] = await Services.aggregate(pipeline);
 
   return {
-    meta,
-    data: result,
+    meta: result.meta[0] || { total: 0 },
+    data: result.data,
   };
 };
 
@@ -1171,7 +1237,10 @@ const getTransactionsDetails = async (req) => {
     throw new ApiError(500, "Internal Server Error");
   }
 };
+// =======================
+// const getAllAdmins = async (req) =>{
 
+// }
 
 const DashboardService = {
   getAllUsers,
@@ -1204,7 +1273,9 @@ const DashboardService = {
   sendNoticePartner,
   getTransactionsHistory,
   getTransactionsDetails,
-  getPaddingPartner
+  getPaddingPartner,
+  updateProfile
+
 };
 
 module.exports = { DashboardService };

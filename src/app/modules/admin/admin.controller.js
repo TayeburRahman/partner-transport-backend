@@ -33,7 +33,7 @@ const deleteMyAccount = catchAsync(async (req, res) => {
   });
 });
 
-const getAllAdmin = catchAsync(async (req, res) => { 
+const getAllAdmin = catchAsync(async (req, res) => {
   const result = await AdminService.getAllAdmin();
   sendResponse(res, {
     statusCode: 200,
@@ -43,7 +43,7 @@ const getAllAdmin = catchAsync(async (req, res) => {
   });
 });
 
- 
+
 
 const AdminController = {
   updateProfile,

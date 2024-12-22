@@ -126,6 +126,18 @@ const deleteAdmin = catchAsync(async (req, res) => {
   });
 });
 
+const updateProfile = catchAsync(async (req, res) => {
+  const result = await DashboardService.updateProfile(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Profile updated successfully",
+    data: result,
+  });
+});
+
+ 
+
 const deleteUser = catchAsync(async (req, res) => {
   const result = await DashboardService.deleteUser(req.query);
   sendResponse(res, {
@@ -353,7 +365,8 @@ const DashboardController = {
   sendNoticeUsers,
   sendNoticePartner,
   getTransactionsHistory,
-  getTransactionsDetails
+  getTransactionsDetails,
+  updateProfile
 };
 
 module.exports = { DashboardController };

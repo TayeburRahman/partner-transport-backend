@@ -20,7 +20,7 @@ const AuthSchema = new Schema(
         message: "Please provide a valid email address",
       },
     },
-    playerIds:{
+    playerIds: {
       type: [String],
       default: null,
     },
@@ -44,9 +44,9 @@ const AuthSchema = new Schema(
     activationCode: {
       type: String,
     },
-    amount:{
-     type: Number,
-     default: 0,
+    amount: {
+      type: Number,
+      default: 0,
     },
     verifyExpire: {
       type: Date,

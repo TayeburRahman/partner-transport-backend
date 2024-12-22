@@ -9,7 +9,7 @@ const router = express.Router();
 router
   .post("/register", AuthController.registrationAccount)
   .post("/login", AuthController.loginAccount)
-  .post("/o-auth", AuthController.OAuthLoginAccount) 
+  .post("/o-auth", AuthController.OAuthLoginAccount)
   .post("/activate-user", AuthController.activateAccount)
   .post("/resend", AuthController.resendActivationCode)
   .post("/active-resend", AuthController.resendCodeActivationAccount)
@@ -23,7 +23,7 @@ router
     //   ENUM_USER_ROLE.ADMIN,
     //   ENUM_USER_ROLE.SUPER_ADMIN
     // ),
-     AuthController.resetPassword)
+    AuthController.resetPassword)
   .patch(
     "/change-password",
     auth(

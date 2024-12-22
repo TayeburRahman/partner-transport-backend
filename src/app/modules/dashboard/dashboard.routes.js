@@ -4,6 +4,7 @@ const { ENUM_USER_ROLE, ENUM_ADMIN_ACCESS } = require("../../../utils/enums");
 const { DashboardController } = require("./dashboard.controller");
 const checkAdminAccess = require("../../middlewares/checkAdminAccess");
 const { BidController } = require("../bid/bid.controller");
+const { uploadFile } = require("../../middlewares/fileUploader");
 
 const router = express.Router();
 
@@ -91,18 +92,24 @@ router
   // Admin ========================
   .get(
     "/get_all_admin",
-    auth(ENUM_USER_ROLE.SUPER_ADMIN),
+    auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
     DashboardController.getAllAdmins
   )
   .get(
     "/get_admin_details",
-    auth(ENUM_USER_ROLE.SUPER_ADMIN),
+    auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
     DashboardController.getAdminDetails
   )
   .delete(
     "/delete_admin",
-    auth(ENUM_USER_ROLE.SUPER_ADMIN),
+    auth(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
     DashboardController.deleteAdmin
+  )
+  .patch(
+    "/edit-profile",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    uploadFile(),
+    DashboardController.updateProfile
   )
 
   // Common ========================
