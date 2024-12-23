@@ -10,19 +10,19 @@ router
   .post(
     "/create-category",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_CATEGORY_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_CATEGORY_EDIT),
     CategoryController.createCategory
   )
   .patch(
     "/update-category",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_CATEGORY_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_CATEGORY_EDIT),
     CategoryController.updateCategory
   )
   .delete(
     "/delete-category",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_CATEGORY_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_CATEGORY_EDIT),
     CategoryController.deleteCategory
   )
   .get(

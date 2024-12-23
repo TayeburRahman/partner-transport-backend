@@ -232,25 +232,24 @@ const deletePartner = async (query) => {
 
 const getAllAdmins = async (query) => {
   const adminQuery = new QueryBuilder(Admin.find().populate("authId"), query)
-    .search(["name", "email"])   
-    .filter()                
-    .sort()                  
-    .paginate()                
-    .fields();                   
+    .search(["name", "email"])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
   const result = await adminQuery.modelQuery;
- 
+
   if (!result?.length) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Admin not found");  
+    throw new ApiError(httpStatus.NOT_FOUND, "Admin not found");
   }
- 
+
   const meta = await adminQuery.countTotal();
 
   return {
     meta,
-    data: result, 
+    data: result,
   };
 };
-
 
 const getAdminDetails = async (query) => {
   const { id } = query;
@@ -270,22 +269,22 @@ const getAdminDetails = async (query) => {
 
 const deleteAdmin = async (query) => {
   const { email } = query;
- 
+
   const isAdminExist = await Auth.isAuthExist(email);
   if (!isAdminExist) {
     throw new ApiError(404, "Admin authentication does not exist.");
   }
- 
+
   const admin = await Admin.findOne({ email });
   if (!admin) {
     throw new ApiError(404, "Admin record does not exist.");
   }
- 
+
   const [authResult, adminResult] = await Promise.all([
     Auth.deleteOne({ _id: isAdminExist._id }),
     Admin.deleteOne({ _id: admin._id }),
   ]);
- 
+
   return {
     success: true,
     message: "Admin deleted successfully.",
@@ -295,13 +294,18 @@ const deleteAdmin = async (query) => {
 };
 
 const updateProfile = async (req) => {
-  const { files } = req;
   const { userId, authId } = req.query;
-
   const data = req.body;
+
+  if(!userId || !authId) {
+    throw new ApiError(400, "Missing userId and authId in the request!");
+  }
+
   if (!data) {
     throw new ApiError(400, "Data is missing in the request body!");
   }
+
+  console.log("dsff", data)
 
   const checkUser = await Admin.findById(userId);
   if (!checkUser) {
@@ -312,41 +316,28 @@ const updateProfile = async (req) => {
   if (!checkAuth) {
     throw new ApiError(403, "You are not authorized");
   }
-
-  let profile_image;
-  if (files?.profile_image) {
-    profile_image = `/images/profile/${files.profile_image[0].filename}`;
+ 
+  if (data.name) {
+    await Auth.findOneAndUpdate(
+      { _id: authId },
+      { name: data.name },
+      { new: true }
+    );
   }
-
-  let cover_image;
-  if (files?.cover_image) {
-    cover_image = `/images/cover/${files.cover_image[0].filename}`;
-  }
-
-  const updatedData = {
-    ...data,
-    ...(profile_image && { profile_image }),
-    ...(cover_image && { cover_image }),
-  };
-
-  await Auth.findOneAndUpdate(
-    { _id: authId },
-    { name: updatedData.name },
-    { new: true }
-  );
-
-  const updateUser = await Admin.findOneAndUpdate({ authId }, updatedData, {
+ 
+  const updateUser = await Admin.findOneAndUpdate({ authId }, data, {
     new: true,
   }).populate("authId");
 
+  console.log('updateUser',updateUser)
+
   return updateUser;
 };
+ 
 
 const getAllPendingPartners = async (query) => {
   const userQuery = new QueryBuilder(
-    Partner.find({ status: { $eq: ENUM_PARTNER_AC_STATUS.PENDING } }).populate(
-      "authId"
-    ),
+    Partner.find({ status: { $eq: ENUM_PARTNER_AC_STATUS.PENDING } }).populate("authId"),
     query
   )
     .search(["name", "email"])
@@ -584,7 +575,7 @@ const addPrivacyPolicy = async (req) => {
       error.message || "An error occurred while updating or adding the privacy policy."
     );
   }
-}; 
+};
 
 const getPrivacyPolicy = async () => {
   return await PrivacyPolicy.findOne();
@@ -606,20 +597,20 @@ const deletePrivacyPolicy = async (query) => {
 const getAllAuctions = async (query) => {
   const page = Number.isInteger(parseInt(query.page)) ? parseInt(query.page) : 1;
   const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10;
- 
+
   const matchQuery = {
     ...query.searchTerm
       ? {
-          $or: [
-            { "user.name": { $regex: query.searchTerm, $options: "i" } },
-            { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
-          ],
-        }
+        $or: [
+          { "user.name": { $regex: query.searchTerm, $options: "i" } },
+          { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
+        ],
+      }
       : {},
     ...(query.mainService ? { mainService: query.mainService } : {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.service ? { service: query.service } : {}),
-    ...(query.category ? { category: { $in: query.category.split(',') } } : {}), 
+    ...(query.category ? { category: { $in: query.category.split(',') } } : {}),
   };
 
   const pipeline = [
@@ -638,7 +629,7 @@ const getAllAuctions = async (query) => {
         foreignField: "_id",
         as: "confirmedPartner",
       },
-    }, 
+    },
     {
       $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
     },
@@ -646,18 +637,18 @@ const getAllAuctions = async (query) => {
       $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true },
     },
     {
-      $match: matchQuery,  
+      $match: matchQuery,
     },
     {
       $lookup: {
-        from: "categories",  
-        localField: "category", 
-        foreignField: "_id", 
-        as: "category", 
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
       },
     },
     {
-      $unwind: { path: "$category" }, 
+      $unwind: { path: "$category" },
     },
     {
       $facet: {
@@ -1266,6 +1257,7 @@ const getTransactionsDetails = async (req) => {
     throw new ApiError(500, "Internal Server Error");
   }
 };
+
 // =======================
 // const getAllAdmins = async (req) =>{
 

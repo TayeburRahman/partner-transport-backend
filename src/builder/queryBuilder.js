@@ -2,14 +2,14 @@ class QueryBuilder {
   constructor(modelQuery, query) {
     this.modelQuery = modelQuery;
     this.query = query;
-  } 
+  }
 
   search(searchableFields) {
     const searchTerm = this.query?.searchTerm;
     if (searchTerm) {
       this.modelQuery = this.modelQuery
         .find({
-          $or: searchableFields.map((field) => ({ 
+          $or: searchableFields.map((field) => ({
             [field]: { $regex: searchTerm, $options: "i" },
           })),
         })
@@ -17,11 +17,11 @@ class QueryBuilder {
     }
     return this;
   }
- 
+
 
   filter() {
     const queryObj = { ...this.query }; // copy
-   
+
     // Filtering
     const excludeFields = ["searchTerm", "sort", "limit", "page", "fields"];
 
@@ -62,7 +62,7 @@ class QueryBuilder {
     const limit = Number(this.query?.limit) || 10;
     const totalPage = Math.ceil(total / limit);
 
- 
+
 
     return {
       page,

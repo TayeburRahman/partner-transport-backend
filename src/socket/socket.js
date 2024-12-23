@@ -12,7 +12,7 @@ const onlineUsers = new Set();
 const socket = async (io) => {
   const emitActiveAdmins = async () => {
     try { 
-      const onlineAdminIds = Array.from(onlineUsers);
+      const onlineAdminIds = Array.from(onlineUsers); 
    
       const activeAdmins = await Admin.find({ _id: { $in: onlineAdminIds } });
    
@@ -42,6 +42,11 @@ const socket = async (io) => {
   io.on(ENUM_SOCKET_EVENT.CONNECT, async (socket) => {
     const currentUserId = socket.handshake.query.id;
     const role = socket.handshake.query.role;
+
+    if(currentUserId === undefined){
+      console.error('Invalid user ID provided:', currentUserId);
+      return;
+    }
 
     socket.join(currentUserId);
 

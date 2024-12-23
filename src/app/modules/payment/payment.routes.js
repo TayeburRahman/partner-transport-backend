@@ -28,12 +28,12 @@ router
   // Paypal Refund Payment ------------
   .patch("/paypal/refund_pay",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_AUCTION_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_AUCTION_EDIT),
     PaymentController.paypalRefundPayment)
   // Stripe Refund Payment ------------
   .patch("/stripe/refund_pay",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_AUCTION_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_AUCTION_EDIT),
     PaymentController.stripeRefundPayment)
   // Stripe Payment -------------
   .patch("/stripe/transfer",
@@ -59,11 +59,12 @@ router
   // Withdraw 
   // =============================
   .post("/withdraw",
-    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER), 
     PaymentController.withdrawRequest
   ) 
   .patch("/withdraw-success",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER_EDIT),
     PaymentController.withdrawSuccess
   )
   // .get("/withdraw-user-details",
@@ -72,6 +73,7 @@ router
   // )
   .get("/withdraw",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER),
     PaymentController.getWithdraw
   ) 
    

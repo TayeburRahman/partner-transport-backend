@@ -52,9 +52,7 @@ const getPaddingPartner = catchAsync(async (req, res) => {
     message: "Partner retrieval successful",
     data: result,
   });
-});
-
- 
+}); 
 
 const getPartnerDetails = catchAsync(async (req, res) => {
   const result = await DashboardService.getPartnerDetails(req.query);
@@ -134,9 +132,7 @@ const updateProfile = catchAsync(async (req, res) => {
     message: "Profile updated successfully",
     data: result,
   });
-});
-
- 
+}); 
 
 const deleteUser = catchAsync(async (req, res) => {
   const result = await DashboardService.deleteUser(req.query);
