@@ -231,25 +231,26 @@ const deletePartner = async (query) => {
 };
 
 const getAllAdmins = async (query) => {
-  const adminQuery = new QueryBuilder(Admin.find({}).populate("authId"), query)
-    .search(["name", "email"])
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
-
+  const adminQuery = new QueryBuilder(Admin.find().populate("authId"), query)
+    .search(["name", "email"])   
+    .filter()                
+    .sort()                  
+    .paginate()                
+    .fields();                   
   const result = await adminQuery.modelQuery;
-  const meta = await adminQuery.countTotal();
-
+ 
   if (!result?.length) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Partner not found");
+    throw new ApiError(httpStatus.NOT_FOUND, "Admin not found");  
   }
+ 
+  const meta = await adminQuery.countTotal();
 
   return {
     meta,
-    data: result,
+    data: result, 
   };
 };
+
 
 const getAdminDetails = async (query) => {
   const { id } = query;
@@ -269,17 +270,28 @@ const getAdminDetails = async (query) => {
 
 const deleteAdmin = async (query) => {
   const { email } = query;
+ 
   const isAdminExist = await Auth.isAuthExist(email);
-  const admin = await Admin.findOne({email})
-
-  if (!isAdminExist || !admin) {
-    throw new ApiError(404, "Admin does not exist");
+  if (!isAdminExist) {
+    throw new ApiError(404, "Admin authentication does not exist.");
   }
-  const [result, ,] = await Promise.all([
+ 
+  const admin = await Admin.findOne({ email });
+  if (!admin) {
+    throw new ApiError(404, "Admin record does not exist.");
+  }
+ 
+  const [authResult, adminResult] = await Promise.all([
     Auth.deleteOne({ _id: isAdminExist._id }),
-    Admin.deleteOne({ authId: admin._id }),
+    Admin.deleteOne({ _id: admin._id }),
   ]);
-  return result;
+ 
+  return {
+    success: true,
+    message: "Admin deleted successfully.",
+    authDeletion: authResult,
+    adminDeletion: adminResult,
+  };
 };
 
 const updateProfile = async (req) => {
@@ -499,7 +511,6 @@ const addTermsConditions = async (req) => {
   }
 };
 
-
 const getTermsConditions = async () => {
   return await TermsConditions.findOne();
 };
@@ -573,8 +584,7 @@ const addPrivacyPolicy = async (req) => {
       error.message || "An error occurred while updating or adding the privacy policy."
     );
   }
-};
-
+}; 
 
 const getPrivacyPolicy = async () => {
   return await PrivacyPolicy.findOne();
@@ -596,6 +606,21 @@ const deletePrivacyPolicy = async (query) => {
 const getAllAuctions = async (query) => {
   const page = Number.isInteger(parseInt(query.page)) ? parseInt(query.page) : 1;
   const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10;
+ 
+  const matchQuery = {
+    ...query.searchTerm
+      ? {
+          $or: [
+            { "user.name": { $regex: query.searchTerm, $options: "i" } },
+            { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
+          ],
+        }
+      : {},
+    ...(query.mainService ? { mainService: query.mainService } : {}),
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.service ? { service: query.service } : {}),
+    ...(query.category ? { category: { $in: query.category.split(',') } } : {}), 
+  };
 
   const pipeline = [
     {
@@ -613,7 +638,7 @@ const getAllAuctions = async (query) => {
         foreignField: "_id",
         as: "confirmedPartner",
       },
-    },
+    }, 
     {
       $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
     },
@@ -621,14 +646,18 @@ const getAllAuctions = async (query) => {
       $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true },
     },
     {
-      $match: query.searchTerm
-        ? {
-            $or: [
-              { "user.name": { $regex: query.searchTerm, $options: "i" } },
-              { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
-            ],
-          }
-        : {},
+      $match: matchQuery,  
+    },
+    {
+      $lookup: {
+        from: "categories",  
+        localField: "category", 
+        foreignField: "_id", 
+        as: "category", 
+      },
+    },
+    {
+      $unwind: { path: "$category" }, 
     },
     {
       $facet: {
