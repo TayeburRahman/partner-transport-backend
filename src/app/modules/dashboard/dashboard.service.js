@@ -305,8 +305,6 @@ const updateProfile = async (req) => {
     throw new ApiError(400, "Data is missing in the request body!");
   }
 
-  console.log("dsff", data)
-
   const checkUser = await Admin.findById(userId);
   if (!checkUser) {
     throw new ApiError(404, "User not found!");
@@ -333,7 +331,6 @@ const updateProfile = async (req) => {
 
   return updateUser;
 };
- 
 
 const getAllPendingPartners = async (query) => {
   const userQuery = new QueryBuilder(
@@ -906,12 +903,17 @@ const getTotalIncomeUserAuction = async (req, res) => {
 };
 
 //=Overview ==========================  
-const incomeOverview = async (year) => {
+const incomeOverview = async ({year}) => {
   try {
     const currentYear = new Date().getFullYear();
-    const selectedYear = year || currentYear;
-    const startDate = new Date(`${selectedYear}-01-01T00:00:00.000Z`);
-    const endDate = new Date(`${selectedYear + 1}-01-01T00:00:00.000Z`);
+    const selectedYear = parseInt(year, 10) || currentYear;
+
+    if (isNaN(selectedYear)) {
+      throw new ApiError(400, "Invalid year provided.");
+    }
+
+    const startDate = new Date(selectedYear, 0, 1);  
+    const endDate = new Date(selectedYear + 1, 0, 1);  
 
     const incomeOverview = await Transaction.aggregate([
       {
@@ -977,12 +979,20 @@ const incomeOverview = async (year) => {
   }
 };
 
-const getUserGrowth = async (year) => {
+const getUserGrowth = async ({year}) => {
   try {
     const currentYear = new Date().getFullYear();
-    const selectedYear = year || currentYear;
+    const selectedYear = parseInt(year, 10) || currentYear;
 
-    const { startDate, endDate } = getYearRange(selectedYear);
+    if (isNaN(selectedYear)) {
+      throw new ApiError(400, "Invalid year provided.");
+    }
+
+    const startDate = new Date(selectedYear, 0, 1);  
+    const endDate = new Date(selectedYear + 1, 0, 1);  
+
+    console.log("year", year)
+    
     console.log('Year Range:', { startDate, endDate });
 
     const monthlyUserGrowth = await Auth.aggregate([
@@ -1009,8 +1019,6 @@ const getUserGrowth = async (year) => {
         $sort: { month: 1 },
       },
     ]);
-
-    console.log('Aggregation Output:', monthlyUserGrowth);
 
     const months = [
       'Jan',
@@ -1053,8 +1061,6 @@ const getUserGrowth = async (year) => {
     );
   }
 };
-
-
 
 // =Send Notice=====================
 const sendNoticeUsers = async (req, res) => {
