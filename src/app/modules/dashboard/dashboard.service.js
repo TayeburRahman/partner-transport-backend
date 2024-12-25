@@ -1266,9 +1266,6 @@ const getTransactionsDetails = async (req) => {
 };
 
 // =======================
-// const getAllAdmins = async (req) =>{
-
-// }
 
 const DashboardService = {
   getAllUsers,
