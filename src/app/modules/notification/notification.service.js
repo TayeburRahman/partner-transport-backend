@@ -55,7 +55,7 @@ const handleNotification = async (receiverId, role, socket, io) => {
 
 };
 
-const sendNotification = async ({ title, message, user, userType, getId, types, notice }) => {
+const sendNotification = async ({ title, message, user, userType, getId, types, notice, isAdmin}) => {
   try {
     const notification = await Notification.create({
       title,
@@ -64,7 +64,8 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
       getId,
       userType,
       types,
-      notice
+      notice,
+      isAdmin
     });
 
     let authId;
@@ -79,14 +80,14 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
     } else if (userType === "Partner") {
       const partnerDb = await Partner.findById(user);
       if (!partnerDb) {
-        console.error(`Partner with ID ${user} not found`);
+        console.error(`Partner with ID ${user} not found!`);
         return;
       }
       authId = partnerDb.authId;
     } else if (userType === "Admin") {
       const partnerDb = await Admin.findById(user);
       if (!partnerDb) {
-        console.error(`Partner with ID ${user} not found`);
+        console.error(`Admin with ID ${user} not found!`);
         return;
       }
       authId = partnerDb.authId;
@@ -107,7 +108,8 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
       return;
     }
     // Send notification via OneSignal
-    await sendNotificationOnesignal(playerIds, title, message, types, getId, notice);
+   const data =  await sendNotificationOnesignal(playerIds, title, message, types, getId, notice);
+   console.log("jsdBhjsdbhfcbhdsbchdbhbchjb", data);
 
     return notification;
   } catch (error) {

@@ -983,23 +983,18 @@ const getUserGrowth = async (year) => {
     const selectedYear = year || currentYear;
 
     const { startDate, endDate } = getYearRange(selectedYear);
+    console.log('Year Range:', { startDate, endDate });
 
     const monthlyUserGrowth = await Auth.aggregate([
       {
         $match: {
-          createdAt: {
-            $gte: startDate,
-            $lt: endDate,
-          },
+          createdAt: { $gte: startDate, $lt: endDate },
           role: { $in: ['USER', 'PARTNER'] },
         },
       },
       {
         $group: {
-          _id: {
-            month: { $month: '$createdAt' },
-            year: { $year: '$createdAt' },
-          },
+          _id: { month: { $month: '$createdAt' } },
           count: { $sum: 1 },
         },
       },
@@ -1007,7 +1002,6 @@ const getUserGrowth = async (year) => {
         $project: {
           _id: 0,
           month: '$_id.month',
-          year: '$_id.year',
           count: 1,
         },
       },
@@ -1015,6 +1009,8 @@ const getUserGrowth = async (year) => {
         $sort: { month: 1 },
       },
     ]);
+
+    console.log('Aggregation Output:', monthlyUserGrowth);
 
     const months = [
       'Jan',
@@ -1037,11 +1033,11 @@ const getUserGrowth = async (year) => {
         monthlyUserGrowth.find((data) => data.month === i) || {
           month: i,
           count: 0,
-          year: selectedYear.year,
         };
+      console.log('Month Data:', monthData);
       result.push({
-        ...monthData,
         month: months[i - 1],
+        count: monthData.count,
       });
     }
 
@@ -1050,10 +1046,15 @@ const getUserGrowth = async (year) => {
       data: result,
     };
   } catch (error) {
-    console.error('Error in getUserGrowth function: ', error);
-    throw new ApiError(httpStatus.BAD_REQUEST, "Service not found:", error.message);
+    console.error('Error in getUserGrowth function:', error);
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Service not found: ${error.message}`
+    );
   }
 };
+
+
 
 // =Send Notice=====================
 const sendNoticeUsers = async (req, res) => {

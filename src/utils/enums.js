@@ -75,7 +75,7 @@ const ENUM_ADMIN_ACCESS = {
   ACC_TO_NOTIFICATIONS_MANAGE: "accTo_notifications_manage",
   ACC_TO_NOTIFICATIONS_EDIT: "accTo_notification_manage_edit",
   ACC_TO_AUDIT_DASHBOARD: "accTo_audit_dashboard",
-  ACC_TO_SUPERVISION_DASHBOARD: "accTo_supervition_dashboard",
+  ACC_TO_SUPERVISION_DASHBOARD: "accTo_supervision_dashboard",
   ACC_TO_ACTIVITY_LOG: "accTo_activity_log",
 }
 
@@ -85,7 +85,8 @@ const ENUM_NOTIFICATION_TYPE = {
   NOTICE: "notice",
   TICKET: 'ticket',
   NONE: 'none',
-  ONGOING: 'ongoing'
+  ONGOING: 'ongoing',
+  COMPLETE_STATUS:"complete-status"
 };
 const ENUM_PAYMENT_STATUS = {};
 

@@ -56,79 +56,80 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
         if (!receiverId || !senderId) {
             throw new ApiError(404, 'Sender or Receiver user not found');
-        }
+        } 
 
         let conversation = await Conversation.findOne({
             participants: { $all: [receiverId, senderId] },
         });
 
+         // =====
+        let userRoleType = null;
+        let previousNotification;
+        
+        const user = await User.findOne({ _id: senderId });
+        if (user) {
+            userRoleType = "User";
+        } else {
+            const partner = await Partner.findOne({ _id: senderId });
+            if (partner) {
+                userRoleType = "Partner";
+            } else {
+                const admin = await Admin.findOne({ _id: senderId });
+                if (admin) {
+                    userRoleType = "Admin";
+                }
+            }
+        }
+         // =====
+        let adminType = false;
+        const admin = await Admin.findOne({ _id: receiverId });
+        if (admin) {
+            adminType = true;
+        } 
+         // =====
+
         if (!conversation) {
             conversation = await Conversation.create({
                 participants: [senderId, receiverId],
-            });
+            }); 
 
-            let userRoleType = null;
+            previousNotification = await NotificationService.sendNotification({
+                title: `New Message from ${userRoleType || "Unknown"}`,
+                message: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
+                user: senderId,
+                userType: userRoleType,
+                getId: receiverId,
+                types: 'new-message',
+                isAdmin: adminType,
+            }) 
+        } 
 
-            const user = await User.findOne({ _id: senderId });
-            if (user) {
-                userRoleType = "User";
-            } else {
-                const partner = await Partner.findOne({ _id: senderId });
-                if (partner) {
-                    userRoleType = "Partner";
-                } else {
-                    const admin = await Admin.findOne({ _id: senderId });
-                    if (admin) {
-                        userRoleType = "Admin";
-                    }
-                }
-            }
+        const newMessage = new Message({
+            senderId,
+            receiverId,
+            text,
+            isAdmin: adminType,
+            conversationId: conversation._id,
+        });
+
+        conversation.messages.push(newMessage._id);
+        await Promise.all([conversation.save(), newMessage.save()]);
+        
+         // =====
+        if(!previousNotification && adminType) {
             await NotificationService.sendNotification({
                 title: `New Message from ${userRoleType || "Unknown"}`,
                 message: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
                 user: senderId,
                 userType: userRoleType,
                 getId: receiverId,
-                types: 'new-message'
-            })
-        }
-
-        // ---------------
-        const findParticipant = async (id) => {
-            let participant =
-                (await User.findOne({ _id: id })) ||
-                (await Partner.findOne({ _id: id })) ||
-                (await Admin.findOne({ _id: id }));
-            return participant;
-        };
-
-        const [sender] = await Promise.all([
-            findParticipant(senderId),
-        ]);
-
-        const getRole = (user) => {
-            if (!user) return null;
-            if (user instanceof Admin) return true;
-            if (user instanceof Partner) return false;
-            return false;
-        };
-
-        const senderRole = getRole(sender);
-
-
-        const newMessage = new Message({
-            senderId,
-            receiverId,
-            text,
-            isAdmin: senderRole,
-            conversationId: conversation._id,
-        });
-
-        conversation.messages.push(newMessage._id);
-        await Promise.all([conversation.save(), newMessage.save()]);
-
-        await emitMassage(senderId, newMessage, ENUM_SOCKET_EVENT.MESSAGE_NEW)
-        await emitMassage(receiverId, newMessage, ENUM_SOCKET_EVENT.MESSAGE_NEW)
+                types: 'new-message',
+                isAdmin: adminType,
+            }) 
+        } 
+       // =====
+        await emitMassage(senderId, newMessage, `${ENUM_SOCKET_EVENT.MESSAGE_NEW}/${receiverId}`)
+        await emitMassage(receiverId, newMessage, `${ENUM_SOCKET_EVENT.MESSAGE_NEW}/${senderId}`)
 
     },
     );

@@ -85,13 +85,18 @@ const getMessages = async (req) => {
 const conversationUser = async (payload) => {
   try {
     const { searchTerm } = payload;
- 
+
+    console.log("=6665=======================================", searchTerm)
+
+   
     const conversations = await Conversation.find({});
- 
+
+    // Flatten and collect participant IDs
     const participantIds = conversations.flatMap((convo) =>
       convo.participants.map((participantId) => participantId.toString())
     );
- 
+
+    // Fetch users, partners, and admins concurrently
     const [users, partners, admins] = await Promise.all([
       User.find({ _id: { $in: participantIds } }).select(
         "_id name email profile_image"
@@ -102,30 +107,29 @@ const conversationUser = async (payload) => {
       Admin.find({ _id: { $in: participantIds } }).select(
         "_id name email profile_image"
       ),
-    ]); 
+    ]);
 
+    // Create a map for participants
     const participantMap = {};
 
     [...users, ...partners, ...admins].forEach((participant) => {
       participantMap[participant._id.toString()] = {
         ...participant.toObject(),
-        type:
-          participant instanceof User
-            ? "User"
-            : participant instanceof Partner
-            ? "Partner"
-            : "Admin",
+        type: participant.constructor.modelName, // Dynamic type identification
       };
     });
- 
+
+    // Map conversations with participant details
     const conversationsWithParticipants = conversations.map((convo) => ({
       ...convo.toObject(),
-      messages: undefined, 
       participants: convo.participants.map(
         (participantId) => participantMap[participantId.toString()]
       ),
     }));
- 
+
+    
+
+    // Filter by search term if provided
     const filteredConversations = searchTerm
       ? conversationsWithParticipants.filter((convo) =>
           convo.participants.some((participant) =>
@@ -134,12 +138,15 @@ const conversationUser = async (payload) => {
         )
       : conversationsWithParticipants;
 
+      console.log("Conversations with Participants:", filteredConversations);
+
     return filteredConversations;
   } catch (error) {
     console.error("Error fetching conversations:", error);
-    throw new Error("Failed to fetch conversations");
+    throw new ApiError(400,"Failed to fetch conversations");
   }
 };
+
 
 
 

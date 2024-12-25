@@ -9,8 +9,7 @@ const router = express.Router();
 router
   .post(
     "/create-ticket",
-    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER), 
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SUPPORT_EDIT),
+    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),  
     SupportController.createTicket
   )
   .patch(

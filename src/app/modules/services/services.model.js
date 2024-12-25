@@ -201,6 +201,10 @@ const ServicesSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    paymentMethod:{
+      type: String,
+      enum: ['Stripe', 'PayPal', 'applePay', 'googlePay', "BankTransfer"], 
+    },
     distance: {
       type: Number,
       default: 0.1,

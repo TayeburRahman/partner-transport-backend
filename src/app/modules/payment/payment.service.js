@@ -137,6 +137,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
 
     service.paymentStatus = 'paid';
     service.transactionId = session.payment_intent;
+    service.paymentMethod = 'Stripe',
     await service.save();
 
     // Create transaction data
@@ -267,6 +268,8 @@ const createCheckoutSessionPaypal = async (req, res) => {
 const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
   const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query;
 
+  console.log("Check Pay:", paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType)
+
   if (!paymentId || !PayerID || !serviceId || !payUser || !receiveUser) {
     return { status: "failed", message: "Missing required query parameters." };
   }
@@ -302,6 +305,7 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
         const saleId = payment.transactions[0].related_resources[0].sale.id;
 
         service.paymentStatus = 'paid';
+        service.paymentMethod = 'PayPal',
         service.transactionId = saleId;
         await service.save();
 
@@ -328,6 +332,8 @@ const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
         resolve({ status: "success", result: newTransaction });
       });
     });
+
+    console.log("Payment Result:--", paymentResult)
 
     return paymentResult;
   } catch (error) {

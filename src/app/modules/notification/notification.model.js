@@ -12,6 +12,10 @@ const notificationSchema = new Schema(
       refPath: 'userType',
       ref: "User",
     },
+    isAdmin:{
+       type: Boolean,
+       default: false,
+    },
     userType: {
       type: String,
       enum: ['User', 'Partner', 'Admin'],

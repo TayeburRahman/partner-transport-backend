@@ -327,9 +327,7 @@ const getTransactionsDetails = catchAsync(
     });
   },
 ); 
-
  
-
 const DashboardController = {
   getAllUsers,
   getUserDetails,
