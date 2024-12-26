@@ -60,7 +60,7 @@ const ENUM_ADMIN_ACCESS = {
   ACC_TO_PARTNER_EDIT: "accTo_partner_manage_edit",
   ACC_TO_TRANSACTION: "accTo_transaction",
   ACC_TO_CATEGORY_MANAGE: "accTo_category_manage",
-  ACC_TO_CATEGORY_EDIT: "accTo_category_manage_edit ",
+  ACC_TO_CATEGORY_EDIT: "accTo_category_manage_edit",
   ACC_TO_REVIEW_CONVERSATION: "accTo_review_conversation",
   ACC_TO_BANK_TRANSFER: "accTo_bank_transfer",
   ACC_TO_BANK_TRANSFER_EDIT: "accTo_bank_transfer_edit",
