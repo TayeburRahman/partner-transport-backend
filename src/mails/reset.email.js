@@ -88,7 +88,7 @@ const resetEmailTemplate = (data) => `
           <p>Thank you,<br>The Support Team</p>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Partner Transport. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Xmoveit. All rights reserved.</p>
           <p><a href="https://yourwebsite.com/privacy">Privacy Policy</a> | <a href="https://yourwebsite.com/contact">Contact Support</a></p>
         </div>
       </div>

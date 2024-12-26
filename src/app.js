@@ -28,6 +28,7 @@ app.use(
       "http://192.168.10.26:3003",
       "http://192.168.10.26:3004",
       "http://192.168.10.26:3005", 
+      "http://157.245.94.100:3001",
     ],
     credentials: true,
   })
@@ -56,7 +57,7 @@ app.use("/", routes);
 
 // Home route to render index.ejs
 app.get("/", async (req, res) => {
-  res.json("Welcome to Partner Transport");
+  res.json("Welcome to Xmoveit");
 });
 
 // Global Error Handler

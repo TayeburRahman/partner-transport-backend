@@ -94,18 +94,18 @@ const registrationEmailTemplate = (data, role = "user") => `
     <body>
       <div class="container">
         <div class="header">
-          <h1>Welcome to Partner Transport</h1>
+          <h1>Welcome to Xmoveit</h1>
         </div>
         <div class="content">
           <h2>Hello, ${data?.name || "User"}</h2>
           ${
             role === "admin"
               ? `
-            <p>Thank you for registering as an admin with Partner Transport. We are excited to have you on board. As an admin, you have full access to manage the platform.</p>
+            <p>Thank you for registering as an admin with Xmoveit. We are excited to have you on board. As an admin, you have full access to manage the platform.</p>
             <p>If you need assistance, reach out to us at <a href="mailto:thakursaad613@gmail.com">thakursaad613@gmail.com</a>.</p>
             `
               : `
-            <p>Thank you for registering with Partner Transport. To activate your account, please use the following activation code:</p>
+            <p>Thank you for registering with Xmoveit. To activate your account, please use the following activation code:</p>
             <div class="activation-code">${
               data?.activationCode || "XXXXXX"
             }</div>
@@ -123,7 +123,7 @@ const registrationEmailTemplate = (data, role = "user") => `
         </div>
         <div class="footer">
           <p>
-            &copy; ${new Date().getFullYear()}Partner Transport. All rights reserved.
+            &copy; ${new Date().getFullYear()}Xmoveit. All rights reserved.
           </p>
           <p><a href="https://yourwebsite.com/privacy">Privacy Policy</a> | <a href="https://yourwebsite.com/contact">Contact Us</a></p>
         </div>

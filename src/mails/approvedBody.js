@@ -69,7 +69,7 @@ const approvedBody = (data) =>
                   
                </div>
                <p>If you have any questions or need further assistance, feel free to contact our support team at any time.</p>
-               <p>Thank you for choosingXmoveit!</p>
+               <p>Thank you for choosing Xmoveit!</p>
                <div class="footer">
                    <p>&copy; ${new Date().getFullYear()}Xmoveit. All rights reserved.</p>
                </div>
