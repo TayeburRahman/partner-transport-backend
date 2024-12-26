@@ -48,18 +48,18 @@ const createVariable = async (req) => {
       throw new ApiError(httpStatus.BAD_REQUEST, "Data is missing in the request body!");
     }
   
-    try { 
-      const variable = await Variable.findOneAndUpdate({}, data, { new: true, runValidators: true });
-  
-      if (!variable) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Variable not found!");
-      }
+    try {  
+      const variable = await Variable.findOneAndUpdate(
+        {},  
+        data,
+        { new: true, runValidators: true, upsert: true } 
+      );
   
       // Log success
       const newTask = {
         admin: userId,
         email: emailAuth,
-        description: `Variable was successfully updated. update author email: '${emailAuth}'`,
+        description: `Variable was successfully updated. Update author email: '${emailAuth}'`,
         types: "Update",
         activity: "reglue",
         status: "Success",
@@ -72,12 +72,12 @@ const createVariable = async (req) => {
       const newTask = {
         admin: userId,
         email: emailAuth,
-        description: `Failed to update variable: ${error.message || "Unknown error"}.`,
+        description: `Failed to update or create variable: ${error.message || "Unknown error"}.`,
         types: "Failed",
         activity: "reglue",
         status: "Error",
       };
-      await LogsDashboardService.createTaskDB(newTask);
+      await LogsDashboardService.createTaskDB(newTask); 
     }
   };
   
