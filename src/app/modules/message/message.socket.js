@@ -134,7 +134,6 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
     },
     );
 }
-
 const emitMassage = (receiver, data, emit_massage) => {
     if (global.io) {
         const socketIo = global.io;
