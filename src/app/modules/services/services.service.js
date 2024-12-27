@@ -562,9 +562,7 @@ const updateServicesStatusPartner = async (req) => {
 
   if (!serviceId || !status) {
     throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Service ID and status are required in the query parameters."
-    );
+      httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
   }
 
   const service = await Services.findById(serviceId);
@@ -575,71 +573,53 @@ const updateServicesStatusPartner = async (req) => {
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
+  console.log("service", service.status)
+  if (status === "arrived" && service.status !== "accepted") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
+  }
 
-  validatePartnerStatusTransitions(service, status);
+  console.log("status==", status)
 
-  let service_status = determineServiceStatusPartner(service, status);
+  if (status === "start-trip" && service.user_status !== "goods-loaded") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm goods are loaded before starting the trip.");
+  }
 
-  const updatedService = await Services.findOneAndUpdate(
+  if (status === "arrive-at-destination" && (service.partner_status !== "start-trip" || service.user_status !== "goods-loaded")) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Trip must be started and goods must be loaded before arriving at the destination.");
+  }
+
+  if (status === "delivered" && service.user_status !== "partner-at-destination") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm partner is at the destination before marking as delivered.");
+  }
+
+  let service_status = service.status;
+  if (status === "start-trip") {
+    service_status = "in-progress";
+  }
+
+  const result = await Services.findOneAndUpdate(
     { _id: serviceId },
     { partner_status: status, status: service_status },
     { new: true }
   );
-
-  if (!updatedService) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update the service status.");
-  }
-
-  await sendPartnerNotification(updatedService, status, serviceId);
-
-  return updatedService;
-};
-
-// Helper Functions
-const validatePartnerStatusTransitions = (service, status) => {
-  const errorMessages = {
-    arrived: "User must confirm pending status before arriving.",
-    "start-trip": "User must confirm goods are loaded before starting the trip.",
-    "arrive-at-destination": "Trip must be started and goods must be loaded before arriving at the destination.",
-    delivered: "User must confirm partner is at the destination before marking as delivered.",
-  };
-
-  const conditions = {
-    arrived: service.status === "accepted",
-    "start-trip": service.user_status === "goods-loaded",
-    "arrive-at-destination": service.partner_status === "start-trip" && service.user_status === "goods-loaded",
-    delivered: service.user_status === "partner-at-destination",
-  };
-
-  if (conditions[status] === false) {
-    throw new ApiError(httpStatus.BAD_REQUEST, errorMessages[status]);
-  }
-};
-
-const determineServiceStatusPartner = (service, status) => {
-  if (status === "start-trip") return "in-progress";
-  return service.status;
-};
-
-const sendPartnerNotification = async (service, status, serviceId) => {
-  const notificationType = status === "delivered" ? "completed" : "ongoing";
 
   await NotificationService.sendNotification({
     title: "Service Status Updated",
     message: `The service status has been updated to "${status}".`,
     user: service.user,
     userType: "User",
-    types: notificationType,
+    types: "ongoing",
     getId: serviceId,
   });
-};
 
+  return result;
+};
 
 const updateServicesStatusUser = async (req) => {
   const { serviceId, status } = req.query;
 
   if (!serviceId || !status) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
   }
 
   const service = await Services.findById(serviceId);
@@ -648,120 +628,77 @@ const updateServicesStatusUser = async (req) => {
   }
 
   if (service.paymentStatus !== "paid") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Payment must be completed.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Payment must be completed before you can update the status.");
   }
 
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
 
-  validateServiceStatusTransitions(service, status);
-
-  const transaction = await Transaction.findOne({ serviceId });
-  if (!transaction || transaction.paymentStatus !== "Completed") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const receivedUser = await findReceivedUser(transaction, session);
-    if (status === "delivery-confirmed") {
-      await processDeliveryConfirmed(transaction, receivedUser, session);
+    const transaction = await Transaction.findOne({ serviceId });
+    if (!transaction || transaction.paymentStatus !== "Completed") {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
     }
 
-    const serviceStatus = determineServiceStatus(service, status);
+    const receivedUser =
+      transaction.receiveUserType === "Partner"
+        ? await Partner.findById(transaction.receiveUser)
+        : await User.findById(transaction.receiveUser);
+
+    if (!receivedUser) {
+      throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
+    }
+
+    if (status === "delivery-confirmed") {
+      receivedUser.wallet += transaction.amount;
+      await receivedUser.save();
+
+      transaction.isFinish = true;
+      await transaction.save();
+
+      await NotificationService.sendNotification({
+        title: "Payment Received",
+        message: `You have received a payment of ${transaction.amount} for the service.`,
+        user: receivedUser._id,
+        userType: transaction.receiveUserType,
+        types: "complete-status",
+        getId: serviceId,
+      });
+    }
+
+    let serviceStatus = service.status;
+    if (status === "goods-loaded") {
+      serviceStatus = "pick-up";
+    } else if (status === "delivery-confirmed") {
+      serviceStatus = "completed";
+    }
 
     const updatedService = await Services.findByIdAndUpdate(
       serviceId,
       { user_status: status, status: serviceStatus },
-      { new: true, session }
+      { new: true }
     );
 
-    await sendNotification(service, status, serviceStatus, serviceId);
+    await NotificationService.sendNotification({
+      title: "Service Status Updated",
+      message: `The service status has been updated to "${status}".`,
+      user: service.confirmedPartner,
+      userType: "Partner",
+      types: serviceStatus === "completed" ? "complete-status" : "ongoing",
+      getId: serviceId,
+    });
 
-    await session.commitTransaction();
     return updatedService;
   } catch (error) {
-    await session.abortTransaction();
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service: ${error.message}`);
-  } finally {
-    session.endSession();
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
-};
-
-// Helper functions
-const validateServiceStatusTransitions = (service, status) => {
-  const errorMessages = {
-    "confirm-arrived": "Partner must mark arrival before confirming arrival.",
-    "goods-loaded": "Partner must arrive and user must confirm arrival before loading goods.",
-    "partner-at-destination": "Partner must arrive at destination before confirming destination.",
-    "delivery-confirmed": "Partner must mark delivery before confirming delivery.",
-  };
-
-  const conditions = {
-    "confirm-arrived": service.partner_status === "arrived",
-    "goods-loaded": service.user_status === "confirm-arrived" && service.partner_status === "arrived",
-    "partner-at-destination": service.partner_status === "arrive-at-destination",
-    "delivery-confirmed": service.partner_status === "delivered",
-  };
-
-  if (conditions[status] === false) {
-    throw new ApiError(httpStatus.BAD_REQUEST, errorMessages[status]);
-  }
-};
-
-const findReceivedUser = async (transaction, session) => {
-  const userModel = transaction.receiveUserType === "Partner" ? Partner : User;
-  const receivedUser = await userModel.findById(transaction.receiveUser).session(session);
-
-  if (!receivedUser) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found.");
-  }
-
-  return receivedUser;
-};
-
-const processDeliveryConfirmed = async (transaction, receivedUser, session) => {
-  receivedUser.wallet += transaction.amount;
-  await receivedUser.save({ session });
-
-  transaction.isFinish = true;
-  await transaction.save({ session });
-
-  await NotificationService.sendNotification({
-    title: "Payment Received",
-    message: `You have received ${transaction.amount}.`,
-    user: receivedUser._id,
-    userType: transaction.receiveUserType,
-    types: "complete-status",
-    getId: transaction.serviceId,
-  });
-};
-
-const determineServiceStatus = (service, status) => {
-  if (status === "goods-loaded") return "pick-up";
-  if (status === "delivery-confirmed") return "completed";
-  return service.status;
-};
-
-const sendNotification = async (service, status, serviceStatus, serviceId) => {
-  await NotificationService.sendNotification({
-    title: "Service Status Updated",
-    message: `Service status updated to "${status}".`,
-    user: service.confirmedPartner,
-    userType: "Partner",
-    types: serviceStatus === "completed" ? "complete-status" : "ongoing",
-    getId: serviceId,
-  });
 };
 
 
 //---------------
 const updateSellServicesStatusUser = async (req) => {
   const { serviceId, status } = req.query;
-  const { userId } = req.user;
 
   if (!serviceId || !status) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
@@ -785,17 +722,13 @@ const updateSellServicesStatusUser = async (req) => {
   }
 
   if (status === "delivered" && (service.user_status !== "confirm-arrived" || service.partner_status !== "arrived")) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive and user must confirm arrival before loading goods.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive and user must confirm arrival before delivery.");
   }
-
 
   const transaction = await Transaction.findOne({ serviceId });
   if (!transaction || transaction.paymentStatus !== "Completed") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
   }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
     const receivedUser =
@@ -804,16 +737,13 @@ const updateSellServicesStatusUser = async (req) => {
         : await User.findById(transaction.receiveUser);
 
     if (!receivedUser) {
-      throw new ApiError(
-        httpStatus.NOT_FOUND,
-        "Recipient user not found for the transaction."
-      );
+      throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
     }
 
     const updatedService = await Services.findByIdAndUpdate(
       serviceId,
-      { user_status: status, },
-      { new: true, session }
+      { user_status: status },
+      { new: true }
     );
 
     await NotificationService.sendNotification({
@@ -825,18 +755,12 @@ const updateSellServicesStatusUser = async (req) => {
       getId: serviceId,
     });
 
-    await session.commitTransaction();
     return updatedService;
   } catch (error) {
-    await session.abortTransaction();
-    throw new ApiError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      `Error updating service status: ${error.message}`
-    );
-  } finally {
-    session.endSession();
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
 };
+
 
 const updateSellServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;
@@ -884,16 +808,13 @@ const updateSellServicesStatusPartner = async (req) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     if (status === "delivery-confirmed") {
       receivedUser.wallet = (receivedUser.wallet || 0) + transaction.amount;
-      await receivedUser.save({ session });
+      await receivedUser.save();
 
       transaction.isFinish = true;
-      await transaction.save({ session });
+      await transaction.save();
 
       await NotificationService.sendNotification({
         title: "Payment Received",
@@ -913,7 +834,7 @@ const updateSellServicesStatusPartner = async (req) => {
     const result = await Services.findOneAndUpdate(
       { _id: serviceId },
       { partner_status: status, status: updatedServiceStatus },
-      { new: true, session }
+      { new: true }
     );
 
     await NotificationService.sendNotification({
@@ -925,16 +846,13 @@ const updateSellServicesStatusPartner = async (req) => {
       getId: serviceId,
     });
 
-    await session.commitTransaction();
     return result;
   } catch (error) {
-    await session.abortTransaction();
-    console.error("Transaction failed:", error);
+    console.error("Error updating service status:", error);
     throw error;
-  } finally {
-    session.endSession();
   }
 };
+
 
 // Status===========================
 
