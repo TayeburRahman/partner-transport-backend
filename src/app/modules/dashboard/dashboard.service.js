@@ -60,20 +60,28 @@ const getUserDetails = async (query) => {
 };
 
 const deleteUser = async (query) => {
-  const { email } = query || {};
+  const { userId } = query || {};
 
-  if (!email) {
-    throw new ApiError(404, "Missing email");
+  if (!userId) {
+    throw new ApiError(404, "User ID is missing.");
   }
+ 
+  const activeService = await Services.findOne({
+    user: userId,
+    status: { $in: ['accepted', 'rescheduled', 'pick-up', 'in-progress'] },
+  });
 
-  const isUserExist = await Auth.isAuthExist(email);
-
-  if (!isUserExist) {
-    throw new ApiError(404, "User does not exist");
+  if (activeService) {
+    throw new ApiError(400, "The user has active services associated with a partner.");
   }
-
-  await User.deleteOne({ authId: isUserExist._id });
-  return await Auth.deleteOne({ email });
+ 
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User does not exist.");
+  }
+ 
+  await User.deleteOne({ _id: userId });
+  return await Auth.deleteOne({ _id: user.authId });
 };
 
 const blockUnblockUserPartnerAdmin = async (req) => {
@@ -212,22 +220,28 @@ const getPartnerDetails = async (query) => {
 };
 
 const deletePartner = async (query) => {
-  const { email } = query;
-  if (!email) {
-    throw new ApiError(404, "Missing email");
+  const { userId } = query || {};
+
+  if (!userId) {
+    throw new ApiError(404, "Missing userId");
   }
+ 
+  const activeService = await Services.findOne({
+    confirmedPartner: userId,
+    status: { $in: ['accepted', 'rescheduled', 'pick-up', 'in-progress'] },
+  });
 
-  const isUserExist = await Auth.isAuthExist(email);
-  if (!isUserExist) {
-    throw new ApiError(404, "Partner does not exist");
+  if (activeService) {
+    throw new ApiError(400, "The partner has active services associated with users.");
   }
-
-  const [result, ,] = await Promise.all([
-    Auth.deleteOne({ _id: isUserExist._id }),
-    Partner.deleteOne({ authId: isUserExist._id }),
-  ]);
-
-  return result;
+ 
+  const partner = await Partner.findById(userId);
+  if (!partner) {
+    throw new ApiError(404, "Partner does not exist.");
+  }
+ 
+  await Partner.deleteOne({ _id: userId });
+  return await Auth.deleteOne({ _id: partner.authId });
 };
 
 const getAllAdmins = async (query) => {
