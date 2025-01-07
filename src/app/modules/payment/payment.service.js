@@ -277,7 +277,7 @@ const createConnectedAccountWithBank = async (req, res) => {
 
     const { bank_info, business_profile, address, dateOfBirth : dob } = req.body;
 
-    console.log("Update all of:",bank_info, business_profile, address, dob)
+    // console.log("Update all of:",bank_info, business_profile, address, dob)
 
     // Validate the input address and use the valid one if the original is not valid
     const finalAddress = address.line1 && address.city && address.state && address.postal_code && address.country && address
@@ -383,20 +383,26 @@ const createStripeFile = async (fileData, file) => {
   }
 };
 
-const createStripeToken = async (user, dob, address, frontFilePart, backFilePart) => {
+const createStripeToken = async (user, dob, address, backFilePart) => {
   try {
+    // Ensure dob is a valid Date object
+    const parsedDob = new Date(dob);
+    if (isNaN(parsedDob)) {
+      throw new Error("Invalid date format for dob");
+    } 
+
     return await stripe.tokens.create({
       account: {
         individual: {
           dob: {
-            day: dob.getDate(),
-            month: dob.getMonth() + 1,
-            year: dob.getFullYear(),
+            day: parsedDob.getDate(),
+            month: parsedDob.getMonth() + 1,
+            year: parsedDob.getFullYear(),
           },
-          first_name: user?.name?.split(" ")[0] || 'Unknown',
-          last_name: user?.name?.split(" ")[1] || 'Unknown',
+          first_name: user?.name?.split(" ")[0] || "Unknown",
+          last_name: user?.name?.split(" ")[1] || "Unknown",
           email: user?.email,
-          phone: user?.phone_number,
+          // phone: user?.phone_number,
           address: {
             city: address.city,
             country: "US",
@@ -405,23 +411,28 @@ const createStripeToken = async (user, dob, address, frontFilePart, backFilePart
             state: address.state,
           },
           verification: {
-            document: {
-              front: frontFilePart.id,
-              back: backFilePart.id,
-            },
+            // document: {
+            //   front: frontFilePart.id,
+            //   back: backFilePart.id,
+            // },
           },
         },
         business_type: "individual",
         tos_shown_and_accepted: true,
       },
     });
-
   } catch (error) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Error creating Stripe token: " + error.message);
+    console.error("Error creating Stripe token:", error);
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Error creating Stripe token: " + error.message
+    );
   }
 };
 
+
 const createStripeAccount = async (token, bank_info, business_profile, user) => {
+  console.log("Token:", token.id)
   try {
     return await stripe.accounts.create({
       type: "custom",
@@ -454,6 +465,7 @@ const createStripeAccount = async (token, bank_info, business_profile, user) => 
 const saveStripeAccount = async (account, user, driverId, address,
   //  kycFront, kycBack,
    dob) => {
+    return account
   const formattedAddress = `${address.line1}, ${address.city}, ${address.state}, US, ${address.postal_code}`;
   const dobFormatted = dob.toISOString(); // Convert date to ISO string
 
@@ -463,23 +475,23 @@ const saveStripeAccount = async (account, user, driverId, address,
     status: true,
   };
 
-  const newStripeAccount = new StripeAccount({
-    name: user?.name || 'Unknown',
-    email: user?.email,
-    driverId,
-    stripeAccountId: account.id,
-    address: formattedAddress,
-    dob: dobFormatted,
-    accountInformation: accountInformation,
-    // kycBack: kycBack[0].path,
-    // kycFront: kycFront[0].path,
-    line1: address.line1,
-    city: address.city,
-    state: address.state,
-    postal_code: address.postal_code,
-  });
+  // const newStripeAccount = new StripeAccount({
+  //   name: user?.name || 'Unknown',
+  //   email: user?.email,
+  //   driverId,
+  //   stripeAccountId: account.id,
+  //   address: formattedAddress,
+  //   dob: dobFormatted,
+  //   accountInformation: accountInformation,
+  //   // kycBack: kycBack[0].path,
+  //   // kycFront: kycFront[0].path,
+  //   line1: address.line1,
+  //   city: address.city,
+  //   state: address.state,
+  //   postal_code: address.postal_code,
+  // });
 
-  return await newStripeAccount.save();
+  // return await newStripeAccount.save();
 };
 
 
