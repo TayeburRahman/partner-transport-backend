@@ -274,8 +274,14 @@ const conformPartner = async (req) => {
   await Bids.bulkWrite(bulkOps);
 
   await NotificationService.sendNotification({
-    title: "You’ve Won the Bid!",
-    message: `Congratulations! Your bid for service has been accepted.`,
+    title: {
+      eng: "You’ve Won the Bid!",
+      span: "¡Has Ganado la Oferta!"
+    },
+    message: {
+      eng: "Congratulations! Your bid for service has been accepted.",
+      span: "¡Felicidades! Tu oferta por el servicio ha sido aceptada."
+    },
     user: partnerId,
     userType: 'Partner',
     types: 'service',
@@ -603,9 +609,16 @@ const updateServicesStatusPartner = async (req) => {
     { new: true }
   );
 
-  await NotificationService.sendNotification({
-    title: "Service Status Updated",
-    message: `The service status has been updated to "${status}".`,
+  await NotificationService.sendNotification({ 
+      title: {
+        eng: "Service Status Updated",
+        span: "Estado del Servicio Actualizado"
+      },
+      message: {
+        eng: `The service status has been updated to "${status}".`,
+        span: `El estado del servicio ha sido actualizado a "${status}".`
+      },
+    
     user: service.user,
     userType: "User",
     types: "ongoing",
@@ -658,8 +671,14 @@ const updateServicesStatusUser = async (req) => {
       await transaction.save();
 
       await NotificationService.sendNotification({
-        title: "Payment Received",
-        message: `You have received a payment of ${transaction.amount} for the service.`,
+        title: {
+          eng: "Payment Received",
+          span: "Pago Recibido"
+        },
+        message: {
+          eng: `You have received a payment of ${transaction.amount} for the service.`,
+          span: `Has recibido un pago de ${transaction.amount} por el servicio.`
+        },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
         types: "complete-status",
@@ -681,8 +700,14 @@ const updateServicesStatusUser = async (req) => {
     );
 
     await NotificationService.sendNotification({
-      title: "Service Status Updated",
-      message: `The service status has been updated to "${status}".`,
+      title: {
+        eng: "Service Status Updated",
+        span: "Estado del Servicio Actualizado"
+      },
+      message: {
+        eng: `The service status has been updated to "${status}".`,
+        span: `El estado del servicio ha sido actualizado a "${status}".`
+      },
       user: service.confirmedPartner,
       userType: "Partner",
       types: serviceStatus === "completed" ? "complete-status" : "ongoing",
@@ -747,8 +772,14 @@ const updateSellServicesStatusUser = async (req) => {
     );
 
     await NotificationService.sendNotification({
-      title: "Service Status Updated",
-      message: `The service status has been updated to "${status}".`,
+      title: {
+        eng: "Service Status Updated",
+        span: "Estado del Servicio Actualizado"
+      },
+      message: {
+        eng: `The service status has been updated to "${status}".`,
+        span: `El estado del servicio ha sido actualizado a "${status}".`
+      },
       user: service.confirmedPartner,
       userType: "Partner",
       types: "service",
@@ -817,8 +848,14 @@ const updateSellServicesStatusPartner = async (req) => {
       await transaction.save();
 
       await NotificationService.sendNotification({
-        title: "Payment Received",
-        message: `You have received a payment of ${transaction.amount} for the service.`,
+        title: {
+          eng: "Payment Received",
+          span: "Pago Recibido"
+        },
+        message: {
+          eng: `You have received a payment of ${transaction.amount} for the service.`,
+          span: `Has recibido un pago de ${transaction.amount} por el servicio.`
+        },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
         types: "complete-status",
@@ -838,8 +875,14 @@ const updateSellServicesStatusPartner = async (req) => {
     );
 
     await NotificationService.sendNotification({
-      title: "Service Status Updated",
-      message: `The service status has been updated to "${status}".`,
+      title: {
+        eng: "Service Status Updated",
+        span: "Estado del Servicio Actualizado"
+      },
+      message: {
+        eng: `The service status has been updated to "${status}".`,
+        span: `El estado del servicio ha sido actualizado a "${status}".`
+      },
       user: service.user,
       userType: "User",
       types: "service",

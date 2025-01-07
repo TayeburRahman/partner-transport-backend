@@ -18,7 +18,9 @@ const {
 } = require("../../../mails/email.register");
 const { resetEmailTemplate } = require("../../../mails/reset.email");
 
-const registrationAccount = async (payload) => {
+const registrationAccount = async (req) => {
+  const payload = req.body;
+  const files = req.files
   const { role, password, confirmPassword, email, ...other } = payload;
 
   if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
@@ -54,6 +56,37 @@ const registrationAccount = async (payload) => {
     ]);
   }
 
+  const fileUploads = {};
+  if (files) {
+    if (files.profile_image && files.profile_image[0]) {
+      fileUploads.profile_image = `/images/profile/${files.profile_image[0].filename}`;
+    }
+    if (files.licensePlateImage && files.licensePlateImage[0]) {
+      fileUploads.licensePlateImage = `/images/vehicle-licenses/${files.licensePlateImage[0].filename}`;
+    }
+    if (files.drivingLicenseImage && files.drivingLicenseImage[0]) {
+      fileUploads.drivingLicenseImage = `/images/driving-licenses/${files.drivingLicenseImage[0].filename}`;
+    }
+    if (files.vehicleInsuranceImage && files.vehicleInsuranceImage[0]) {
+      fileUploads.vehicleInsuranceImage = `/images/insurance/${files.vehicleInsuranceImage[0].filename}`;
+    }
+    if (
+      files.vehicleRegistrationCardImage &&
+      files.vehicleRegistrationCardImage[0]
+    ) {
+      fileUploads.vehicleRegistrationCardImage = `/images/vehicle-registration/${files.vehicleRegistrationCardImage[0].filename}`;
+    }
+    if (files.vehicleFrontImage && files.vehicleFrontImage[0]) {
+      fileUploads.vehicleFrontImage = `/images/vehicle-image/${files.vehicleFrontImage[0].filename}`;
+    }
+    if (files.vehicleBackImage && files.vehicleBackImage[0]) {
+      fileUploads.vehicleBackImage = `/images/vehicle-image/${files.vehicleBackImage[0].filename}`;
+    }
+    if (files.vehicleSideImage && files.vehicleSideImage[0]) {
+      fileUploads.vehicleSideImage = `/images/vehicle-image/${files.vehicleSideImage[0].filename}`;
+    }
+  }
+
   const { activationCode } = createActivationToken();
   const auth = {
     role,
@@ -63,7 +96,8 @@ const registrationAccount = async (payload) => {
     password,
     expirationTime: Date.now() + 3 * 60 * 1000,
   };
-
+ 
+ 
   if (role === "USER"
     //  || role === "PARTNER"
   ) {
@@ -91,20 +125,24 @@ const registrationAccount = async (payload) => {
   other.authId = createAuth._id;
   other.email = email;
 
+  const createData = { ...other, ...fileUploads }; 
+
+  // console.log("update",createData);
+
   // Role-based user creation
   let result;
   switch (role) {
     case ENUM_USER_ROLE.USER:
-      result = await User.create(other);
+      result = await User.create(createData);
       break;
     case ENUM_USER_ROLE.ADMIN:
-      result = await Admin.create(other);
+      result = await Admin.create(createData);
       break;
     case ENUM_USER_ROLE.SUPER_ADMIN:
-      result = await Admin.create(other);
+      result = await Admin.create(createData);
       break;
     case ENUM_USER_ROLE.PARTNER:
-      result = await Partner.create(other);
+      result = await Partner.create(createData);
       break;
     default:
       throw new ApiError(400, "Invalid role provided!");

@@ -4,7 +4,7 @@ const catchAsync = require("../../../shared/catchasync");
 const config = require("../../../config");
 
 const registrationAccount = catchAsync(async (req, res) => {
-  const { role } = await AuthService.registrationAccount(req.body);
+  const { role } = await AuthService.registrationAccount(req);
   let message;
   message = role === "USER" && "Please check your email for the activation OTP code."
   message = role === "PARTNER" && "Your account is awaiting admin approval."

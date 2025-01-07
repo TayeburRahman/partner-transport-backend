@@ -1090,11 +1090,17 @@ const sendNoticeUsers = async (req, res) => {
       const users = await User.find({});
 
       const notifications = users.map(user => ({
-        title: title,
+        title: {
+          eng: "Important Notice from Administrator",
+          span: "Aviso Importante del Administrador"
+        },
         user: user._id,
         admin_ms: true,
         userType: "User",
-        message: 'We have made some updates to improve your experience.',
+        message: {
+          eng: "We have made some updates to improve your experience.",
+          span: "Hemos realizado algunas actualizaciones para mejorar tu experiencia."
+        },
         notice: message,
         types: 'notice',
         getId: null,
@@ -1107,8 +1113,14 @@ const sendNoticeUsers = async (req, res) => {
       }
 
       await NotificationService.sendNotification({
-        title: title,
-        message: 'We have made some updates to improve your experience.',
+        title: {
+          eng: "Important Notice from Administrator",
+          span: "Aviso Importante del Administrador"
+        },
+        message: {
+          eng: "We have made some updates to improve your experience.",
+          span: "Hemos realizado algunas actualizaciones para mejorar tu experiencia."
+        },
         user: userId,
         userType: 'User',
         getId: null,
@@ -1157,8 +1169,14 @@ const sendNoticePartner = async (req, res) => {
     if (all_user) {
       const users = await Partner.find({});
       const notifications = users.map(user => ({
-        title: title,
-        message: 'We have made some updates to improve your experience.',
+        title: {
+          eng: "Important Notice from Administrator",
+          span: "Aviso Importante del Administrador"
+        },
+        message: {
+          eng: "We have made some updates to improve your experience.",
+          span: "Hemos realizado algunas actualizaciones para mejorar tu experiencia."
+        },
         user: user._id,
         userType: 'Partner',
         getId: null,
@@ -1174,8 +1192,14 @@ const sendNoticePartner = async (req, res) => {
       }
 
       await NotificationService.sendNotification({
-        title: title,
-        message: 'We have made some updates to improve your experience.',
+        title: {
+          eng: "Important Notice from Administrator",
+          span: "Aviso Importante del Administrador"
+        },
+        message: {
+          eng: "We have made some updates to improve your experience.",
+          span: "Hemos realizado algunas actualizaciones para mejorar tu experiencia."
+        },
         user: userId,
         userType: 'Partner',
         getId: null,

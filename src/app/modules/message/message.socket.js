@@ -56,16 +56,16 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
         if (!receiverId || !senderId) {
             throw new ApiError(404, 'Sender or Receiver user not found');
-        } 
+        }
 
         let conversation = await Conversation.findOne({
             participants: { $all: [receiverId, senderId] },
         });
 
-         // =====
+        // =====
         let userRoleType = null;
         let previousNotification;
-        
+
         const user = await User.findOne({ _id: senderId });
         if (user) {
             userRoleType = "User";
@@ -80,29 +80,35 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
                 }
             }
         }
-         // =====
+        // =====
         let adminType = false;
         const admin = await Admin.findOne({ _id: receiverId });
         if (admin) {
             adminType = true;
-        } 
-         // =====
+        }
+        // =====
 
         if (!conversation) {
             conversation = await Conversation.create({
                 participants: [senderId, receiverId],
-            }); 
+            });
 
             previousNotification = await NotificationService.sendNotification({
-                title: `New Message from ${userRoleType || "Unknown"}`,
-                message: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
+                title: {
+                    eng: `New Message from ${userRoleType || "Unknown"}`,
+                    span: `Nuevo Mensaje de ${userRoleType || "Desconocido"}`
+                },
+                message: {
+                    eng: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
+                    span: `Has recibido un nuevo mensaje de un ${userRoleType || "usuario"}. Por favor, revisa la conversación.`
+                },
                 user: senderId,
                 userType: userRoleType,
                 getId: receiverId,
                 types: 'new-message',
                 isAdmin: adminType,
-            }) 
-        } 
+            })
+        }
 
         const newMessage = new Message({
             senderId,
@@ -114,20 +120,26 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
         conversation.messages.push(newMessage._id);
         await Promise.all([conversation.save(), newMessage.save()]);
-        
-         // =====
-        if(!previousNotification && adminType) {
+
+        // =====
+        if (!previousNotification && adminType) {
             await NotificationService.sendNotification({
-                title: `New Message from ${userRoleType || "Unknown"}`,
-                message: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
+                title: {
+                    eng: `New Message from ${userRoleType || "Unknown"}`,
+                    span: `Nuevo Mensaje de ${userRoleType || "Desconocido"}`
+                },
+                message: {
+                    eng: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
+                    span: `Has recibido un nuevo mensaje de un ${userRoleType || "usuario"}. Por favor, revisa la conversación.`
+                },
                 user: senderId,
                 userType: userRoleType,
                 getId: receiverId,
                 types: 'new-message',
                 isAdmin: adminType,
-            }) 
-        } 
-       // =====
+            })
+        }
+        // =====
         await emitMassage(senderId, newMessage, `${ENUM_SOCKET_EVENT.MESSAGE_NEW}/${receiverId}`)
         await emitMassage(receiverId, newMessage, `${ENUM_SOCKET_EVENT.MESSAGE_NEW}/${senderId}`)
 

@@ -100,8 +100,14 @@ const partnerBidPost = async (req) => {
   }
 
   await NotificationService.sendNotification({
-    title: "New Bid Received",
-    message: `You have placed a new bid of $${price} for your service.`,
+    title: {
+      eng: "New Bid Received",
+      span: "Nueva Oferta Recibida"
+    },
+    message: {
+      eng: `You have placed a new bid of $${price} for your service.`,
+      span: `Has colocado una nueva oferta de $${price} para tu servicio.`
+    },
     user: foundService.user,
     userType: 'User',
     getId: serviceId,
@@ -390,9 +396,15 @@ const updateStatusFileClaim = async (req, res) => {
     }
  
     if (status === "resolved") {
-      await NotificationService.sendNotification({
-        title: "File Claim Resolved.",
-        message: `Your claim against ${result?.userType === "User" ? 'partner' : 'user'} has been resolved.`,
+      await NotificationService.sendNotification({ 
+          title: {
+            eng: "File Claim Resolved.",
+            span: "Reclamación Resuelta."
+          },
+          message: {
+            eng: "Your claim against ${result?.userType === 'User' ? 'partner' : 'user'} has been resolved.",
+            span: "Tu reclamación contra ${result?.userType === 'User' ? 'el socio' : 'el usuario'} ha sido resuelta."
+          },
         user: result.user,
         userType: result.userType,
         types: 'none',
@@ -525,8 +537,14 @@ const applyPenaltyPercent = async (req, res) => {
     await user.save();
  
     await NotificationService.sendNotification({
-      title: "Penalty Applied",
-      message: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
+      title: {
+        eng: "Penalty Applied",
+        span: "Sanción Aplicada"
+      },
+      message: {
+        eng: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
+        span: `Se ha deducido una sanción de ${percentValue}% (${reason}) de tu billetera.`
+      },
       user: user._id,
       userType: 'User',
       types: 'none',
@@ -541,9 +559,15 @@ const applyPenaltyPercent = async (req, res) => {
     partner.wallet -= cutAmount;
     await partner.save();
  
-    await NotificationService.sendNotification({
-      title: "Penalty Applied",
-      message: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
+    await NotificationService.sendNotification({ 
+        title: {
+          eng: "Penalty Applied",
+          span: "Sanción Aplicada"
+        },
+        message: {
+          eng: "A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.",
+          span: "Se ha deducido una sanción de ${percentValue}% (${reason}) de tu billetera."
+        }, 
       user: partner._id,
       userType: 'Partner',
       types: 'none',

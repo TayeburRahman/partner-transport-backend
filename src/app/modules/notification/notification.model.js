@@ -21,16 +21,22 @@ const notificationSchema = new Schema(
       enum: ['User', 'Partner', 'Admin'],
       required: true,
     },
-    title: {
-      type: String,
-      required: true,
-    },
     admin_ms: {
       type: Boolean,
       required: false,
     },
+    title: {
+      type: {
+        eng: { type: String, required: true },
+        span: { type: String, required: true },
+      },
+      required: true,
+    }, 
     message: {
-      type: String,
+      type: {
+        eng: { type: String, required: true },
+        span: { type: String, required: true },
+      },
       required: true,
     },
     notice: {

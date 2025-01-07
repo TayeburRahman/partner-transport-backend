@@ -12,23 +12,9 @@ const app = express();
 // CORS configuration
 app.use(
   cors({
-    origin: [
-      "http://192.168.10.16:3000",
-      "http://192.168.30.250:3000",
-      "http://192.168.10.102:3000",
-      "http://103.161.9.133:3003",
-      "https://103.161.9.133:3003",
-      "http://localhost:3003",
-      "http://localhost:5173",
-      "http://localhost:3005", 
-      //-Sukumar Bhai-------
-      "http://192.168.10.26:3000", 
-      "http://192.168.10.26:3001",
-      "http://192.168.10.26:3002",
-      "http://192.168.10.26:3003",
-      "http://192.168.10.26:3004",
-      "http://192.168.10.26:3005", 
-      "http://157.245.94.100:3001",
+    origin: [  
+      //-Sukumar Bhai------- 
+      "http://192.168.12.90:3001"
     ],
     credentials: true,
   })

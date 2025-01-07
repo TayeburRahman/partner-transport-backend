@@ -7,7 +7,9 @@ const { AuthController } = require("../auth/auth.controller");
 const router = express.Router();
 
 router
-  .post("/register", AuthController.registrationAccount)
+  .post("/register", 
+    uploadFile()
+    ,AuthController.registrationAccount)
   .post("/login", AuthController.loginAccount)
   .post("/o-auth", AuthController.OAuthLoginAccount)
   .post("/activate-user", AuthController.activateAccount)

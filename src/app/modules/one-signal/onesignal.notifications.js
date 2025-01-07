@@ -30,11 +30,11 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
     default:
       console.warn("Unknown notification type:", types);
   }
- 
+  
   const data = {
     app_id: config.onesignal.app_id,
-    contents: { en: message },
-    headings: { en: title },
+    contents: { en: message.eng },
+    headings: { en: title.eng },
     include_player_ids: playerIds,
     data: {
       route: router,

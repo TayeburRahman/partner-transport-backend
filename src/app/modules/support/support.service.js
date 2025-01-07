@@ -21,9 +21,9 @@ const createTicket = async (req) => {
         type = "Partner";
     }
 
-    if (!number ||!email ||!description) {
-        throw new ApiError(404,"All fields are required");
-    }
+    // if (!number ||!email ||!description) {
+    //     throw new ApiError(404,"All fields are required");
+    // }
 
     const ticketData = {
         userType: type,
@@ -76,8 +76,14 @@ const createTicket = async (req) => {
   
       // Send notification to the user
       await NotificationService.sendNotification({
-        title: "Ticket Reply Notification",
-        message: "Your ticket has been replied to. Please review the response at your earliest convenience.",
+        title: {
+          eng: "Ticket Reply Notification",
+          span: "Notificación de Respuesta al Ticket"
+        },
+        message: {
+          eng: "Your ticket has been replied to. Please review the response at your earliest convenience.",
+          span: "Tu ticket ha recibido una respuesta. Por favor, revisa la respuesta a la brevedad."
+        },
         user: ticketDb.user,
         userType: ticketDb.userType,
         getId: ticket._id,

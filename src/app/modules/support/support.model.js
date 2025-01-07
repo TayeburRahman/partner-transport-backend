@@ -18,12 +18,10 @@ const ticketSchema = new mongoose.Schema(
       required: true,
     },
     email: {
-      type: String,
-      required: true,
+      type: String, 
     },
     number: {
-      type: String,
-      required: true,
+      type: String, 
     },
     replied: {
       type: String,
