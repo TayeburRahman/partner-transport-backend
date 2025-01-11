@@ -276,18 +276,13 @@ const createConnectedAccountWithBank = async (req, res) => {
     console.log("ID:", userId)
 
     const { bank_info, business_profile, address, dateOfBirth : dob } = req.body;
-
-    // console.log("Update all of:",bank_info, business_profile, address, dob)
+ 
 
     // Validate the input address and use the valid one if the original is not valid
     const finalAddress = address.line1 && address.city && address.state && address.postal_code && address.country && address
-
-    // const { kycFront, kycBack } = req.files;
-
+ 
     // Input validation
-    const validationError = validateInputs(finalAddress, 
-      // kycFront, kycBack, 
-      dob, bank_info);
+    const validationError = validateInputs(finalAddress, dob, bank_info);
     if (validationError) throw new ApiError(httpStatus.BAD_REQUEST, validationError);
 
     // Find the user
@@ -300,25 +295,16 @@ const createConnectedAccountWithBank = async (req, res) => {
     if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
 
     // Handle KYC files and create token in parallel
-    const [
-      // kycFileParts, 
-      token] = await Promise.all([
-      // handleKYCFiles(kycFront, kycBack),
-      createStripeToken(existingUser, dob, finalAddress,
-        //  kycFront, kycBack
-        )
+    const [token] = await Promise.all([ 
+      createStripeToken(existingUser, dob, finalAddress)
     ]);
-
-    // const { frontFilePart, backFilePart } = kycFileParts;
 
     // Create the Stripe account
     const account = await createStripeAccount(token, bank_info, business_profile, existingUser);
 
     // Save Stripe account if creation was successful
     if (account.id && account.external_accounts.data.length) {
-      const saveData = await saveStripeAccount(account, existingUser, id, finalAddress, 
-        // kycFront, kycBack, 
-        dob);
+      const saveData = await saveStripeAccount(account, existingUser, id, finalAddress, dob);
       return {
         saveData,
         account,
