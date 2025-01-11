@@ -5,7 +5,7 @@ const Services = require("../services/services.model");
 const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const config = require("../../../config");
 const ApiError = require("../../../errors/ApiError");
-const { Transaction } = require("./payment.model");
+const { Transaction, StripeAccount } = require("./payment.model");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const Admin = require("../admin/admin.model");
@@ -268,62 +268,49 @@ const stripeRefundPayment = async (req, res) => {
   }
 };
 
-//Bank Transfer Create Connected Account =================
 const createConnectedAccountWithBank = async (req, res) => {
   try {
-    const {userId, role} = req.user;
-    
-    console.log("ID:", userId)
+    const { userId, role } = req.user;
+    console.log("===", userId, role) 
 
-    const { bank_info, business_profile, address, dateOfBirth : dob } = req.body;
-
-    // console.log("Update all of:",bank_info, business_profile, address, dob)
-
-    // Validate the input address and use the valid one if the original is not valid
-    const finalAddress = address.line1 && address.city && address.state && address.postal_code && address.country && address
-
-    // const { kycFront, kycBack } = req.files;
+    console.log("ID:", userId);
+    const address = req.body.address;
+    const bank_info = req.body.bank_info;
+    const business_profile = req.body.business_profile;
+    const dob = req.body.dateOfBirth;
 
     // Input validation
-    const validationError = validateInputs(finalAddress, 
-      // kycFront, kycBack, 
-      dob, bank_info);
+    const validationError = validateInputs(address, dob, bank_info, business_profile);
     if (validationError) throw new ApiError(httpStatus.BAD_REQUEST, validationError);
 
     // Find the user
-    let existingUser  
-    if(role === 'USER'){
+    let existingUser;
+    let userType;
+    if (role === "USER") {
+      userType="User"
       existingUser = await User.findById(userId);
-    }else if(role === "PARTNER"){
-      existingUser = await Partner.findById(userId)
+    } else if (role === "PARTNER") {
+       userType="Partner"
+      existingUser = await Partner.findById(userId);
     }
     if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
 
     // Handle KYC files and create token in parallel
-    const [
-      // kycFileParts, 
-      token] = await Promise.all([
-      // handleKYCFiles(kycFront, kycBack),
-      createStripeToken(existingUser, dob, finalAddress,
-        //  kycFront, kycBack
-        )
+    const [token] = await Promise.all([
+      createStripeToken(existingUser, dob, address),
     ]);
 
-    // const { frontFilePart, backFilePart } = kycFileParts;
-
     // Create the Stripe account
-    const account = await createStripeAccount(token, bank_info, business_profile, existingUser);
+    const account = await createStripeAccount(token, bank_info, business_profile, existingUser, dob);
 
     // Save Stripe account if creation was successful
     if (account.id && account.external_accounts.data.length) {
-      const saveData = await saveStripeAccount(account, existingUser, id, finalAddress, 
-        // kycFront, kycBack, 
-        dob);
+      const saveData = await saveStripeAccount(account, existingUser, userId, userType, address, dob, business_profile, bank_info);
       return {
         saveData,
         account,
         success: true,
-        message: "Account created successfully."
+        message: "Account created successfully.",
       };
     } else {
       throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create the Stripe account.");
@@ -333,63 +320,52 @@ const createConnectedAccountWithBank = async (req, res) => {
   }
 };
 
-const validateInputs = (address,
-  //  kycFront, kycBack, 
-   dateOfBirth, bank_info) => {
-
-
-  if (!address || !address.line1 || !address.city || !address.state || !address.country || !address.postal_code) {
-    throw new Error("Missing required address information.");
+const validateInputs = (address, dateOfBirth, bank_info, business_profile) => {
+  if (
+    !address ||
+    !address.line1 ||
+    !address.city ||
+    !address.state ||
+    !address.country ||
+    !address.postal_code ||
+    !address.phone_number ||
+    !address.personal_rfc
+  ) {
+    throw new Error("All address fields are required: line1, city, state, country, postal_code, phone_number, and personal_rfc.");
   }
-  // if (!kycBack || !kycFront || kycBack.length === 0 || kycFront.length === 0) {
-  //   throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Two KYC files are required");
-  // }
-  if (!dateOfBirth || !bank_info || !bank_info?.account_number || !bank_info?.account_holder_name) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Date of birth, business profile, and bank info fields are required");
+
+  // Validate date of birth
+  if (!dateOfBirth || isNaN(Date.parse(dateOfBirth))) {
+    throw new Error("A valid date of birth is required.");
+  } 
+
+  if (
+    !bank_info ||
+    !bank_info.account_holder_name ||
+    !bank_info.account_holder_type ||
+    !bank_info.account_number ||
+    !bank_info.country ||
+    !bank_info.currency
+  ) {
+    throw new Error("All bank information fields are required: account_holder_name, account_holder_type, account_number, country, and currency.");
+  }
+ 
+  if (
+    !business_profile ||
+    !business_profile.business_name
+  ) {
+    throw new Error("All business profile fields are required: business_name.");
   }
   return null;
 };
 
-// const handleKYCFiles = async (kycFront, kycBack) => {
-//   try {
-//     const [frontFileData, backFileData] = await Promise.all([
-//       fs.readFileSync(kycFront[0]?.path),
-//       fs.readFileSync(kycBack[0]?.path)
-//     ]);
-
-//     const [frontFilePart, backFilePart] = await Promise.all([
-//       createStripeFile(frontFileData, kycFront[0]),
-//       createStripeFile(backFileData, kycBack[0])
-//     ]);
-
-//     return { frontFilePart, backFilePart };
-//   } catch (fileError) {
-//     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Error reading KYC files: " + fileError.message);
-//   }
-// };
-
-const createStripeFile = async (fileData, file) => {
-  try {
-    return await stripe.files.create({
-      purpose: "identity_document",
-      file: {
-        data: fileData,
-        name: file.filename,
-        type: file.mimetype,
-      },
-    });
-  } catch (error) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Error creating KYC file with Stripe: " + error.message);
-  }
-};
-
-const createStripeToken = async (user, dob, address, backFilePart) => {
+const createStripeToken = async (user, dob, address) => {
   try {
     // Ensure dob is a valid Date object
     const parsedDob = new Date(dob);
     if (isNaN(parsedDob)) {
       throw new Error("Invalid date format for dob");
-    } 
+    }
 
     return await stripe.tokens.create({
       account: {
@@ -402,19 +378,16 @@ const createStripeToken = async (user, dob, address, backFilePart) => {
           first_name: user?.name?.split(" ")[0] || "Unknown",
           last_name: user?.name?.split(" ")[1] || "Unknown",
           email: user?.email,
-          // phone: user?.phone_number,
+          phone: address?.phone_number,
           address: {
             city: address.city,
-            country: "US",
+            country: address.country,
             line1: address.line1,
             postal_code: address.postal_code,
             state: address.state,
           },
-          verification: {
-            // document: {
-            //   front: frontFilePart.id,
-            //   back: backFilePart.id,
-            // },
+          metadata: {
+            rfc: address.personal_rfc, 
           },
         },
         business_type: "individual",
@@ -430,20 +403,18 @@ const createStripeToken = async (user, dob, address, backFilePart) => {
   }
 };
 
+const createStripeAccount = async (token, bank_info, business_profile, user, dob) => { 
 
-const createStripeAccount = async (token, bank_info, business_profile, user) => {
-  console.log("Token:", token.id)
   try {
     return await stripe.accounts.create({
       type: "custom",
       account_token: token.id,
       capabilities: {
-        // card_payments: { requested: true },
         transfers: { requested: true },
       },
       business_profile: {
         mcc: "5970",
-        name: business_profile.business_name || user.name || 'Unknown',
+        name: business_profile.business_name || user.name || "Unknown",
         url: business_profile.website || "www.example.com",
       },
       external_account: {
@@ -451,9 +422,8 @@ const createStripeAccount = async (token, bank_info, business_profile, user) => 
         account_holder_name: bank_info.account_holder_name,
         account_holder_type: bank_info.account_holder_type,
         account_number: bank_info.account_number,
-        routing_number: bank_info.routing_number,
-        country: "US",
-        currency: "USD",
+        country: bank_info.country,
+        currency: bank_info.currency,
       },
     });
   } catch (error) {
@@ -462,37 +432,44 @@ const createStripeAccount = async (token, bank_info, business_profile, user) => 
   }
 };
 
-const saveStripeAccount = async (account, user, driverId, address,
-  //  kycFront, kycBack,
-   dob) => {
-    return account
-  const formattedAddress = `${address.line1}, ${address.city}, ${address.state}, US, ${address.postal_code}`;
-  const dobFormatted = dob.toISOString(); // Convert date to ISO string
+const saveStripeAccount = async (account, user, userid, userType, address, dob, businessProfile, bank_info) => { 
 
-  const accountInformation = {
+  const newStripeAccount = StripeAccount({
+    name: user?.name || "Unknown",
+    email: user?.email,
+    user: userid,  
+    userType: userType,  
     stripeAccountId: account.id,
-    externalAccountId: account.external_accounts?.data[0].id,
-    status: true,
-  };
-
-  // const newStripeAccount = new StripeAccount({
-  //   name: user?.name || 'Unknown',
-  //   email: user?.email,
-  //   driverId,
-  //   stripeAccountId: account.id,
-  //   address: formattedAddress,
-  //   dob: dobFormatted,
-  //   accountInformation: accountInformation,
-  //   // kycBack: kycBack[0].path,
-  //   // kycFront: kycFront[0].path,
-  //   line1: address.line1,
-  //   city: address.city,
-  //   state: address.state,
-  //   postal_code: address.postal_code,
-  // });
-
-  // return await newStripeAccount.save();
+    address: {
+      line1: address.line1,
+      city: address.city,
+      state: address.state,
+      postal_code: address.postal_code,
+      country: address.country,
+      phone_number: address.phone_number,
+      personal_rfc: address.personal_rfc,
+    },
+    bank_info: {
+      account_holder_name: bank_info.account_holder_name,
+      account_holder_type: bank_info.account_holder_type,
+      account_number: bank_info.account_number,
+      country: bank_info.country,
+      currency: bank_info.currency,
+    },
+    business_profile: {
+      business_name: businessProfile.business_name,
+      website: businessProfile?.website,
+      product_description: businessProfile?.product_description,
+    },
+    dateOfBirth: new Date(dob),
+  });
+  const saveData = await newStripeAccount.save();
+  
+  return saveData
+ 
+  
 };
+
 
 
 
