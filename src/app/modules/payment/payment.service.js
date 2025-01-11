@@ -450,8 +450,7 @@ const createStripeAccount = async (token, bank_info, business_profile, user) => 
 
 const saveStripeAccount = async (account, user, driverId, address,
   //  kycFront, kycBack,
-   dob) => {
-    return account
+   dob) => { 
   const formattedAddress = `${address.line1}, ${address.city}, ${address.state}, US, ${address.postal_code}`;
   const dobFormatted = dob.toISOString(); // Convert date to ISO string
 
@@ -482,7 +481,36 @@ const saveStripeAccount = async (account, user, driverId, address,
 
 
 
+const TransferBallance = async (data) => {
+  try {
+  
+    if (!data) {
+      throw new ApiError(404, "Invalid data provides!");
+    }
+ 
+    const amount = Number(order.deliveryFee) * 100;
+ 
+    const transfer = await stripe.transfers.create(
+      {
+        amount,
+        currency: "usd",
+        destination:   stripeAccount.stripeAccountId,  
+      },
+      // {
+      //   stripeAccount:  stripeAccount.accountInformation.externalAccountId,  
+        
+      // }
+    );
 
+    if (!transfer) {
+      throw new ApiError(500, "Failed to complete the transfer.");
+    }
+
+  } catch (error) {
+    console.error("Transfer Balance Error:", error);
+    throw new ApiError(500, "Internal server error: " + error.message);
+  }
+}; 
 
 
 
@@ -500,27 +528,7 @@ const stripeTransferPayment = (req, res) => {
   // Implement Bank Transfer Payment logic here  
   return
 }
-const transferPayments = async (req, res) => {
-  // Implement Bank Transfer Payment logic here  
-
-  // const transactionData = {
-  //   serviceId,
-  //   userId: service.user,
-  //   partnerId: service.confirmedPartner,
-  //   paymentMethod: 'Stripe',
-  //   amount: Number(refund.amount) / 100,
-  //   paymentStatus: "Refunded",
-  //   transactionId: refund.id,
-  //   paymentDetails: {
-  //     payId: refund.charge,
-  //     currency: refund.currency,
-  //   },
-  // };
-
-  // const newTransaction = await Transaction.create(transactionData);
-
-  return
-}
+ 
 //Bank Transfer Payment ------------
 const PaymentService = {
   createConnectedAccountWithBank,
@@ -528,7 +536,7 @@ const PaymentService = {
   paymentStatusCancel,
   stripeCheckAndUpdateStatusSuccess,
   stripeRefundPayment,
-  transferPayments,
+  TransferBallance,
   stripeTransferPayment
 }
 

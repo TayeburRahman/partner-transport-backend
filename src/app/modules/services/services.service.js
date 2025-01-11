@@ -664,6 +664,12 @@ const updateServicesStatusUser = async (req) => {
     }
 
     if (status === "delivery-confirmed") {
+      const variableData = await Variable.findOne();
+      if (!variableData?.surcharge) {
+        throw new ApiError(404, 'Variable data not found, please create a ticket and inform the Admin!');
+      }
+      const {surcharge} = variableData;
+
       receivedUser.wallet += transaction.amount;
       await receivedUser.save();
 
@@ -719,7 +725,6 @@ const updateServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
 };
-
 
 //---------------
 const updateSellServicesStatusUser = async (req) => {
@@ -791,7 +796,6 @@ const updateSellServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
 };
-
 
 const updateSellServicesStatusPartner = async (req) => {
   const { serviceId, status } = req.query;

@@ -7,6 +7,7 @@ const { Transaction, Withdraw } = require("./payment.model");
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const httpStatus = require("http-status");
 const Notification = require("../notification/notification.model");
+const PaymentService = require("./payment.service");
 
 const paymentHistory = async (req, res) => {
 
@@ -91,45 +92,49 @@ const withdrawRequest = async (req, res) => {
     throw new ApiError(400, "Valid amount is required.");
   }
 
-  let userType;
-  let Model;
-
-  if (role === ENUM_USER_ROLE.PARTNER) {
-    userType = "Partner";
-    Model = Partner;
-  } else if (role === ENUM_USER_ROLE.USER) {
-    userType = "User";
-    Model = User;
+  let user;
+  if (role === "Partner") {
+    user = await Partner.findById(withdraw.user);
+    if (!user) {
+      throw new ApiError(404, "Partner not found.");
+    }
+  } else if (role === "User") {
+    user = await User.findById(withdraw.user);
+    if (!user) {
+      throw new ApiError(404, "User not found.");
+    }
   } else {
-    throw new ApiError(403, "Unauthorized role.");
+    throw new ApiError(403, "Unauthorized user type.");
   }
-
-  const user = await Model.findById(userId);
-  if (!user) {
-    throw new ApiError(404, "User not found.");
-  }
-
+ 
   if (user.wallet < amount) {
-    throw new ApiError(400, "Insufficient wallet balance. Current balance is $" + user.wallet + ".");
+    throw new ApiError(400, "Insufficient balance for withdrawal.");
+  } 
+  // ----
+  const bankAccount = await StripeAccount.findOne(userId)
+  if (!bankAccount) {
+    throw new ApiError(404, "Your bank account details not found! Please update details in your profile.");
   }
-
-  const withdraw = new Withdraw({
-    request_amount: amount,
-    user: userId,
-    userType: userType,
-    name: user.name
+  const result = PaymentService.TransferBallance(bankAccount)
+  // ------
+  user.wallet -= amount;
+  await user.save();
+  // --------------
+  const transaction = new Transaction({
+    payUserType: role,
+    payUser: userId,
+    receiveUserType: role,
+    receiveUser: userId,
+    amount: -amount,
+    paymentMethod: "BankTransfer",
+    transactionId: bankTransferId,
+    paymentStatus: "Completed",
+    isFinish: true,
+    payType: "withdraw",
   });
-  await withdraw.save();
 
-  await Notification.create({
-    title: "Withdraw Request Submitted",
-    message: `${userType} ${user.email} has requested a withdrawal of $${amount}.`,
-    userType: "Admin", 
-    types: 'none',
-    admin: true,
-  });
-
-  return { message: "Withdraw request sent successfully." };
+  await transaction.save();
+  
 };
 
 const withdrawSuccess = async (req, res) => {
@@ -176,7 +181,7 @@ const withdrawSuccess = async (req, res) => {
     withdraw.status = "Completed";
     withdraw.bankTransferId = bankTransferId;
     await withdraw.save();
-
+//  -------
     const transaction = new Transaction({
       payUserType: "Admin",
       payUser: userId,
@@ -191,7 +196,7 @@ const withdrawSuccess = async (req, res) => {
     });
 
     await transaction.save();
-
+// ------------
     // Log success
     const newTask = {
       admin: userId,
@@ -243,8 +248,7 @@ const TransitionsService = {
   transitionsHistory,
   paymentHistory,
   withdrawRequest,
-  withdrawSuccess,
-  // userDetailsWithdraw,
+  withdrawSuccess, 
   getWithdraw
 }
 
