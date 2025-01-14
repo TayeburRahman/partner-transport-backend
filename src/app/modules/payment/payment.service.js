@@ -5,7 +5,7 @@ const Services = require("../services/services.model");
 const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const config = require("../../../config");
 const ApiError = require("../../../errors/ApiError");
-const { Transaction } = require("./payment.model");
+const { Transaction, StripeAccount } = require("./payment.model");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const Admin = require("../admin/admin.model");
@@ -267,49 +267,52 @@ const stripeRefundPayment = async (req, res) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message || "Failed to process refund.");
   }
 };
-
-//Bank Transfer Create Connected Account =================
+// =====================
 const createConnectedAccountWithBank = async (req, res) => {
   try {
-    const {userId, role} = req.user;
-    
-    console.log("ID:", userId)
+    const { userId, role } = req.user;
+    console.log("===", userId, role) 
 
-    const { bank_info, business_profile, address, dateOfBirth : dob } = req.body;
  
+    const address = req.body.address;
+    const bank_info = req.body.bank_info;
+    const business_profile = req.body.business_profile;
+    const dob = req.body.dateOfBirth;
 
-    // Validate the input address and use the valid one if the original is not valid
-    const finalAddress = address.line1 && address.city && address.state && address.postal_code && address.country && address
- 
+    console.log("address:", address);
+
     // Input validation
-    const validationError = validateInputs(finalAddress, dob, bank_info);
+    const validationError = validateInputs(address, dob, bank_info, business_profile);
     if (validationError) throw new ApiError(httpStatus.BAD_REQUEST, validationError);
 
     // Find the user
-    let existingUser  
-    if(role === 'USER'){
+    let existingUser;
+    let userType;
+    if (role === "USER") {
+      userType="User"
       existingUser = await User.findById(userId);
-    }else if(role === "PARTNER"){
-      existingUser = await Partner.findById(userId)
+    } else if (role === "PARTNER") {
+       userType="Partner"
+      existingUser = await Partner.findById(userId);
     }
     if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
 
     // Handle KYC files and create token in parallel
-    const [token] = await Promise.all([ 
-      createStripeToken(existingUser, dob, finalAddress)
+    const [token] = await Promise.all([
+      createStripeToken(existingUser, dob, address, bank_info),
     ]);
 
     // Create the Stripe account
-    const account = await createStripeAccount(token, bank_info, business_profile, existingUser);
+    const account = await createStripeAccount(token, bank_info, business_profile, existingUser, dob);
 
     // Save Stripe account if creation was successful
     if (account.id && account.external_accounts.data.length) {
-      const saveData = await saveStripeAccount(account, existingUser, id, finalAddress, dob);
+      const saveData = await saveStripeAccount(account, existingUser, userId, userType, address, dob, business_profile, bank_info);
       return {
         saveData,
         account,
         success: true,
-        message: "Account created successfully."
+        message: "Account created successfully.",
       };
     } else {
       throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create the Stripe account.");
@@ -319,63 +322,51 @@ const createConnectedAccountWithBank = async (req, res) => {
   }
 };
 
-const validateInputs = (address,
-  //  kycFront, kycBack, 
-   dateOfBirth, bank_info) => {
-
-
-  if (!address || !address.line1 || !address.city || !address.state || !address.country || !address.postal_code) {
-    throw new Error("Missing required address information.");
+const validateInputs = (address, dateOfBirth, bank_info, business_profile) => {
+  console.log("validateInputs", address.line1)
+  if (
+    !address ||
+    !address.line1 ||
+    !address.city ||
+    !address.state ||
+    !address.country ||
+    !address.postal_code  
+  ) {
+    throw new Error("All address fields are required: line1, city, state, country, postal_code, phone_number, and personal_rfc.");
   }
-  // if (!kycBack || !kycFront || kycBack.length === 0 || kycFront.length === 0) {
-  //   throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Two KYC files are required");
-  // }
-  if (!dateOfBirth || !bank_info || !bank_info?.account_number || !bank_info?.account_holder_name) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Date of birth, business profile, and bank info fields are required");
+
+  // Validate date of birth
+  if (!dateOfBirth || isNaN(Date.parse(dateOfBirth))) {
+    throw new Error("A valid date of birth is required.");
+  } 
+
+  if (
+    !bank_info ||
+    !bank_info.account_holder_name ||
+    !bank_info.account_holder_type ||
+    !bank_info.account_number ||
+    !bank_info.country ||
+    !bank_info.currency
+  ) {
+    throw new Error("All bank information fields are required: account_holder_name, account_holder_type, account_number, country, and currency.");
+  }
+ 
+  if (
+    !business_profile ||
+    !business_profile.business_name
+  ) {
+    throw new Error("All business profile fields are required: business_name.");
   }
   return null;
 };
 
-// const handleKYCFiles = async (kycFront, kycBack) => {
-//   try {
-//     const [frontFileData, backFileData] = await Promise.all([
-//       fs.readFileSync(kycFront[0]?.path),
-//       fs.readFileSync(kycBack[0]?.path)
-//     ]);
-
-//     const [frontFilePart, backFilePart] = await Promise.all([
-//       createStripeFile(frontFileData, kycFront[0]),
-//       createStripeFile(backFileData, kycBack[0])
-//     ]);
-
-//     return { frontFilePart, backFilePart };
-//   } catch (fileError) {
-//     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Error reading KYC files: " + fileError.message);
-//   }
-// };
-
-const createStripeFile = async (fileData, file) => {
-  try {
-    return await stripe.files.create({
-      purpose: "identity_document",
-      file: {
-        data: fileData,
-        name: file.filename,
-        type: file.mimetype,
-      },
-    });
-  } catch (error) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Error creating KYC file with Stripe: " + error.message);
-  }
-};
-
-const createStripeToken = async (user, dob, address, backFilePart) => {
+const createStripeToken = async (user, dob, address, bank_info) => {
   try {
     // Ensure dob is a valid Date object
     const parsedDob = new Date(dob);
     if (isNaN(parsedDob)) {
       throw new Error("Invalid date format for dob");
-    } 
+    }
 
     return await stripe.tokens.create({
       account: {
@@ -388,19 +379,16 @@ const createStripeToken = async (user, dob, address, backFilePart) => {
           first_name: user?.name?.split(" ")[0] || "Unknown",
           last_name: user?.name?.split(" ")[1] || "Unknown",
           email: user?.email,
-          // phone: user?.phone_number,
+          // phone: address?.phone_number,
           address: {
             city: address.city,
-            country: "US",
+            country: bank_info.country,
             line1: address.line1,
             postal_code: address.postal_code,
             state: address.state,
           },
-          verification: {
-            // document: {
-            //   front: frontFilePart.id,
-            //   back: backFilePart.id,
-            // },
+          metadata: {
+            rfc: address.personal_rfc, 
           },
         },
         business_type: "individual",
@@ -416,20 +404,18 @@ const createStripeToken = async (user, dob, address, backFilePart) => {
   }
 };
 
-
-const createStripeAccount = async (token, bank_info, business_profile, user) => {
-  console.log("Token:", token.id)
+const createStripeAccount = async (token, bank_info, business_profile, user, dob) => { 
+  // console.log("Creating Stripe account",  token, bank_info, business_profile, user)
   try {
     return await stripe.accounts.create({
       type: "custom",
       account_token: token.id,
       capabilities: {
-        // card_payments: { requested: true },
         transfers: { requested: true },
       },
       business_profile: {
         mcc: "5970",
-        name: business_profile.business_name || user.name || 'Unknown',
+        name: business_profile.business_name || user.name || "Unknown",
         url: business_profile.website || "www.example.com",
       },
       external_account: {
@@ -438,8 +424,8 @@ const createStripeAccount = async (token, bank_info, business_profile, user) => 
         account_holder_type: bank_info.account_holder_type,
         account_number: bank_info.account_number,
         routing_number: bank_info.routing_number,
-        country: "US",
-        currency: "USD",
+        country: bank_info.country,
+        currency: bank_info.currency,
       },
     });
   } catch (error) {
@@ -448,86 +434,230 @@ const createStripeAccount = async (token, bank_info, business_profile, user) => 
   }
 };
 
-const saveStripeAccount = async (account, user, driverId, address,
-  //  kycFront, kycBack,
-   dob) => { 
-  const formattedAddress = `${address.line1}, ${address.city}, ${address.state}, US, ${address.postal_code}`;
-  const dobFormatted = dob.toISOString(); // Convert date to ISO string
+const saveStripeAccount = async (account, user, userid, userType, address, dob, businessProfile, bank_info) => { 
 
-  const accountInformation = {
+  const newStripeAccount = StripeAccount({
+    name: user?.name || "Unknown",
+    email: user?.email,
+    user: userid,  
+    userType: userType,  
     stripeAccountId: account.id,
     externalAccountId: account.external_accounts?.data[0].id,
-    status: true,
-  };
+    address: {
+      line1: address.line1,
+      city: address.city,
+      state: address.state,
+      postal_code: address.postal_code,
+      country: address.country,
+      phone_number: address?.phone_number,
+      personal_rfc: address?.personal_rfc,
+    },
+    bank_info: {
+      account_holder_name: bank_info.account_holder_name,
+      account_holder_type: bank_info.account_holder_type,
+      account_number: bank_info.account_number,
+      routing_number: bank_info.routing_number,
+      country: bank_info.country,
+      currency: bank_info.currency,
+    },
+    business_profile: {
+      business_name: businessProfile.business_name,
+      website: businessProfile?.website,
+      product_description: businessProfile?.product_description,
+    },
+    dateOfBirth: new Date(dob),
+  });
+  const saveData = await newStripeAccount.save();
+  
+  return saveData
+  
+};
 
-  // const newStripeAccount = new StripeAccount({
-  //   name: user?.name || 'Unknown',
-  //   email: user?.email,
-  //   driverId,
-  //   stripeAccountId: account.id,
-  //   address: formattedAddress,
-  //   dob: dobFormatted,
-  //   accountInformation: accountInformation,
-  //   // kycBack: kycBack[0].path,
-  //   // kycFront: kycFront[0].path,
-  //   line1: address.line1,
-  //   city: address.city,
-  //   state: address.state,
-  //   postal_code: address.postal_code,
-  // });
+// =================== 
+const updateUserDataOfBank = async (req, res) => {
+  try {
+    const { userId, role } = req.user;
+    const { address, bank_info, business_profile, dateOfBirth } = req.body;
+ 
+    const parsedDob = new Date(dateOfBirth);
+    if (isNaN(parsedDob)) {
+      throw new ApiError(404, "Invalid date format for dateOfBirth.");
+    }
+ 
+    const stripeAccount = await StripeAccount.findOne({ user: userId });
+    if (!stripeAccount) {
+      throw new ApiError(404, "Stripe account not found.");
+    }
 
-  // return await newStripeAccount.save();
+    const accountId = stripeAccount.stripeAccountId;
+ 
+    const accountToken = await stripe.tokens.create({
+      account: {
+        individual: {
+          address: {
+            line1: address.line1,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postal_code,
+            country: bank_info.country,
+          },
+          dob: {
+            day: parsedDob.getDate(),
+            month: parsedDob.getMonth() + 1,
+            year: parsedDob.getFullYear(),
+          },
+          phone: address.phone_number,
+          metadata: {
+            personal_rfc: address.personal_rfc,
+          },
+        },
+      },
+    });
+ 
+    await stripe.accounts.update(accountId, {
+      account_token: accountToken.id,
+      business_profile: {
+        name: business_profile.business_name,
+        url: business_profile.website,
+        product_description: business_profile.product_description,
+      },
+    });
+ 
+    let existingBankAccountId = stripeAccount.externalAccountId;
+
+    if (existingBankAccountId) {
+      const account = await stripe.accounts.retrieve(accountId);
+      const activeBankAccount = account.external_accounts.data.find(
+        (bank) => bank.id === existingBankAccountId
+      );
+ 
+      if (!activeBankAccount) {
+        console.log("The existing bank account is already deleted.");
+        existingBankAccountId = null;
+      }
+    }
+ 
+    const newBankAccount = await stripe.accounts.createExternalAccount(accountId, {
+      external_account: {
+        object: "bank_account",
+        account_holder_name: bank_info.account_holder_name,
+        account_holder_type: bank_info.account_holder_type,
+        account_number: bank_info.account_number,
+        country: bank_info.country,
+        currency: bank_info.currency,
+      },
+    });
+ 
+    await stripe.accounts.updateExternalAccount(accountId, newBankAccount.id, {
+      default_for_currency: true,
+    });
+ 
+    if (existingBankAccountId) {
+      try {
+        await stripe.accounts.deleteExternalAccount(accountId, existingBankAccountId);
+      } catch (error) {
+        if (error.type === "invalid_request_error" && error.code === "resource_missing") {
+          console.log("The old bank account was already deleted.");
+        } else {
+          throw new ApiError(404, error.message);
+        }
+      }
+    }
+ 
+    const updatedStripeAccount = await StripeAccount.findOneAndUpdate(
+      { user: userId },
+      {
+        address: {
+          line1: address.line1,
+          city: address.city,
+          state: address.state,
+          postal_code: address.postal_code,
+          country: address.country,
+          phone_number: address.phone_number,
+          personal_rfc: address.personal_rfc,
+        },
+        bank_info: {
+          account_holder_name: bank_info.account_holder_name,
+          account_holder_type: bank_info.account_holder_type,
+          account_number: bank_info.account_number,
+          country: bank_info.country,
+          currency: bank_info.currency,
+        },
+        business_profile: {
+          business_name: business_profile.business_name,
+          website: business_profile.website,
+          product_description: business_profile.product_description,
+        },
+        dateOfBirth: parsedDob,
+        externalAccountId: newBankAccount.id,
+        updatedAt: new Date(),
+      },
+      { new: true, upsert: true }
+    );
+ 
+    return{ 
+      message: "User data updated successfully.",
+      updatedStripeAccount,
+    };
+  } catch (error) {
+    console.error("Error updating user data:", error);
+    throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
+  }
+};
+
+const TransferBalance = async ({ bankAccount, amount }) => {
+  try { 
+    if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+      throw new ApiError(400, "Invalid bank account data provided!");
+    }  
+
+    const balance = await stripe.balance.retrieve({
+      stripeAccount: bankAccount.stripeAccountId,  
+    });
+    
+    console.log("Available Balance:", balance);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      throw new ApiError(400, "Invalid transfer amount!");
+    }
+    const currency = bankAccount.country === 'MX' ? 'mxn' : 'usd';
+
+    // console.log("Initiating transfer to bank account:", bankAccount.stripeAccountId, "Amount:", amount);
+ 
+    const payout = await stripe.payouts.create({
+      amount: Math.round(amount * 100), 
+      currency: currency || 'usd',  
+      destination: bankAccount.externalAccountId, 
+    },{
+      stripeAccount: bankAccount.stripeAccountId,  
+    });
+
+    if (!payout) {
+      throw new ApiError(500, "Failed to complete the payout.");
+    }
+ 
+    console.log("Payout successful:", payout);
+    return payout;
+
+  } catch (error) { 
+    if (error.code === 'balance_insufficient') {
+      throw new ApiError(400, "Insufficient funds in Stripe balance. Please wait for payments are available.");
+    }
+    console.error("Payout Error:", error);
+    throw new ApiError(500, "Internal server error: " + error.message);
+  }
 };
 
 
 
-const TransferBallance = async (data) => {
-  try {
-  
-    if (!data) {
-      throw new ApiError(404, "Invalid data provides!");
-    }
+
+
+
+
+
+
+
  
-    const amount = Number(order.deliveryFee) * 100;
- 
-    const transfer = await stripe.transfers.create(
-      {
-        amount,
-        currency: "usd",
-        destination:   stripeAccount.stripeAccountId,  
-      },
-      // {
-      //   stripeAccount:  stripeAccount.accountInformation.externalAccountId,  
-        
-      // }
-    );
-
-    if (!transfer) {
-      throw new ApiError(500, "Failed to complete the transfer.");
-    }
-
-  } catch (error) {
-    console.error("Transfer Balance Error:", error);
-    throw new ApiError(500, "Internal server error: " + error.message);
-  }
-}; 
-
-
-
-
-
-
-
-
-
-
-
-
-
-const stripeTransferPayment = (req, res) => {
-  // Implement Bank Transfer Payment logic here  
-  return
-}
  
 //Bank Transfer Payment ------------
 const PaymentService = {
@@ -536,8 +666,8 @@ const PaymentService = {
   paymentStatusCancel,
   stripeCheckAndUpdateStatusSuccess,
   stripeRefundPayment,
-  TransferBallance,
-  stripeTransferPayment
+  TransferBalance, 
+  updateUserDataOfBank
 }
 
 module.exports = PaymentService;

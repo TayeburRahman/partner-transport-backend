@@ -13,8 +13,10 @@ const app = express();
 app.use(
   cors({
     origin: [  
-      //-Sukumar Bhai------- 
-      "http://192.168.12.90:3001"
+      //-Sukumar Bhai-------  
+      "http://192.168.12.90:3001",
+      "http://10.0.60.43:3001",
+      "http://10.0.60.43:3002"
     ],
     credentials: true,
   })

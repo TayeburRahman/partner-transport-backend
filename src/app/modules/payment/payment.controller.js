@@ -64,34 +64,16 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
     data: result,
   });
 });
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // Stripe Refund Payment ===================
-  const stripeTransferPayment = catchAsync(async (req, res) => {
-      const result = await PaymentService.stripeTransferPayment(req);
-       console.log(result);
-       sendResponse(res, {
-        statusCode: 200,
-        success: true,
-        message: "Refund payment successfully",
-        data: result,
-      });
-  });
-
+const updateUserDataOfBank = catchAsync(async (req, res) => {
+  const result = await PaymentService.updateUserDataOfBank(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "get successfully.",
+   data: result,
+ });
+})
+ 
   // =============================
 
 
@@ -127,27 +109,25 @@ const withdrawRequest = catchAsync(async (req, res) => {
  });
 })
 
-const withdrawSuccess = catchAsync(async (req, res) => {
-  const result = await TransitionsService.withdrawSuccess(req); 
-  sendResponse(res, {
-   statusCode: 200,
-   success: true,
-   message: "Withdraw request processed successfully.",
-   data: result,
- });
-})
+// const withdrawSuccess = catchAsync(async (req, res) => {
+//   const result = await TransitionsService.withdrawSuccess(req); 
+//   sendResponse(res, {
+//    statusCode: 200,
+//    success: true,
+//    message: "Withdraw request processed successfully.",
+//    data: result,
+//  });
+// })
 
-const getWithdraw = catchAsync(async (req, res) => {
-  const result = await TransitionsService.getWithdraw(req); 
-  sendResponse(res, {
-   statusCode: 200,
-   success: true,
-   message: "get successfully.",
-   data: result,
- });
-})
- 
- 
+// const getWithdraw = catchAsync(async (req, res) => {
+//   const result = await TransitionsService.getWithdraw(req); 
+//   sendResponse(res, {
+//    statusCode: 200,
+//    success: true,
+//    message: "get successfully.",
+//    data: result,
+//  });
+// }) 
  
 
  
@@ -157,14 +137,13 @@ const getWithdraw = catchAsync(async (req, res) => {
     stripeCheckAndUpdateStatusSuccess,
     paymentStatusCancel, 
     stripeRefundPayment,
-    createConnectedAccountWithBank,
-    stripeTransferPayment,
+    createConnectedAccountWithBank, 
     transitionsHistory, 
     paymentHistory,
     withdrawRequest,
-    withdrawSuccess,
-    // userDetailsWithdraw,
-    getWithdraw
+    // withdrawSuccess,
+    updateUserDataOfBank,
+    // getWithdraw
      
   };
   

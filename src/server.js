@@ -23,8 +23,11 @@ async function main() {
       pingTimeout: 60000,
       cors: {
         origin: [
-        "http://localhost:5173",
-        "http://localhost:3000"
+        "http://137.184.185.124:4173",
+        "http://localhost:3000",
+        "http://10.0.60.43:3002",
+        "http://10.0.60.43:3001"
+
       ]
       },
     });

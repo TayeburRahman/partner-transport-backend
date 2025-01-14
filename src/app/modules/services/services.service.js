@@ -669,8 +669,10 @@ const updateServicesStatusUser = async (req) => {
         throw new ApiError(404, 'Variable data not found, please create a ticket and inform the Admin!');
       }
       const {surcharge} = variableData;
-
-      receivedUser.wallet += transaction.amount;
+      
+      const transactionAmount = Number(transaction.amount);
+      const amount = transactionAmount - (transactionAmount * Number(surcharge)) / 100;
+      receivedUser.wallet += amount;
       await receivedUser.save();
 
       transaction.isFinish = true;

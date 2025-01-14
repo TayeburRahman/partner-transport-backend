@@ -112,9 +112,84 @@ const withdrawSchema = new Schema({
  
 }, { timestamps: true });
 
-// Registering the model
+ 
+
+ 
+
+const AddressSchema = new mongoose.Schema({
+  line1: { type: String, required: true },
+  city: { type: String, required: true },
+  state: { type: String, required: true },
+  postal_code: { type: String, required: true },
+  country: { type: String, required: true },
+  phone_number: { type: String},
+  personal_rfc: { type: String, }
+});
+
+const BankInfoSchema = new mongoose.Schema({
+  account_holder_name: { type: String, required: true },
+  account_holder_type: { type: String, required: true, enum: ['individual', 'company'] },
+  account_number: { type: String, required: true },
+  routing_number: { type: String}, 
+  country: { type: String, required: true },
+  currency: { type: String, required: true }
+});
+
+const BusinessProfileSchema = new mongoose.Schema({
+  business_name: { type: String, required: true },
+  website: { type: String, },
+  product_description: { type: String}
+});
+
+const stripeAccountSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    default: "Unknown",
+  },
+  email: {
+    type: String,
+    required: true,
+  },
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: "User",  
+    required: true,
+  },
+  userType: {
+    type: String,
+    enum: ['User', 'Partner', 'Admin'],
+    required: true,
+  },
+  stripeAccountId: {
+    type: String,
+    required: true,
+  },
+  address: { 
+    type: AddressSchema, 
+    required: true 
+  },
+  bank_info: { 
+    type: BankInfoSchema, 
+    required: true
+   },
+  business_profile: { 
+    type: BusinessProfileSchema, 
+    required: true 
+  },
+  externalAccountId:{
+    type: String, 
+    required: true
+  },
+  dateOfBirth: { 
+    type: Date, 
+    required: true 
+  }
+}); 
+
+const StripeAccount = mongoose.model("StripeAccount", stripeAccountSchema);  
 const Withdraw = mongoose.model('Withdraw', withdrawSchema); 
 const Transaction = mongoose.model('Transaction', transactionSchema); 
  
 
-module.exports = { Transaction, Withdraw};
+module.exports = { Transaction, Withdraw, StripeAccount};
