@@ -506,7 +506,7 @@ const updateUserDataOfBank = async (req, res) => {
             month: parsedDob.getMonth() + 1,
             year: parsedDob.getFullYear(),
           },
-          phone: address.phone_number,
+          // phone: address.phone_number,
           metadata: {
             personal_rfc: address.personal_rfc,
           },
@@ -647,14 +647,6 @@ const TransferBalance = async ({ bankAccount, amount }) => {
     throw new ApiError(500, "Internal server error: " + error.message);
   }
 };
-
-
-
-
-
-
-
-
 
 
  

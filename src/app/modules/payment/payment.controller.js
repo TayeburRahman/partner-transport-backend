@@ -1,5 +1,7 @@
+const ApiError = require("../../../errors/ApiError");
 const catchAsync = require("../../../shared/catchasync");
 const sendResponse = require("../../../shared/sendResponse");
+const { StripeAccount } = require("./payment.model");
 const PaymentService = require("./payment.service");
 const TransitionsService = require("./transitions.service");
 
@@ -69,10 +71,24 @@ const updateUserDataOfBank = catchAsync(async (req, res) => {
   sendResponse(res, {
    statusCode: 200,
    success: true,
-   message: "get successfully.",
+   message: "Update bank info successfully.",
    data: result,
  });
 })
+
+const getUserBankInfo = catchAsync(async (req, res) => { 
+  const {userId} = req.user
+  const stripeAccount = await StripeAccount.findOne({ user: userId });
+
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "get successfully.",
+   data: stripeAccount,
+ });
+})
+
+ 
  
   // =============================
 
@@ -135,6 +151,7 @@ const withdrawRequest = catchAsync(async (req, res) => {
   const PaymentController = { 
     createCheckoutSessionStripe,
     stripeCheckAndUpdateStatusSuccess,
+    getUserBankInfo,
     paymentStatusCancel, 
     stripeRefundPayment,
     createConnectedAccountWithBank, 

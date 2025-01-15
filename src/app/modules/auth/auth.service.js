@@ -222,6 +222,8 @@ const activateAccount = async (payload) => {
 const loginAccount = async (payload) => {
   const { email, password, playerId } = payload;
 
+  console.log("email", email)
+
   const isAuth = await Auth.isAuthExist(email);
 
   if (!isAuth) {
@@ -245,25 +247,28 @@ const loginAccount = async (payload) => {
   let role;
   switch (isAuth.role) {
     case ENUM_USER_ROLE.USER:
-      userDetails = await User.findOne({ authId: isAuth._id })
+      userDetails = await User.findOne({ authId: isAuth?._id })
       role = ENUM_USER_ROLE.USER;
       break;
     case ENUM_USER_ROLE.PARTNER:
-      userDetails = await Partner.findOne({ authId: isAuth._id })
+      userDetails = await Partner.findOne({ authId: isAuth?._id })
       role = ENUM_USER_ROLE.PARTNER;
       break;
     case ENUM_USER_ROLE.ADMIN:
-      userDetails = await Admin.findOne({ authId: isAuth._id })
+      userDetails = await Admin.findOne({ authId: isAuth?._id })
       role = ENUM_USER_ROLE.ADMIN;
       break;
     case ENUM_USER_ROLE.SUPER_ADMIN:
-      userDetails = await Admin.findOne({ authId: isAuth._id })
+      userDetails = await Admin.findOne({ authId: isAuth?._id })
       role = ENUM_USER_ROLE.SUPER_ADMIN;
       break;
     default:
       throw new ApiError(400, "Invalid role provided!");
   }
 
+  if(!userDetails){
+    throw new ApiError(500, "User not found");
+  }
   // --------------
   isAuth.playerIds = (isAuth.playerIds || []).filter((id) => id !== playerId);
   isAuth.playerIds.push(playerId);
@@ -273,15 +278,15 @@ const loginAccount = async (payload) => {
   await isAuth.save();
 
   // ------------
-
+console.log("---", userDetails)
   const accessToken = jwtHelpers.createToken(
-    { authId, role, userId: userDetails._id, emailAuth: userDetails.email },
+    { authId, role, userId: userDetails?._id, emailAuth: userDetails.email },
     config.jwt.secret,
     config.jwt.expires_in
   );
 
   const refreshToken = jwtHelpers.createToken(
-    { authId, role, userId: userDetails._id, emailAuth: userDetails.email },
+    { authId, role, userId: userDetails?._id, emailAuth: userDetails.email },
     config.jwt.refresh_secret,
     config.jwt.refresh_expires_in
   );

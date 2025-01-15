@@ -12,8 +12,6 @@ router
   //====================
   // Payments Stripe ------------
   //====================
-
-  // Stripe Payment -------------
   .post("/stripe/create-checkout-session",
     bodyParser.json(),
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
@@ -39,6 +37,10 @@ router
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
     PaymentController.updateUserDataOfBank)
 
+  .get("/stripe_bank/get",
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
+    PaymentController.getUserBankInfo)
+
 
   //====================
   // Get Transition History ------------
@@ -58,20 +60,20 @@ router
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
     PaymentController.withdrawRequest
   )
-  // .patch("/withdraw-success",
-  //   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  //   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER_EDIT),
-  //   PaymentController.withdrawSuccess
-  // )
-  // .get("/withdraw-user-details",
-  //   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  //   PaymentController.userDetailsWithdraw
-  // )
-  // .get("/withdraw",
-  //   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-  //   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER),
-  //   PaymentController.getWithdraw
-  // )
+// .patch("/withdraw-success",
+//   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+//   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER_EDIT),
+//   PaymentController.withdrawSuccess
+// )
+// .get("/withdraw-user-details",
+//   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+//   PaymentController.userDetailsWithdraw
+// )
+// .get("/withdraw",
+//   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+//   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER),
+//   PaymentController.getWithdraw
+// )
 
 
 
