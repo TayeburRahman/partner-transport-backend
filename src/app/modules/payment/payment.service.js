@@ -607,36 +607,40 @@ const updateUserDataOfBank = async (req, res) => {
 
 const TransferBalance = async ({ bankAccount, amount }) => {
   try { 
+    console.log("bankAccount===========",bankAccount.stripeAccountId, amount)
     if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
       throw new ApiError(400, "Invalid bank account data provided!");
     }  
 
-    const balance = await stripe.balance.retrieve({
-      stripeAccount: bankAccount.stripeAccountId,  
-    });
-    
-    console.log("Available Balance:", balance);
-
     if (!amount || isNaN(amount) || amount <= 0) {
       throw new ApiError(400, "Invalid transfer amount!");
     }
-    const currency = bankAccount.country === 'MX' ? 'mxn' : 'usd';
+    const amountInCent = amount * 100;
+    
+    const transfer = await stripe.transfers.create({
+      amount: amountInCent  ,
+      currency: 'mxn',
+      destination: bankAccount.stripeAccountId ,
+    }); 
+     
+    // const balance = await stripe.balance.retrieve({
+    //   stripeAccount: bankAccount.stripeAccountId,  
+    // });
 
-    // console.log("Initiating transfer to bank account:", bankAccount.stripeAccountId, "Amount:", amount);
+    // Payout to bank
+    const payout = await stripe.payouts.create(
+      {
+        amount: amountInCent,
+        currency: 'mxn',
+      },
+      {
+        stripeAccount: bankAccount.stripeAccountId,
+      },
+    ); 
  
-    const payout = await stripe.payouts.create({
-      amount: Math.round(amount * 100), 
-      currency: currency || 'usd',  
-      destination: bankAccount.externalAccountId, 
-    },{
-      stripeAccount: bankAccount.stripeAccountId,  
-    });
-
     if (!payout) {
       throw new ApiError(500, "Failed to complete the payout.");
     }
- 
-    console.log("Payout successful:", payout);
     return payout;
 
   } catch (error) { 

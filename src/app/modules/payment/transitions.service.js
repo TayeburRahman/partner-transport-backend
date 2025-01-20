@@ -8,6 +8,7 @@ const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.servic
 const httpStatus = require("http-status");
 const Notification = require("../notification/notification.model");
 const PaymentService = require("./payment.service");
+const { NotificationService } = require("../notification/notification.service");
 
 const paymentHistory = async (req, res) => {
 
@@ -90,18 +91,19 @@ const withdrawRequest = async (req, res) => {
 
   if (!amount || isNaN(amount) || Number(amount) <= 0) {
     throw new ApiError(400, "Valid amount is required.");
-  }
-
-  console.log("userId", userId,role)
+  } 
 
   let user;
+  let roleU;
   if (role === ENUM_USER_ROLE.PARTNER) {
     user = await Partner.findById(userId);
+    roleU = 'Partner'
     if (!user) {
       throw new ApiError(404, "Partner not found.");
     }
   } else if (role === ENUM_USER_ROLE.USER) {
     user = await User.findById(userId);
+     roleU = 'User'
     if (!user) {
       throw new ApiError(404, "User not found.");
     }
@@ -114,34 +116,49 @@ const withdrawRequest = async (req, res) => {
   } 
   // ----
   const bankAccount = await StripeAccount.findOne({user: userId})
-
  
   if (!bankAccount) {
     throw new ApiError(404, "Your bank account details not found! Please update details in your profile.");
   }  
-  const result = PaymentService.TransferBalance({bankAccount, amount})
 
-  console.log("currency", result)
+  const result = await PaymentService.TransferBalance({bankAccount, amount})
+
+  if(!result){
+    throw new ApiError(500, "Error processing your withdrawal. Please try again later.");
+  }
   // ------
   user.wallet -= amount;
   await user.save();
  
-
   // --------------
   const transaction = new Transaction({
-    payUserType: role,
+    payUserType: 'User',
     payUser: userId,
-    receiveUserType: role,
+    receiveUserType: 'User',
     receiveUser: userId,
     amount: -amount,
     paymentMethod: "BankTransfer",
-    transactionId: result.id, // need check and update.    
+    transactionId: result.id,   
     paymentStatus: "Completed",
     isFinish: true,
     payType: "withdraw",
   });
   await transaction.save();
-  
+
+  await NotificationService.sendNotification({
+    title: {
+      eng: "Withdrawal Successful!",
+      span: "¡Retiro Exitoso!"
+    },
+    message: {
+      eng: `You have successfully withdrawn $${amount}. The funds will be transferred to your bank account ending in ${bankAccount.bank_info.account_number.slice(-4)} shortly.`,
+      span: `Has retirado exitosamente $${amount}. Los fondos se transferirán a tu cuenta bancaria terminada en ${bankAccount.bank_info.account_number.slice(-4)} en breve`
+    },    
+    user: userId,
+    userType: roleU,
+    types: 'none', 
+  });
+
   return transaction;
 };
 
