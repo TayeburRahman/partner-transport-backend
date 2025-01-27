@@ -38,12 +38,18 @@ const createTicket = async (req) => {
         throw new ApiError(400,"Failed to create ticket");
     }
     await Notification.create({
-      title: "New Support Ticket",
-      message: `${type} with email ${email} has created a support ticket.`,
-      userType:"Admin",
+      title: {
+        en: "New Support Ticket",
+        span: "Nuevo Ticket de Soporte",
+      },
+      message: {
+        en: `${type} with email ${email} has created a support ticket.`,
+        span: `${type} con el correo electrónico ${email} ha creado un ticket de soporte.`,
+      },
+      userType: "Admin",
       types: 'none',
       admin: true,
-    });
+    });    
 
     return ticket;
   };
