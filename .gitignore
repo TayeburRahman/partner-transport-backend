@@ -7,3 +7,4 @@ dist/
 entrypoint.sh
 yarn.lock
 package-lock.jsonsrc/app/modules/phone-verify/firebase-admin.json
+src/app/modules/phone-verify/firebase-admin.json
