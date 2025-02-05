@@ -31,6 +31,7 @@
     "express-session": "^1.18.1",
     "firebase": "^11.2.0",
     "firebase-admin": "^13.0.2",
+    "git-filter-repo": "^0.0.30",
     "http-status": "^1.7.4",
     "jsonwebtoken": "^9.0.2",
     "mongo": "^0.1.0",
