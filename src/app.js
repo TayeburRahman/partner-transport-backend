@@ -5,8 +5,7 @@ const routes = require("./app/routes");
 const NotFoundHandler = require("./errors/NotFoundHandler");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const path = require("path");
-const config = require("./config");
+const path = require("path"); 
 
 const app = express();
 // CORS configuration

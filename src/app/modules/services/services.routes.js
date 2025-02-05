@@ -81,11 +81,7 @@ router
     auth(ENUM_USER_ROLE.PARTNER),
     ServicesController.updateSellServicesStatusPartner
   )
-
-
-
-
-
+  
   .get(
     "/user/within_one_hour",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),

@@ -66,6 +66,11 @@ const config = {
     headings: {
       en: "New Notification"
     }
+  },
+  twilio:{
+    account_sid: process.env.ACCOUNT_NUMBER,
+    auth_token: process.env.AUTH_TOKEN,
+    phone_number: process.env.PHONE_NUMBER, 
   }
 };
 

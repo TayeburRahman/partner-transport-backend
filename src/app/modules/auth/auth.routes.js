@@ -35,6 +35,7 @@ router
       ENUM_USER_ROLE.SUPER_ADMIN
     ),
     AuthController.changePassword
-  );
+  )
+  .post("/verify-phone", AuthController.phoneVerifications)
 
 module.exports = router;

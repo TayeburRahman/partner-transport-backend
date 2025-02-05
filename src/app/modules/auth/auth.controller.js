@@ -2,6 +2,8 @@ const { AuthService } = require("./auth.service");
 const sendResponse = require("../../../shared/sendResponse");
 const catchAsync = require("../../../shared/catchasync");
 const config = require("../../../config");
+const createActivationToken = require("../../../utils/createActivationToken");
+const sendPhoneVerificationsMessage = require("../phone-verify/twilio.verify");
 
 const registrationAccount = catchAsync(async (req, res) => {
   const { role } = await AuthService.registrationAccount(req);
@@ -141,6 +143,21 @@ const OAuthLoginAccount = catchAsync(async (req, res) => {
 })
 
 
+const phoneVerifications = catchAsync(async (req, res) => {
+   const phoneNumber = req.query.phone;
+   const verifyCode = createActivationToken().activationCode;
+   const message = 'Your verification code is: ' + verifyCode;
+   console.log("Codes",message, phoneNumber);
+   const data = await sendPhoneVerificationsMessage(message, phoneNumber)
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Message sent successfully",
+    data: data,
+  });
+});
+
 
 const AuthController = {
   registrationAccount,
@@ -153,7 +170,8 @@ const AuthController = {
   checkIsValidForgetActivationCode,
   resendCodeActivationAccount,
   resendCodeForgotAccount,
-  OAuthLoginAccount
+  OAuthLoginAccount,
+  phoneVerifications
 };
 
 module.exports = { AuthController };

@@ -36,6 +36,18 @@ const PartnerSchema = new Schema(
       type: String,
       default: null,
     },
+    street:{
+      type: String,
+      default: null,
+    },
+    exterior_number:{
+      type: String,
+      default: null,
+    },
+    interior_number:{
+      type: String,
+      default: null,
+    },
     state: {
       type: String,
       default: null,

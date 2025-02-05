@@ -28,16 +28,24 @@ const UserSchema = new Schema(
     isPhoneNumberVerified: {
       type: Boolean,
       default: false,
-    },
-    street: {
-      type: String,
-      default: null,
-    },
+    }, 
     neighborhood: {
       type: String,
       default: null,
     },
     city: {
+      type: String,
+      default: null,
+    },
+    street:{
+      type: String,
+      default: null,
+    },
+    exterior_number:{
+      type: String,
+      default: null,
+    },
+    interior_number:{
       type: String,
       default: null,
     },
@@ -48,7 +56,7 @@ const UserSchema = new Schema(
     country: {
       type: String,
       default: null,
-    },
+    }, 
     date_of_birth: {
       type: Date,
     },

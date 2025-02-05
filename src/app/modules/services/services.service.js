@@ -1,9 +1,8 @@
-const { query } = require("express");
+ 
 const QueryBuilder = require("../../../builder/queryBuilder");
 const ApiError = require("../../../errors/ApiError");
 const Services = require("./services.model");
-const httpStatus = require("http-status");
-const { Server } = require("socket.io");
+const httpStatus = require("http-status"); 
 const Partner = require("../partner/partner.model");
 
 const {
@@ -13,8 +12,7 @@ const {
   ENUM_USER_ROLE,
 } = require("../../../utils/enums");
 const Variable = require("../variable/variable.model");
-const { Transaction } = require("../payment/payment.model");
-const { default: mongoose } = require("mongoose");
+const { Transaction } = require("../payment/payment.model"); 
 const { Bids } = require("../bid/bid.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
@@ -23,8 +21,7 @@ const VariableCount = require("../variable/variable.count");
 // =USER============================= 
 const validateInputs = (data, image) => {
   const requiredFields = [
-    "service", "category", "scheduleDate", "scheduleTime", "numberOfItems",
-    "weightMTS", "weightKG", "description", "deadlineDate", "deadlineTime",
+    "service", "category", "scheduleDate", "scheduleTime", "numberOfItems", "weightKG", "description", "deadlineDate", "deadlineTime",
     "isLoaderNeeded", "loadFloorNo", "loadingAddress", "loadLongitude",
     "loadLatitude", "mainService"
   ];
@@ -90,7 +87,7 @@ const createPostDB = async (req) => {
       scheduleDate: data.scheduleDate,
       scheduleTime: data.scheduleTime,
       numberOfItems: Number(data.numberOfItems),
-      weightMTS: Number(data.weightMTS),
+      weightMTS: data.weightMTS,
       weightKG: Number(data.weightKG),
       description: data.description,
       deadlineDate: data.deadlineDate,
