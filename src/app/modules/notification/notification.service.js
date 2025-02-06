@@ -204,6 +204,27 @@ const deleteAdminNotification = async (req) => {
   };
 };
 
+const seenNotifications = async (req) => {
+  const id = req.query?.id;
+  const { userId } = req.user;
+  console.log("Notifications", userId, id);
+ 
+  try {
+    if (id) {
+      const notification = await Notification.findByIdAndUpdate(id, { seen: true }, { new: true });
+      if (!notification) {
+        throw new ApiError(404, "Notification not found.");
+      }
+      return { success: true, notification };
+    } else {
+      const updateResult = await Notification.updateMany({user: userId}, { $set: { seen: true } });
+      return { success: true, modifiedCount: updateResult.modifiedCount };
+    }
+  } catch (error) {
+    console.error("Error marking notifications as seen:", error);
+    throw new ApiError(500, "Failed to update notifications.");
+  }
+};
 
 
 
@@ -214,7 +235,8 @@ const NotificationService = {
   getUserNotification,
   getNoticeNotification,
   getAdminNotification,
-  deleteAdminNotification
+  deleteAdminNotification,
+  seenNotifications
 };
 
 module.exports = { NotificationService }

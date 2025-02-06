@@ -42,6 +42,18 @@ const deleteAdminNotification = catchAsync(async (req, res) => {
   });
 });
 
+const seenNotifications = catchAsync(async (req, res) => {
+  const result = await NotificationService.seenNotifications(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Notification update successfully",
+    data: result,
+  });
+});
+
+ 
+
 
 
 
@@ -49,7 +61,8 @@ const notificationController = {
   getUserNotification,
   getAdminNotification,
   getNoticeNotification,
-  deleteAdminNotification
+  deleteAdminNotification,
+  seenNotifications
 };
 
 module.exports = { notificationController };
