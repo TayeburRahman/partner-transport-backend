@@ -226,8 +226,6 @@ const seenNotifications = async (req) => {
   }
 };
 
-
-
 const NotificationService = {
   handleNotification,
   sendNotification,

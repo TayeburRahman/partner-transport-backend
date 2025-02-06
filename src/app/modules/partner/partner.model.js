@@ -64,6 +64,10 @@ const PartnerSchema = new Schema(
       type: String,
       default: null,
     },
+    phone_c_code: {
+      type: String,
+      default: null,
+    },
     date_of_birth: {
       type: String,
       default: null,

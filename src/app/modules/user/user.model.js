@@ -25,6 +25,10 @@ const UserSchema = new Schema(
       type: String,
       default: null,
     },
+    phone_c_code: {
+      type: String,
+      default: null,
+    },
     isPhoneNumberVerified: {
       type: Boolean,
       default: false,
