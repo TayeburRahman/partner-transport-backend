@@ -32,7 +32,7 @@ router.delete(
   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_NOTIFICATIONS_EDIT),
   notificationController.deleteAdminNotification
 );
-router.get(
+router.patch(
   "/seen-notification",
   auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
   notificationController.seenNotifications
