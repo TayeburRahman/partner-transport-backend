@@ -36,6 +36,6 @@ router
     ),
     AuthController.changePassword
   )
-  // .post("/verify-phone", AuthController.phoneVerifications)
+  .post("/verify-phone", AuthController.phoneVerifications)
 
 module.exports = router;
