@@ -142,13 +142,14 @@ const OAuthLoginAccount = catchAsync(async (req, res) => {
   });
 })
 
-
 const phoneVerifications = catchAsync(async (req, res) => {
-   const phoneNumber = req.body.phone;
-   const verifyCode = createActivationToken().activationCode;
-   const message = 'Your verification code is: ' + verifyCode;
-   console.log("Codes",message, phoneNumber);
-   const data = await sendPhoneVerificationsMessage(message, phoneNumber)
+   const phone = req.body.phone;
+   const countryCode = req.body.countryCode; 
+   const user= req.user;
+   const verifyOtp = createActivationToken().activationCode;
+   const message = 'Your verification code is: ' + verifyOtp; 
+   const phoneNumber = phone; 
+   const data = await sendPhoneVerificationsMessage(message, phoneNumber, verifyOtp, user, countryCode, phone)
 
   sendResponse(res, {
     statusCode: 200,
@@ -156,6 +157,19 @@ const phoneVerifications = catchAsync(async (req, res) => {
     message: "Message sent successfully",
     data: data,
   });
+});
+
+const phoneOTPVerifications = catchAsync(async (req, res) => {
+  const otp = req.body.otp;  
+  const user = req.user;  
+  const data = await AuthService.phoneOTPVerifications(otp, user)
+
+ sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Verifications successfully",
+   data: data,
+ });
 });
 
 
@@ -171,7 +185,8 @@ const AuthController = {
   resendCodeActivationAccount,
   resendCodeForgotAccount,
   OAuthLoginAccount,
-  phoneVerifications
+  phoneVerifications,
+  phoneOTPVerifications
 };
 
 module.exports = { AuthController };

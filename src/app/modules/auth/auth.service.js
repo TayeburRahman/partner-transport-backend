@@ -18,6 +18,55 @@ const {
 } = require("../../../mails/email.register");
 const { resetEmailTemplate } = require("../../../mails/reset.email");
 
+// Scheduled task to unset activationCode field
+cron.schedule("* * * * *", async () => {
+  try {
+    const now = new Date();
+    const result = await Auth.updateMany(
+      {
+        isActive: false,
+        expirationTime: { $lte: now },
+        activationCode: { $ne: null },
+      },
+      {
+        $unset: { activationCode: "" },
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      logger.info(
+        `Removed activation codes from ${result.modifiedCount} expired inactive users`
+      );
+    }
+  } catch (error) {
+    logger.error("Error removing activation codes from expired users:", error);
+  }
+});
+
+// Scheduled task to unset codeVerify field
+cron.schedule("* * * * *", async () => {
+  try {
+    const now = new Date();
+    const result = await Auth.updateMany(
+      {
+        isActive: false,
+        verifyExpire: { $lte: now },
+      },
+      {
+        $unset: { codeVerify: false },
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      logger.info(
+        `Removed activation codes from ${result.modifiedCount} expired inactive users`
+      );
+    }
+  } catch (error) {
+    logger.error("Error removing activation codes from expired users:", error);
+  }
+});
+
 const registrationAccount = async (req) => {
   const payload = req.body;
   const files = req.files
@@ -726,54 +775,26 @@ const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-10);
 };  
 
-// Scheduled task to unset activationCode field
-cron.schedule("* * * * *", async () => {
-  try {
-    const now = new Date();
-    const result = await Auth.updateMany(
-      {
-        isActive: false,
-        expirationTime: { $lte: now },
-        activationCode: { $ne: null },
-      },
-      {
-        $unset: { activationCode: "" },
-      }
-    );
+const phoneOTPVerifications = async (otp,user) => {
+  const {authId, userId, role}= user
+  const findUser = await Auth.findById(authId)
 
-    if (result.modifiedCount > 0) {
-      logger.info(
-        `Removed activation codes from ${result.modifiedCount} expired inactive users`
-      );
-    }
-  } catch (error) {
-    logger.error("Error removing activation codes from expired users:", error);
+  if(!findUser){
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "User not found.");
   }
-});
 
-// Scheduled task to unset codeVerify field
-cron.schedule("* * * * *", async () => {
-  try {
-    const now = new Date();
-    const result = await Auth.updateMany(
-      {
-        isActive: false,
-        verifyExpire: { $lte: now },
-      },
-      {
-        $unset: { codeVerify: false },
-      }
-    );
-
-    if (result.modifiedCount > 0) {
-      logger.info(
-        `Removed activation codes from ${result.modifiedCount} expired inactive users`
-      );
-    }
-  } catch (error) {
-    logger.error("Error removing activation codes from expired users:", error);
+  if(findUser?.verifyOtp !== otp){
+    throw new ApiError(httpStatus.FORBIDDEN, "Invalid your OTP.");
   }
-});
+
+  findUser.verifyOtp = null;
+  findUser.otpVerify = true;
+  await findUser.save()
+  return findUser;
+}; 
+
+ 
+ 
 
 const AuthService = {
   registrationAccount,
@@ -785,7 +806,8 @@ const AuthService = {
   checkIsValidForgetActivationCode,
   resendCodeActivationAccount,
   resendCodeForgotAccount,
-  OAuthLoginAccount
+  OAuthLoginAccount,
+  phoneOTPVerifications
 };
 
 module.exports = { AuthService };

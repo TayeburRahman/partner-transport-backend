@@ -36,6 +36,18 @@ router
     ),
     AuthController.changePassword
   )
-  .post("/verify-phone", AuthController.phoneVerifications)
+  .post("/verify-phone", 
+    auth(
+      ENUM_USER_ROLE.USER,
+      ENUM_USER_ROLE.PARTNER, 
+    ),
+    AuthController.phoneVerifications)
+    
+  .post("/verify-phone-otp", 
+    auth(
+      ENUM_USER_ROLE.USER,
+      ENUM_USER_ROLE.PARTNER, 
+    ),
+     AuthController.phoneOTPVerifications)
 
 module.exports = router;

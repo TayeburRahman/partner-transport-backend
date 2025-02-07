@@ -44,6 +44,13 @@ const AuthSchema = new Schema(
     activationCode: {
       type: String,
     },
+    verifyOtp: {
+      type: String,
+      default: false,
+    },
+    otpVerify: {
+      type: Boolean,
+    },
     amount: {
       type: Number,
       default: 0,
