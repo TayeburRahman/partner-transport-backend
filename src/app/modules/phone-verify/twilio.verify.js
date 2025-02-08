@@ -18,7 +18,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             message: "Invalid phone number format. Use E.164 format (e.g., +1234567890)."
         };
     }
-    console.log("phoneNumber", phoneNumber)
+    console.log("phoneNumber", phoneNumber, user)
     console.log("Twilio SID:", config.twilio.account_sid);
     console.log("Twilio Auth Token:", config.twilio.auth_token);
     console.log("Twilio From Number:", config.twilio.phone_number);
@@ -41,7 +41,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             let result
             if (user.role === ENUM_USER_ROLE.USER) {
                 result = await User.findByIdAndUpdate(user.userId, { phone_number: phone, phone_c_code: countryCode })
-            } else if (role === ENUM_USER_ROLE.PARTNER) {
+            } else if (user.role === ENUM_USER_ROLE.PARTNER) {
                 result = await Partner.findByIdAndUpdate(user.userId, { phone_number: phone, phone_c_code: countryCode })
             }
 
