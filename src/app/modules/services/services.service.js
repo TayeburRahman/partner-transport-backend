@@ -152,7 +152,11 @@ const updatePostDB = async (req) => {
 
 const getDetails = async (req) => {
   const { serviceId } = req.params;
-
+  const { role } = req.user;
+ 
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);  
+ 
   const result = await Services.findById(serviceId)
     .populate({
       path: "category",
@@ -165,22 +169,31 @@ const getDetails = async (req) => {
     .populate({
       path: "bids",
       populate: [
-        // {
-        //   path: "service",
-        //   model: "Services",
-        // },
         {
           path: "partner",
           model: "Partner",
-          select: "_id profile_image rating name rating",
+          select: "_id profile_image rating name",
         },
       ],
     })
-    .populate("confirmedPartner");
+    .populate("confirmedPartner")
+    .lean();  
+
   if (!result) {
     throw new ApiError(404, "Service not found");
   }
+
+  if(role === ENUM_USER_ROLE.USER && result.mainService === 'move'){ 
+    if (result.bids && Array.isArray(result.bids)) {
+      result.bids = result.bids.map((bid) => ({
+        ...bid,
+        price: bid.price + (bid.price * surcharge) / 100,  
+      }));
+    } 
+  }   
+   
   const pisoVariable = await VariableCount.getPisoVariable();
+
   return { result, piso: pisoVariable };
 };
 
@@ -517,8 +530,12 @@ function formatTimeTo12hrs(date) {
 
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
-  const { userId } = req.user;
+  const { userId, role} = req.user;
   let service;
+
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);  
+
   if (serviceType === "move") {
     service = ["Goods", "Waste"];
   } else if (serviceType === "sell") {
@@ -552,8 +569,16 @@ const filterUserByHistory = async (req) => {
     .sort()
     .paginate();
 
-  const result = await filtered.modelQuery;
+  let result = await filtered.modelQuery;
   const meta = await filtered.countTotal();
+ 
+  if (role === ENUM_USER_ROLE.USER && serviceType === "move" && serviceStatus === "accepted") {
+    result = result.map((data) => ({
+      ...data._doc,  
+      winBid: data.winBid ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 : null,
+    }));
+  }
+
 
   const pisoVariable = await VariableCount.getPisoVariable();
   return { result, meta, piso: pisoVariable };

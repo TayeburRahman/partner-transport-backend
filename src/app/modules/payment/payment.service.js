@@ -34,7 +34,16 @@ const createCheckoutSessionStripe = async (req) => {
     if (!service) {
       throw new ApiError(httpStatus.NOT_FOUND, 'invalid service ID.');
     }
-    const packagePrice = Number(service.winBid);
+
+    let packagePrice 
+    if(service.mainService === 'move'){ 
+      if (service.price) {
+        packagePrice =  Number(service.winBid) + (service.winBid * surcharge) / 100; 
+      } 
+    }else{
+      packagePrice = Number(service.winBid);
+    }  
+    
     if (!packagePrice) {
       throw new ApiError(httpStatus.NOT_FOUND, 'No conform the partner for service');
     }
@@ -72,7 +81,7 @@ const createCheckoutSessionStripe = async (req) => {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: 'mex',
             unit_amount: unitAmount,
             product_data: {
               name: service.service,

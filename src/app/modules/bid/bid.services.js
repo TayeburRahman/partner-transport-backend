@@ -12,6 +12,8 @@ const QueryBuilder = require("../../../builder/queryBuilder");
 const httpStatus = require("http-status");
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const Notification = require("../notification/notification.model");
+const { ENUM_USER_ROLE } = require("../../../utils/enums");
+const Variable = require("../variable/variable.model");
 // const Bids = require("./bid.model");
 
 const partnerBidPost = async (req) => {
@@ -122,12 +124,23 @@ const partnerBidPost = async (req) => {
 
 const getBitProfilePartner = async (req) => {
   const { bidId } = req.query;
+  const {role} = req.user;
 
-  const bids = await Bids.findById(bidId).populate("partner")
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);  
+
+  let bids = await Bids.findById(bidId).populate("partner")
     .populate({ path: "service", select: "mainService" });
   if (!bids) {
     throw new ApiError(404, "Bids not found!");
   }
+
+  if(role === ENUM_USER_ROLE.USER && bids.service.mainService === 'move'){ 
+    if (bids.price) {
+      bids.price =  Number(bids.price) + (bids.price * surcharge) / 100; 
+    } 
+  }  
+
   const partnerId = bids.partner._id
   const all_review = await Review.find({ partnerId })
     .populate({
@@ -231,7 +244,8 @@ const filterBidsByHistory = async (req) => {
 // ================================
 const orderDetailsPageFileClaim = async (req) => {
   const { serviceId } = req.query;
-  const service = await Services.findById(serviceId)
+  const { role } = req.user;
+  let service = await Services.findById(serviceId)
     .populate({
       path: 'user',
       select: 'name profile_image email'
@@ -244,6 +258,16 @@ const orderDetailsPageFileClaim = async (req) => {
       path: 'category',
       select: '_id category'
     })
+
+    const variable = await Variable.findOne();
+    const surcharge = Number(variable?.surcharge || 0); 
+
+    if(role === ENUM_USER_ROLE.USER && service.mainService === 'move'){ 
+      if (service.price) {
+        service.winBid =  Number(service.winBid) + (service.winBid * surcharge) / 100; 
+      } 
+    }  
+
   // .select('_id category numberOfItems scheduleTime scheduleTime scheduleDate loadingAddress deadlineTime loadingLocation paymentStatus deadlineDate unloadingAddress unloadingLocation updatedAt image winBid deadlineTime')
   const payment = await Transaction.findOne({ serviceId }).select('amount paymentMethod',)
   return { service, payment }

@@ -18,10 +18,10 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             message: "Invalid phone number format. Use E.164 format (e.g., +1234567890)."
         };
     }
-    console.log("phoneNumber", phoneNumber, user)
-    console.log("Twilio SID:", config.twilio.account_sid);
-    console.log("Twilio Auth Token:", config.twilio.auth_token);
-    console.log("Twilio From Number:", config.twilio.phone_number);
+    // console.log("phoneNumber", phoneNumber, user)
+    // console.log("Twilio SID:", config.twilio.account_sid);
+    // console.log("Twilio Auth Token:", config.twilio.auth_token);
+    // console.log("Twilio From Number:", config.twilio.phone_number);
 
 
     try {
