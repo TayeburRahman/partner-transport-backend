@@ -9,6 +9,7 @@ const { Transaction, StripeAccount } = require("./payment.model");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const Admin = require("../admin/admin.model");
+const Variable = require("../variable/variable.model");
 
 const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
 
@@ -17,6 +18,9 @@ const createCheckoutSessionStripe = async (req) => {
   try {
     const { serviceId } = req.body
     const { userId, role } = req.user
+
+    const variable = await Variable.findOne();
+    const surcharge = Number(variable?.surcharge || 0); 
 
     let user;
     let payUserRole;
