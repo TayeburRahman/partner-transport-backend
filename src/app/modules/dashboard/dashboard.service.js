@@ -341,8 +341,6 @@ const updateProfile = async (req) => {
     new: true,
   }).populate("authId");
 
-  console.log('updateUser',updateUser)
-
   return updateUser;
 };
 
@@ -978,9 +976,7 @@ const incomeOverview = async ({year}) => {
         month: months[i],
         totalIncome: monthData.totalIncome,
       };
-    });
-
-    console.log(result);
+    }); 
 
     return {
       year: selectedYear,
@@ -1003,12 +999,7 @@ const getUserGrowth = async ({year}) => {
     }
 
     const startDate = new Date(selectedYear, 0, 1);  
-    const endDate = new Date(selectedYear + 1, 0, 1);  
-
-    console.log("year", year)
-    
-    console.log('Year Range:', { startDate, endDate });
-
+    const endDate = new Date(selectedYear + 1, 0, 1);     
     const monthlyUserGrowth = await Auth.aggregate([
       {
         $match: {
@@ -1055,8 +1046,7 @@ const getUserGrowth = async ({year}) => {
         monthlyUserGrowth.find((data) => data.month === i) || {
           month: i,
           count: 0,
-        };
-      console.log('Month Data:', monthData);
+        }; 
       result.push({
         month: months[i - 1],
         count: monthData.count,
@@ -1237,8 +1227,7 @@ const sendNoticePartner = async (req, res) => {
 };
 
 const getTransactionsHistory = async (req) => {
-  const query = req.query;
-  console.log(query);
+  const query = req.query; 
   try {
     const servicesQuery = new QueryBuilder(Transaction.find()
       .populate("receiveUser", "name email profile_image")

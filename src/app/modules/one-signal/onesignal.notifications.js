@@ -54,8 +54,7 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
       `${config.onesignal.onesignal_url}/api/v1/notifications`,
       data,
       { headers }
-    );
-    console.log('Notification sent:', response.data);
+    ); 
   } catch (error) {
     console.error('Error sending notification:', error);
   }

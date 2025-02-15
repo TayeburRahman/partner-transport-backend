@@ -13,20 +13,16 @@ const Notification = require("./notification.model");
 
 const handleNotification = async (receiverId, role, socket, io) => {
   // get all notifications 
-  socket.on(ENUM_SOCKET_EVENT.NOTIFICATION, async (data) => {
-    console.log("get all notification:", role, receiverId);
+  socket.on(ENUM_SOCKET_EVENT.NOTIFICATION, async (data) => { 
 
     const filter = role === ENUM_USER_ROLE.USER
       ? { userId: receiverId }
       : role === ENUM_USER_ROLE.DRIVER
         ? { driverId: receiverId }
-        : null;
-
-    console.log("filter:", filter)
+        : null; 
 
     if (filter) {
-      const notifications = await Notification.find(filter);
-      console.log(notifications)
+      const notifications = await Notification.find(filter); 
 
       io.to(receiverId).emit(ENUM_SOCKET_EVENT.NOTIFICATION, notifications);
     } else {
@@ -206,8 +202,7 @@ const deleteAdminNotification = async (req) => {
 
 const seenNotifications = async (req) => {
   const id = req.query?.id;
-  const { userId } = req.user;
-  console.log("Notifications", userId, id);
+  const { userId } = req.user; 
  
   try {
     if (id) {

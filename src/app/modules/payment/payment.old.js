@@ -118,9 +118,7 @@ const paypalRefundPayment = async (req, res) => {
   };
 
   const paypalCheckAndUpdateStatusSuccess = async (req, res) => {
-    const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query;
-  
-    console.log("Check Pay:", paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType)
+    const { paymentId, PayerID, serviceId, payUser, receiveUser, receiveUserType, payUserType } = req.query; 
   
     if (!paymentId || !PayerID || !serviceId || !payUser || !receiveUser) {
       return { status: "failed", message: "Missing required query parameters." };

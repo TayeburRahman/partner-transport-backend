@@ -29,8 +29,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             body: message,
             from: config.twilio.phone_number,
             to: phoneNumber
-        });
-        console.log("result", result)
+        }); 
 
         if (result) {
             const update = await Auth.findByIdAndUpdate(user.authId, { verifyOtp })
@@ -48,9 +47,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             if (!result) {
                 throw new ApiError(404, "Error updating verify code in the database. Please try again!")
             }
-        }
-
-        console.log("result", result)
+        } 
 
         return {
             invalid: false,

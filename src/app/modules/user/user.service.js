@@ -61,8 +61,7 @@ const getProfile = async (user) => {
   const auth = await Auth.findById(result.authId);
   if (auth.is_block) {
     throw new ApiError(httpStatus.FORBIDDEN, "You are blocked. Contact support");
-  }
-  console.log(auth);
+  } 
   return result;
 };
 

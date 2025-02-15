@@ -22,8 +22,6 @@ const globalErrorHandler = (error, req, res, next) => {
   if (error?.name === "ValidationError") {
     const simplifiedError = handleValidationError(error);
 
-    console.log("==============", simplifiedError);
-
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
     errorMessages = simplifiedError.errorMessages;

@@ -1,8 +1,8 @@
- 
+
 const QueryBuilder = require("../../../builder/queryBuilder");
 const ApiError = require("../../../errors/ApiError");
 const Services = require("./services.model");
-const httpStatus = require("http-status"); 
+const httpStatus = require("http-status");
 const Partner = require("../partner/partner.model");
 
 const {
@@ -12,7 +12,7 @@ const {
   ENUM_USER_ROLE,
 } = require("../../../utils/enums");
 const Variable = require("../variable/variable.model");
-const { Transaction } = require("../payment/payment.model"); 
+const { Transaction } = require("../payment/payment.model");
 const { Bids } = require("../bid/bid.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
@@ -117,7 +117,6 @@ const createPostDB = async (req) => {
     };
 
     const newService = new Services(serviceData);
-    console.log(newService)
     return await newService.save();
 
   } catch (error) {
@@ -153,10 +152,10 @@ const updatePostDB = async (req) => {
 const getDetails = async (req) => {
   const { serviceId } = req.params;
   const { role } = req.user;
- 
+
   const variable = await Variable.findOne();
-  const surcharge = Number(variable?.surcharge || 0);  
- 
+  const surcharge = Number(variable?.surcharge || 0);
+
   const result = await Services.findById(serviceId)
     .populate({
       path: "category",
@@ -177,21 +176,21 @@ const getDetails = async (req) => {
       ],
     })
     .populate("confirmedPartner")
-    .lean();  
+    .lean();
 
   if (!result) {
     throw new ApiError(404, "Service not found");
   }
 
-  if(role === ENUM_USER_ROLE.USER && result.mainService === 'move'){ 
+  if (role === ENUM_USER_ROLE.USER && result.mainService === 'move') {
     if (result.bids && Array.isArray(result.bids)) {
       result.bids = result.bids.map((bid) => ({
         ...bid,
-        price: bid.price + (bid.price * surcharge) / 100,  
+        price: bid.price + (bid.price * surcharge) / 100,
       }));
-    } 
-  }   
-   
+    }
+  }
+
   const pisoVariable = await VariableCount.getPisoVariable();
 
   return { result, piso: pisoVariable };
@@ -350,8 +349,6 @@ const rescheduledPostUser = async (req) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found!");
   }
 
-  console.log("service: ", service)
-
   const result = await Services.findOneAndUpdate(
     { _id: serviceId },
     {
@@ -475,6 +472,60 @@ const rescheduledAction = async (req) => {
   return result;
 };
 
+// const getUserServicesWithinOneHour = async (req) => {
+//   const { userId, role } = req.user;
+//   const now = new Date();
+
+//   const formattedDate = formatDate(now); // Today's date
+//   const formattedStartTime = formatTimeTo12hrs(now); // Current time in 12-hour format
+
+//   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+//   const formattedEndTime = formatTimeTo12hrs(oneHourLater); // Time after 1 hour
+
+//   const query = {
+//     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
+//     scheduleDate: formattedDate, // Only today's services
+//     scheduleTime: {
+//       $gte: formattedStartTime, // Greater than or equal to now
+//       $lte: formattedEndTime,   // Less than or equal to next hour
+//     }
+//   };
+
+//   if (role === 'USER') {
+//     query.user = userId;
+//   } else if (role === 'PARTNER') {
+//     query.confirmedPartner = userId;
+//   }
+
+//   let result = await Services.find(query)
+//     .populate({
+//       path: "confirmedPartner",
+//       select: "name email profile_image phone_number rating",
+//     })
+//     .populate({
+//       path: "user",
+//       select: "name email profile_image phone_number rating",
+//     })
+//     .populate({
+//       path: "category",
+//       select: "_id category",
+//     });
+
+//   const variable = await Variable.findOne();
+//   const surcharge = Number(variable?.surcharge || 0);
+
+//   if (role === ENUM_USER_ROLE.USER) {
+//     result = result.map((data) => ({ 
+//       ...data._doc,
+//       winBid: data.mainService === 'move' 
+//         ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 
+//         : data.winBid,
+//     }));
+//   }
+
+//   return result;
+// };
+
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const now = new Date();
@@ -502,7 +553,7 @@ const getUserServicesWithinOneHour = async (req) => {
     query.confirmedPartner = userId;
   }
 
-  const services = await Services.find(query)
+  let services = await Services.find(query)
     .populate({
       path: "confirmedPartner",
       select: "name email profile_image phone_number rating",
@@ -516,10 +567,21 @@ const getUserServicesWithinOneHour = async (req) => {
       select: "_id category",
     });
 
+    const variable = await Variable.findOne();
+      const surcharge = Number(variable?.surcharge || 0);
+    
+      if (role === ENUM_USER_ROLE.USER) {
+        services = services.map((data) => ({ 
+          ...data._doc,
+          winBid: data.mainService === 'move' 
+            ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 
+            : data.winBid,
+        }));
+      }
+
   // console.log("Fetched services:", services);
   return services;
 };
-
 function formatTimeTo12hrs(date) {
   let hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -530,11 +592,11 @@ function formatTimeTo12hrs(date) {
 
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
-  const { userId, role} = req.user;
+  const { userId, role } = req.user;
   let service;
 
   const variable = await Variable.findOne();
-  const surcharge = Number(variable?.surcharge || 0);  
+  const surcharge = Number(variable?.surcharge || 0);
 
   if (serviceType === "move") {
     service = ["Goods", "Waste"];
@@ -571,10 +633,10 @@ const filterUserByHistory = async (req) => {
 
   let result = await filtered.modelQuery;
   const meta = await filtered.countTotal();
- 
+
   if (role === ENUM_USER_ROLE.USER && serviceType === "move" && serviceStatus === "accepted") {
     result = result.map((data) => ({
-      ...data._doc,  
+      ...data._doc,
       winBid: data.winBid ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 : null,
     }));
   }
@@ -601,12 +663,9 @@ const updateServicesStatusPartner = async (req) => {
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
-  console.log("service", service.status)
   if (status === "arrived" && service.status !== "accepted") {
     throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
   }
-
-  console.log("status==", status)
 
   if (status === "start-trip" && service.user_status !== "goods-loaded") {
     throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm goods are loaded before starting the trip.");
@@ -631,16 +690,16 @@ const updateServicesStatusPartner = async (req) => {
     { new: true }
   );
 
-  await NotificationService.sendNotification({ 
-      title: {
-        eng: "Service Status Updated",
-        span: "Estado del Servicio Actualizado"
-      },
-      message: {
-        eng: `The service status has been updated to "${status}".`,
-        span: `El estado del servicio ha sido actualizado a "${status}".`
-      },
-    
+  await NotificationService.sendNotification({
+    title: {
+      eng: "Service Status Updated",
+      span: "Estado del Servicio Actualizado"
+    },
+    message: {
+      eng: `The service status has been updated to "${status}".`,
+      span: `El estado del servicio ha sido actualizado a "${status}".`
+    },
+
     user: service.user,
     userType: "User",
     types: "ongoing",
@@ -686,14 +745,9 @@ const updateServicesStatusUser = async (req) => {
     }
 
     if (status === "delivery-confirmed") {
-      const variableData = await Variable.findOne();
-      if (!variableData?.surcharge) {
-        throw new ApiError(404, 'Variable data not found, please create a ticket and inform the Admin!');
-      }
-      const {surcharge} = variableData;
-      
-      const transactionAmount = Number(transaction.amount);
-      const amount = transactionAmount - (transactionAmount * Number(surcharge)) / 100;
+      const amount = Number(transaction.partnerAmount);
+      console.log("M-transactionAmount======", amount)  
+
       receivedUser.wallet += amount;
       await receivedUser.save();
 
@@ -706,8 +760,8 @@ const updateServicesStatusUser = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-          eng: `You have received a payment of ${transaction.amount} for the service.`,
-          span: `Has recibido un pago de ${transaction.amount} por el servicio.`
+          eng: `You have received a payment of ${amount}(USD) for the service.`,
+          span: `Has recibido un pago de ${amount}(USD) por el servicio.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
@@ -868,8 +922,11 @@ const updateSellServicesStatusPartner = async (req) => {
   }
 
   try {
-    if (status === "delivery-confirmed") {
-      receivedUser.wallet = (receivedUser.wallet || 0) + transaction.amount;
+    if (status === "delivery-confirmed") { 
+      const amount = Number(transaction.partnerAmount);
+      console.log("S-transactionAmount======", amount) 
+
+      receivedUser.wallet = (receivedUser.wallet || 0) + amount;
       await receivedUser.save();
 
       transaction.isFinish = true;
@@ -881,8 +938,8 @@ const updateSellServicesStatusPartner = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-          eng: `You have received a payment of ${transaction.amount} for the service.`,
-          span: `Has recibido un pago de ${transaction.amount} por el servicio.`
+          eng: `You have received a payment of ${amount}(USD) for the service.`,
+          span: `Has recibido un pago de ${amount}(USD) por el servicio.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,

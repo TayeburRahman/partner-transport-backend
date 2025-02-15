@@ -29,9 +29,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
                 skip: (page - 1) * 20,
                 limit: 20,
             },
-        });
-
-        console.log('conversation', conversation)
+        }); 
 
         if (!conversation) {
             return 'Conversation not found';

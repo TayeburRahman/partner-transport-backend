@@ -18,8 +18,7 @@ const createTaskDB = async ({ admin, email, description, types, activity, status
       status,
       attended
     });
-    await task.save();
-    console.log("Task created successfully!");
+    await task.save(); 
   } catch (error) {
     throw new ApiError(`Failed to create task: ${error?.message}`);
   }

@@ -31,6 +31,10 @@ const transactionSchema = new Schema({
     type: Number,
     required: true,
   },
+  partnerAmount: {
+    type: Number,
+    required: true,
+  }, 
   paymentMethod: {
     type: String,
     enum: ['Stripe', 'PayPal', 'ApplePay', 'GooglePay', "BankTransfer"],

@@ -54,9 +54,7 @@ const getMessages = async (req) => {
     };
 
     const receiverRole = getRole(receiver);
-    const senderRole = getRole(sender);
-
-    console.log("===", conversation)
+    const senderRole = getRole(sender); 
 
     return {
       count: conversation.messages.length,
@@ -84,11 +82,8 @@ const getMessages = async (req) => {
 
 const conversationUser = async (payload) => {
   try {
-    const { searchTerm } = payload;
-
-    console.log("=6665=======================================", searchTerm)
-
-   
+    const { searchTerm } = payload; 
+ 
     const conversations = await Conversation.find({});
 
     // Flatten and collect participant IDs
@@ -136,9 +131,7 @@ const conversationUser = async (payload) => {
             participant.name.toLowerCase().includes(searchTerm.toLowerCase())
           )
         )
-      : conversationsWithParticipants;
-
-      console.log("Conversations with Participants:", filteredConversations);
+      : conversationsWithParticipants; 
 
     return filteredConversations;
   } catch (error) {

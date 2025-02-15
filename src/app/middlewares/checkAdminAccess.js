@@ -5,8 +5,7 @@ const { LogsDashboardService } = require("../modules/logs-dashboard/logsdashboar
 
 const checkAdminAccess = (...requiredPermissions) => {
     return async (req, res, next) => {
-      try {
-        console.log("hello=====", requiredPermissions)
+      try { 
         const { userId, emailAuth } = req.user;
         const admin = await Admin.findById(userId);
   

@@ -45,8 +45,7 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
  
   // Stripe Refund Payment ===================
   const stripeRefundPayment  = catchAsync(async (req, res) => {
-      const result = await PaymentService.stripeRefundPayment(req);
-       console.log(result);
+      const result = await PaymentService.stripeRefundPayment(req); 
        sendResponse(res, {
         statusCode: 200,
         success: true,
@@ -57,8 +56,7 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
 
  // Bank Transfer Payment ==============
  const createConnectedAccountWithBank  = catchAsync(async (req, res) => {
-  const result = await PaymentService.createConnectedAccountWithBank(req);
-   console.log(result);
+  const result = await PaymentService.createConnectedAccountWithBank(req); 
    sendResponse(res, {
     statusCode: 200,
     success: true,

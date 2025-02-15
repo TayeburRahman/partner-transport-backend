@@ -10,17 +10,22 @@ const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const Admin = require("../admin/admin.model");
 const Variable = require("../variable/variable.model");
+const VariableCount = require("../variable/variable.count");
 
 const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
 
 //Stripe Payment =====================
 const createCheckoutSessionStripe = async (req) => {
   try {
-    const { serviceId } = req.body
+    const { serviceId, price, currency } = req.body
     const { userId, role } = req.user
 
-    const variable = await Variable.findOne();
-    const surcharge = Number(variable?.surcharge || 0); 
+    if (!currency || !Number(price) || !serviceId) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Missing required fields.');
+    }
+
+    // const variable = await Variable.findOne();
+    // const surcharge = Number(variable?.surcharge || 0); 
 
     let user;
     let payUserRole;
@@ -39,18 +44,18 @@ const createCheckoutSessionStripe = async (req) => {
       throw new ApiError(httpStatus.NOT_FOUND, 'invalid service ID.');
     }
 
-    let packagePrice 
-    if(service.mainService === 'move'){ 
-      if (service.price) {
-        packagePrice =  Number(service.winBid) + (service.winBid * surcharge) / 100; 
-      } 
-    }else{
-      packagePrice = Number(service.winBid);
-    }  
-    
-    if (!packagePrice) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'No conform the partner for service');
-    }
+    // let packagePrice 
+    // if(service.mainService === 'move'){ 
+    //   if (service.price) {
+    //     packagePrice =  Number(service.winBid) + (service.winBid * surcharge) / 100; 
+    //   } 
+    // }else{
+    //   packagePrice = Number(service.winBid);
+    // }  
+
+    // if (!packagePrice) {
+    //   throw new ApiError(httpStatus.NOT_FOUND, 'No conform the partner for service');
+    // }
 
     let receiveUser;
     let receiveUserRole;
@@ -64,9 +69,8 @@ const createCheckoutSessionStripe = async (req) => {
       throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
     }
 
-    const unitAmount = packagePrice * 100;
+    const unitAmount = Number(price) * 100;
 
-    console.log("===", userId, role)
 
     let session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -85,7 +89,7 @@ const createCheckoutSessionStripe = async (req) => {
       line_items: [
         {
           price_data: {
-            currency: 'mex',
+            currency: currency,
             unit_amount: unitAmount,
             product_data: {
               name: service.service,
@@ -107,8 +111,6 @@ const createCheckoutSessionStripe = async (req) => {
 const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
   const sessionId = req.query.session_id;
 
-  console.log('stripeCheckAndUpdateStatusSuccess', sessionId)
-
   if (!sessionId) {
     return { status: "failed", message: "Missing session ID in the request." };
   }
@@ -124,8 +126,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       return { status: "failed", message: "Payment not approved." };
     }
 
-    const { receiveUser, payUser, payUserType, receiveUserType, serviceId } = session.metadata;
-    // console.log("=====",receiveUser, payUser, payUserType, receiveUserType, serviceId)
+    const { receiveUser, payUser, payUserType, receiveUserType, serviceId } = session.metadata; 
 
     const service = await Services.findById(serviceId);
     if (!service) {
@@ -138,14 +139,24 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
 
     if (service.paymentStatus === 'paid') {
       const existingTransaction = await Transaction.findOne({ serviceId: service._id });
-      console.log("Existing Transaction", existingTransaction);
       return { status: "success", result: existingTransaction };
     }
 
     service.paymentStatus = 'paid';
     service.transactionId = session.payment_intent;
     service.paymentMethod = 'Stripe',
-      await service.save();
+      await service.save(); 
+
+    const amount = Number(session.amount_total)/ 100;
+    let totalAmount = amount;
+    if (session.currency === 'mxn') {
+      const { dollarCost } = await VariableCount.convertPesoToDollar(amount)
+      totalAmount = dollarCost; 
+    } 
+
+    const variable = await Variable.findOne();
+    const surcharge = Number(variable?.surcharge || 0); 
+    const partnerAmount = totalAmount - (totalAmount * Number(surcharge)) / 100; 
 
     // Create transaction data
     const transactionData = {
@@ -155,7 +166,8 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       receiveUser,
       receiveUserType,
       paymentMethod: 'Stripe',
-      amount: Number(session.amount_total) / 100,
+      amount: totalAmount,
+      partnerAmount: partnerAmount,
       paymentStatus: "Completed",
       isFinish: false,
       payType: service.mainService,
@@ -168,6 +180,8 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     };
 
     const newTransaction = await Transaction.create(transactionData);
+
+    console.log("========", newTransaction)
 
     return { status: "success", result: newTransaction };
 
@@ -185,8 +199,6 @@ const paymentStatusCancel = async (req, res) => {
 const stripeRefundPayment = async (req, res) => {
   const { saleId, amount, serviceId } = req.body;
   const { userId, emailAuth, role } = req.user;
-
-  console.log("fds", saleId, amount, serviceId)
 
   try {
     if (!saleId || !amount || !serviceId) {
@@ -284,15 +296,11 @@ const stripeRefundPayment = async (req, res) => {
 const createConnectedAccountWithBank = async (req, res) => {
   try {
     const { userId, role } = req.user;
-    console.log("===", userId, role) 
 
- 
     const address = req.body.address;
     const bank_info = req.body.bank_info;
     const business_profile = req.body.business_profile;
     const dob = req.body.dateOfBirth;
-
-    console.log("address:", address);
 
     // Input validation
     const validationError = validateInputs(address, dob, bank_info, business_profile);
@@ -302,10 +310,10 @@ const createConnectedAccountWithBank = async (req, res) => {
     let existingUser;
     let userType;
     if (role === "USER") {
-      userType="User"
+      userType = "User"
       existingUser = await User.findById(userId);
     } else if (role === "PARTNER") {
-       userType="Partner"
+      userType = "Partner"
       existingUser = await Partner.findById(userId);
     }
     if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
@@ -336,14 +344,14 @@ const createConnectedAccountWithBank = async (req, res) => {
 };
 
 const validateInputs = (address, dateOfBirth, bank_info, business_profile) => {
-  console.log("validateInputs", address.line1)
+
   if (
     !address ||
     !address.line1 ||
     !address.city ||
     !address.state ||
     !address.country ||
-    !address.postal_code  
+    !address.postal_code
   ) {
     throw new Error("All address fields are required: line1, city, state, country, postal_code, phone_number, and personal_rfc.");
   }
@@ -351,7 +359,7 @@ const validateInputs = (address, dateOfBirth, bank_info, business_profile) => {
   // Validate date of birth
   if (!dateOfBirth || isNaN(Date.parse(dateOfBirth))) {
     throw new Error("A valid date of birth is required.");
-  } 
+  }
 
   if (
     !bank_info ||
@@ -363,7 +371,7 @@ const validateInputs = (address, dateOfBirth, bank_info, business_profile) => {
   ) {
     throw new Error("All bank information fields are required: account_holder_name, account_holder_type, account_number, country, and currency.");
   }
- 
+
   if (
     !business_profile ||
     !business_profile.business_name
@@ -401,7 +409,7 @@ const createStripeToken = async (user, dob, address, bank_info) => {
             state: address.state,
           },
           metadata: {
-            rfc: address.personal_rfc, 
+            rfc: address.personal_rfc,
           },
         },
         business_type: "individual",
@@ -417,7 +425,7 @@ const createStripeToken = async (user, dob, address, bank_info) => {
   }
 };
 
-const createStripeAccount = async (token, bank_info, business_profile, user, dob) => { 
+const createStripeAccount = async (token, bank_info, business_profile, user, dob) => {
   // console.log("Creating Stripe account",  token, bank_info, business_profile, user)
   try {
     return await stripe.accounts.create({
@@ -447,13 +455,13 @@ const createStripeAccount = async (token, bank_info, business_profile, user, dob
   }
 };
 
-const saveStripeAccount = async (account, user, userid, userType, address, dob, businessProfile, bank_info) => { 
+const saveStripeAccount = async (account, user, userid, userType, address, dob, businessProfile, bank_info) => {
 
   const newStripeAccount = StripeAccount({
     name: user?.name || "Unknown",
     email: user?.email,
-    user: userid,  
-    userType: userType,  
+    user: userid,
+    userType: userType,
     stripeAccountId: account.id,
     externalAccountId: account.external_accounts?.data[0].id,
     address: {
@@ -481,9 +489,9 @@ const saveStripeAccount = async (account, user, userid, userType, address, dob, 
     dateOfBirth: new Date(dob),
   });
   const saveData = await newStripeAccount.save();
-  
+
   return saveData
-  
+
 };
 
 // =================== 
@@ -491,19 +499,19 @@ const updateUserDataOfBank = async (req, res) => {
   try {
     const { userId, role } = req.user;
     const { address, bank_info, business_profile, dateOfBirth } = req.body;
- 
+
     const parsedDob = new Date(dateOfBirth);
     if (isNaN(parsedDob)) {
       throw new ApiError(404, "Invalid date format for dateOfBirth.");
     }
- 
+
     const stripeAccount = await StripeAccount.findOne({ user: userId });
     if (!stripeAccount) {
       throw new ApiError(404, "Stripe account not found.");
     }
 
     const accountId = stripeAccount.stripeAccountId;
- 
+
     const accountToken = await stripe.tokens.create({
       account: {
         individual: {
@@ -526,7 +534,7 @@ const updateUserDataOfBank = async (req, res) => {
         },
       },
     });
- 
+
     await stripe.accounts.update(accountId, {
       account_token: accountToken.id,
       business_profile: {
@@ -535,7 +543,7 @@ const updateUserDataOfBank = async (req, res) => {
         product_description: business_profile.product_description,
       },
     });
- 
+
     let existingBankAccountId = stripeAccount.externalAccountId;
 
     if (existingBankAccountId) {
@@ -543,13 +551,12 @@ const updateUserDataOfBank = async (req, res) => {
       const activeBankAccount = account.external_accounts.data.find(
         (bank) => bank.id === existingBankAccountId
       );
- 
+
       if (!activeBankAccount) {
-        console.log("The existing bank account is already deleted.");
         existingBankAccountId = null;
       }
     }
- 
+
     const newBankAccount = await stripe.accounts.createExternalAccount(accountId, {
       external_account: {
         object: "bank_account",
@@ -560,23 +567,22 @@ const updateUserDataOfBank = async (req, res) => {
         currency: bank_info.currency,
       },
     });
- 
+
     await stripe.accounts.updateExternalAccount(accountId, newBankAccount.id, {
       default_for_currency: true,
     });
- 
+
     if (existingBankAccountId) {
       try {
         await stripe.accounts.deleteExternalAccount(accountId, existingBankAccountId);
       } catch (error) {
         if (error.type === "invalid_request_error" && error.code === "resource_missing") {
-          console.log("The old bank account was already deleted.");
         } else {
           throw new ApiError(404, error.message);
         }
       }
     }
- 
+
     const updatedStripeAccount = await StripeAccount.findOneAndUpdate(
       { user: userId },
       {
@@ -607,8 +613,8 @@ const updateUserDataOfBank = async (req, res) => {
       },
       { new: true, upsert: true }
     );
- 
-    return{ 
+
+    return {
       message: "User data updated successfully.",
       updatedStripeAccount,
     };
@@ -619,23 +625,22 @@ const updateUserDataOfBank = async (req, res) => {
 };
 
 const TransferBalance = async ({ bankAccount, amount }) => {
-  try { 
-    console.log("bankAccount===========",bankAccount.stripeAccountId, amount)
+  try {
     if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
       throw new ApiError(400, "Invalid bank account data provided!");
-    }  
+    }
 
     if (!amount || isNaN(amount) || amount <= 0) {
       throw new ApiError(400, "Invalid transfer amount!");
     }
     const amountInCent = amount * 100;
-    
+
     const transfer = await stripe.transfers.create({
-      amount: amountInCent  ,
+      amount: amountInCent,
       currency: 'mxn',
-      destination: bankAccount.stripeAccountId ,
-    }); 
-     
+      destination: bankAccount.stripeAccountId,
+    });
+
     // const balance = await stripe.balance.retrieve({
     //   stripeAccount: bankAccount.stripeAccountId,  
     // });
@@ -649,14 +654,14 @@ const TransferBalance = async ({ bankAccount, amount }) => {
       {
         stripeAccount: bankAccount.stripeAccountId,
       },
-    ); 
- 
+    );
+
     if (!payout) {
       throw new ApiError(500, "Failed to complete the payout.");
     }
     return payout;
 
-  } catch (error) { 
+  } catch (error) {
     if (error.code === 'balance_insufficient') {
       throw new ApiError(400, "Insufficient funds in Stripe balance. Please wait for payments are available.");
     }
@@ -666,8 +671,8 @@ const TransferBalance = async ({ bankAccount, amount }) => {
 };
 
 
- 
- 
+
+
 //Bank Transfer Payment ------------
 const PaymentService = {
   createConnectedAccountWithBank,
@@ -675,7 +680,7 @@ const PaymentService = {
   paymentStatusCancel,
   stripeCheckAndUpdateStatusSuccess,
   stripeRefundPayment,
-  TransferBalance, 
+  TransferBalance,
   updateUserDataOfBank
 }
 

@@ -269,9 +269,7 @@ const activateAccount = async (payload) => {
 };
 
 const loginAccount = async (payload) => {
-  const { email, password, playerId } = payload;
-
-  console.log("email", email)
+  const { email, password, playerId } = payload; 
 
   const isAuth = await Auth.isAuthExist(email);
 
@@ -326,8 +324,7 @@ const loginAccount = async (payload) => {
   }
   await isAuth.save();
 
-  // ------------
-console.log("---", userDetails)
+  // ------------ 
   const accessToken = jwtHelpers.createToken(
     { authId, role, userId: userDetails?._id, emailAuth: userDetails.email },
     config.jwt.secret,
@@ -349,8 +346,7 @@ console.log("---", userDetails)
 };
 
 const forgotPass = async (payload) => {
-  try {
-    console.log(JSON.stringify(payload));
+  try { 
     if (!payload?.email) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Email is required!");
     }

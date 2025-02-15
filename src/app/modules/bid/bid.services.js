@@ -469,8 +469,7 @@ const updateStatusFileClaim = async (req, res) => {
 
 const getAllFileClaims = async (req, res) => {
   try {
-    const query = req.query;
-    console.log("Query received:", query);
+    const query = req.query; 
 
     const resultQuery = new QueryBuilder(
       FileClaim.find()
@@ -509,8 +508,7 @@ const getAllFileClaims = async (req, res) => {
 
 //cut-amount---
 const applyPenaltyPercent = async (req, res) => {
-  const { serviceId, amountPercent, reason, id } = req.body;
-  console.log("Inputs:", serviceId, amountPercent, reason, id);
+  const { serviceId, amountPercent, reason, id } = req.body; 
  
   if (!serviceId || !mongoose.isValidObjectId(serviceId)) {
     throw new ApiError(400, "Invalid or missing serviceId.");

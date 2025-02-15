@@ -11,8 +11,7 @@ const calculateBedCosts = async (data) => {
       throw new ApiError(400, `${field} is required!`);
     }
   }
-  const { weightKG, loadFloorNo, unloadFloorNo, distance } = data;
-  console.log("dsds", weightKG, loadFloorNo, unloadFloorNo, distance)
+  const { weightKG, loadFloorNo, unloadFloorNo, distance } = data; 
 
   const W = weightKG < 100 ? 100 : weightKG;
   const variableData = await Variable.findOne();
@@ -26,17 +25,13 @@ const calculateBedCosts = async (data) => {
     maximumStartFee: MXSF,
     maximumWeightLoad: MXWL,
     maximumDistanceOfFee: MXDF
-  } = variableData;
-
-  console.log("===", MNSF, MNWL, MNDF, MXSF, MXWL, MXDF)
+  } = variableData; 
 
   const minimumBit = await MNSF + (W * loadFloorNo * MNWL) + (W * unloadFloorNo * MNWL) + (distance * MNDF);
   const maximumBit = await MXSF + (W * loadFloorNo * MXWL) + (W * unloadFloorNo * MXWL) + (distance * MXDF);
 
   const minimumBed = Math.round(minimumBit)
-  const maximumBed = Math.round(maximumBit)
-
-  console.log(minimumBed, maximumBed)
+  const maximumBed = Math.round(maximumBit) 
 
   return { minimumBed, maximumBed };
 };
