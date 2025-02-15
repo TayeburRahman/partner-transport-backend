@@ -457,11 +457,26 @@ const rescheduledAction = async (req) => {
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
     updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.ACCEPTED;
     updateFields.scheduleTime = service.rescheduledTime;
-    updateFields.scheduleDate = service.rescheduledDate;
+    updateFields.scheduleDate = service.rescheduledDate; 
   } else if (rescheduledStatus === "decline") {
     updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.DECLINED;
-    updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
+    updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED; 
   }
+
+  await NotificationService.sendNotification({
+    title: {
+    eng: rescheduledStatus === "accepted" ? "Reschedule Request Accepted" : "Reschedule Request Declined",
+    span: rescheduledStatus === "accepted" ? "Solicitud de Reprogramación Aceptada" : "Solicitud de Reprogramación Rechazada"
+    },
+    message: {
+      eng: `The reschedule request for service has been ${rescheduledStatus}.`,
+      span: `La solicitud de reprogramación para el servicio ha sido ${rescheduledStatus}.`,
+    },
+    user: service.user,
+    userType: 'User',
+    types: "service",
+    getId: serviceId,
+  });
 
   const result = await Services.findOneAndUpdate(
     { _id: serviceId },
