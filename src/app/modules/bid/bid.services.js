@@ -34,18 +34,14 @@ const partnerBidPost = async (req) => {
 
   if(foundService.mainService === "move"){
     const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
-    if (price < minimumBed || price > maximumBed) {
-      throw new ApiError(
-        400,
-        `Price must be greater than or equal to ${minimumBed} and less than or equal to ${maximumBed}`
-      );
+    if (price < minimumBed) {
+      throw new ApiError(400, 'offer_to_low');
+    }else if( price > maximumBed) {
+      throw new ApiError( 400, 'offer_to_high');
     }
   }else if(foundService.mainService === "sell"){
     if (price < foundService.minPrice ) {
-      throw new ApiError(
-        400,
-        `Price must be greater than or equal to ${foundService.minPrice}.`
-      );
+      throw new ApiError( 400, 'offer_to_low');
     }
   }else{
     throw new ApiError(400, "Invalid service type, please try later.");
