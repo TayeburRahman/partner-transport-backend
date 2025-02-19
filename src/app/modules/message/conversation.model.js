@@ -5,6 +5,15 @@ const { Schema, model } = mongoose;
 
 const conversationSchema = new Schema(
   {
+    types:{
+      type: String,
+      enum: ['direct', 'service'],
+      default: 'direct',
+    },
+    serviceId:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service', 
+    },
     participants: [
       {
         type: mongoose.Schema.Types.ObjectId,

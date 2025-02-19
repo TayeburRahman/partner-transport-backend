@@ -17,6 +17,7 @@ const ENUM_SOCKET_EVENT = {
   NEW_NOTIFICATION: "new-notification",
   SEEN_NOTIFICATION: "seen-notification",
   MESSAGE_NEW: "new-message",
+  MESSAGE_NEW_SERVICE: "new-message-service",
   MESSAGE_GETALL: "message",
   CONVERSION: "conversion",
   PARTNER_LOCATION: "partner-location",

@@ -39,11 +39,11 @@ const createTicket = async (req) => {
     }
     await Notification.create({
       title: {
-        en: "New Support Ticket",
+        eng: "New Support Ticket",
         span: "Nuevo Ticket de Soporte",
       },
       message: {
-        en: `${type} with email ${email} has created a support ticket.`,
+        eng: `${type} with email ${email} has created a support ticket.`,
         span: `${type} con el correo electrónico ${email} ha creado un ticket de soporte.`,
       },
       userType: "Admin",

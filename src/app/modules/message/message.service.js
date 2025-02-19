@@ -78,7 +78,80 @@ const getMessages = async (req) => {
   }
 };
 
+const getMessagesServices = async (req) => {
+  const { senderId, serviceId, receiverId, page = 1, limit = 20 } = req.query;
+  const {userId} = req.user;
 
+  console.log("============", senderId)
+
+  try {
+    if(!senderId || !receiverId){
+      throw new ApiError(httpStatus.BAD_REQUEST, "Missing participant ids.");
+    }
+    const conversation = await Conversation.findOne({
+      types: "service",
+      serviceId: serviceId,
+    }).populate({
+      path: "messages",
+      options: {
+        sort: { createdAt: -1 },  
+        skip: (page - 1) * Number(limit),
+        limit: Number(limit),
+      },
+    });
+
+    if (!conversation) {
+      return {
+        count: 0,
+        conversation: null,
+        message: "No conversation found between participants.",
+      };
+    }
+//  -------------
+    const findParticipant = async (id) => {
+      let participant =
+        (await User.findOne({ _id: id })) ||
+        (await Partner.findOne({ _id: id })) ||
+        (await Admin.findOne({ _id: id }));
+      return participant;
+    };
+ 
+    const [receiver, sender] = await Promise.all([
+      findParticipant(receiverId),
+      findParticipant(senderId),
+    ]);
+ 
+    const getRole = (user) => {
+      if (!user) return null;
+      if (user.__t === "Admin") return "Admin";
+      if (user.__t === "Partner") return "Partner";
+      return "User";
+    };
+
+    const receiverRole = getRole(receiver);
+    const senderRole = getRole(sender); 
+
+    return {
+      count: conversation.messages.length,
+      conversation,
+      participants: {
+        sender: {
+          id: senderId,
+          role: senderRole,
+          details: sender,
+        },
+        receiver: {
+          id: receiverId,
+          role: receiverRole,
+          details: receiver,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching messages:", error.message);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "An error occurred while fetching messages.");
+  }
+};
 
 const conversationUser = async (payload) => {
   try {
@@ -146,6 +219,7 @@ const conversationUser = async (payload) => {
 const MessageService = {
   getMessages,
   conversationUser,
+  getMessagesServices
 };
 
 module.exports = { MessageService };

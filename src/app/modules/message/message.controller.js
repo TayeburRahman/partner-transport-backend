@@ -21,10 +21,20 @@ const conversationUser = catchAsync(async (req, res) => {
     data: result,
   });
 });
-
+const getMessagesServices = catchAsync(async (req, res) => {
+  const result = await MessageService.getMessagesServices(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Message retrieved successfully",
+    data: result,
+  });
+});
+ 
 const MessageController = {
   getMessages,
   conversationUser,
+  getMessagesServices
 };
 
 module.exports = { MessageController };
