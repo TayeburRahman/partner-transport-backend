@@ -437,7 +437,7 @@ const createStripeAccount = async (token, bank_info, business_profile, user, dob
       business_profile: {
         mcc: "5970",
         name: business_profile?.business_name || user.name || "Unknown",
-        url: business_profile?.website || "www.example.com",
+        // url: business_profile?.website || "www.example.com",
       },
       external_account: {
         object: "bank_account",
@@ -483,7 +483,7 @@ const saveStripeAccount = async (account, user, userid, userType, address, dob, 
     },
     business_profile: {
       business_name: businessProfile?.business_name || user.name || "Unknown",
-      website: businessProfile?.website || "www.example.com",
+      // website: businessProfile?.website || "www.example.com",
       product_description: businessProfile?.product_description,
     },
     dateOfBirth: new Date(dob),
@@ -539,7 +539,7 @@ const updateUserDataOfBank = async (req, res) => {
       account_token: accountToken.id,
       business_profile: {
         name: business_profile?.business_name || "Unknown",
-        url: business_profile?.website || "www.example.com",
+        // url: business_profile?.website || "www.example.com",
         product_description: business_profile?.product_description,
       },
     });
@@ -604,7 +604,7 @@ const updateUserDataOfBank = async (req, res) => {
         },
         business_profile: {
           business_name: business_profile?.business_name || "Unknown",
-          website: business_profile?.website || "www.example.com",
+          // website: business_profile?.website || "www.example.com",
           product_description: business_profile?.product_description,
         },
         dateOfBirth: parsedDob,
