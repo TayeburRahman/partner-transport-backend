@@ -667,11 +667,13 @@ const getAllAuctions = async (query) => {
     },
   ];
 
-  const [result] = await Services.aggregate(pipeline);
+  const [result] = await Services.aggregate(pipeline).sort({ _id: -1 } )
+  
+  ;
 
   return {
     meta: result.meta[0] || { total: 0 },
-    data: result.data,
+    data: result.data.reverse(),
   };
 };
 
