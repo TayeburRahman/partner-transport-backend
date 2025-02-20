@@ -80,9 +80,7 @@ const getMessages = async (req) => {
 
 const getMessagesServices = async (req) => {
   const { senderId, serviceId, receiverId, page = 1, limit = 20 } = req.query;
-  const {userId} = req.user;
-
-  console.log("============", senderId)
+  const {userId} = req.user; 
 
   try {
     if(!senderId || !receiverId){

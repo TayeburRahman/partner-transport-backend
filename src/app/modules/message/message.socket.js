@@ -146,8 +146,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
     // Create a new chat message and send it services.
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_NEW_SERVICE, async (data) => {
-        const { serviceId, senderId, text, userType } = data;
-        console.log("======serviceId===========", serviceId, senderId, text)
+        const { serviceId, senderId, text, userType } = data; 
 
         if (!senderId || !text || !serviceId) {
             socket.emit('error', {
@@ -210,6 +209,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
                 user: senderId,
                 userType: userRoleType,
                 getId: receiverId,
+                serviceId: serviceId,
                 types: 'new-message',
                 isAdmin: adminType,
             })

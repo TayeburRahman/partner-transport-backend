@@ -21,6 +21,10 @@ const notificationSchema = new Schema(
       enum: ['User', 'Partner', 'Admin'],
       required: true,
     },
+    serviceId:{
+      type: ObjectId,
+      ref: 'Services',
+    },
     admin_ms: {
       type: Boolean,
       required: false,

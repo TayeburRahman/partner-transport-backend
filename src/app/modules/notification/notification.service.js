@@ -51,7 +51,7 @@ const handleNotification = async (receiverId, role, socket, io) => {
 
 };
 
-const sendNotification = async ({ title, message, user, userType, getId, types, notice, isAdmin}) => {
+const sendNotification = async ({ title, message, user, userType, getId, types, notice, isAdmin, serviceId}) => {
   try {
     const notification = await Notification.create({
       title,
@@ -61,7 +61,8 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
       userType,
       types,
       notice,
-      isAdmin
+      isAdmin,
+      serviceId
     });
 
     let authId;
