@@ -89,6 +89,8 @@ const withdrawRequest = async (req, res) => {
   const { amount } = req.query;
   const { userId, role } = req.user;
 
+  console.log(amount)
+
   if (!amount || isNaN(amount) || Number(amount) <= 0) {
     throw new ApiError(400, "Valid amount is required.");
   } 
@@ -137,6 +139,7 @@ const withdrawRequest = async (req, res) => {
     receiveUserType: 'User',
     receiveUser: userId,
     amount: -amount,
+    partnerAmount: -amount,
     paymentMethod: "BankTransfer",
     transactionId: result.id,   
     paymentStatus: "Completed",

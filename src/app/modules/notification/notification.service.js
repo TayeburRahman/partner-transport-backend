@@ -66,6 +66,7 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
     });
 
     let authId;
+    console.log("notification", userType ,authId, user)
 
     if (userType === "User") {
       const userDb = await User.findById(user);
@@ -87,6 +88,8 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
         console.error(`Admin with ID ${user} not found!`);
         return;
       }
+      console.log(`Admin with ID`, partnerDb)
+      
       authId = partnerDb.authId;
     } else {
       console.error(`Invalid userType: ${userType}`);
@@ -100,6 +103,7 @@ const sendNotification = async ({ title, message, user, userType, getId, types, 
     }
 
     const playerIds = authDb.playerIds;
+    console.log("playerIds",playerIds)
     if (!playerIds || playerIds.length === 0) {
       console.error(`No player IDs found for auth ID ${authId}`);
       return;

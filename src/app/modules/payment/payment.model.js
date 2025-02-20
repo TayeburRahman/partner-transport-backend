@@ -28,12 +28,10 @@ const transactionSchema = new Schema({
     required: true,
   },
   amount: {
-    type: Number,
-    required: true,
+    type: Number
   },
   partnerAmount: {
-    type: Number,
-    required: true,
+    type: Number
   }, 
   paymentMethod: {
     type: String,

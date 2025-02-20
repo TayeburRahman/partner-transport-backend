@@ -659,6 +659,9 @@ const TransferBalance = async ({ bankAccount, amount }) => {
     if (!payout) {
       throw new ApiError(500, "Failed to complete the payout.");
     }
+
+    console.log("Transfer ID:", transfer.id);
+    console.log("Payout ID:", payout);
     return payout;
 
   } catch (error) {

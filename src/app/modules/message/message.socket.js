@@ -93,12 +93,12 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
             previousNotification = await NotificationService.sendNotification({
                 title: {
-                    eng: `New Message from ${userRoleType || "Unknown"}`,
-                    span: `Nuevo Mensaje de ${userRoleType || "Desconocido"}`
+                    eng: `New Message from ${adminType? "Admin": 'User' || "Unknown"}`,
+                    span: `Nuevo Mensaje de ${adminType? "Admin": 'User' || "Desconocido"}`
                 },
                 message: {
-                    eng: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
-                    span: `Has recibido un nuevo mensaje de un ${userRoleType || "usuario"}. Por favor, revisa la conversación.`
+                    eng: `You have received a new message from a ${adminType? "Admin": 'User' || "user"}. Please check the conversation.`,
+                    span: `Has recibido un nuevo mensaje de un ${adminType? "Admin": 'User' || "usuario"}. Por favor, revisa la conversación.`
                 },
                 user: senderId,
                 userType: userRoleType,
@@ -123,12 +123,12 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
         if (!previousNotification && adminType) {
             await NotificationService.sendNotification({
                 title: {
-                    eng: `New Message from ${userRoleType || "Unknown"}`,
-                    span: `Nuevo Mensaje de ${userRoleType || "Desconocido"}`
+                    eng: `New Message from ${adminType? "Admin": 'User' || "Unknown"}`,
+                    span: `Nuevo Mensaje de ${adminType? "Admin": 'User' || "Desconocido"}`
                 },
                 message: {
-                    eng: `You have received a new message from a ${userRoleType || "user"}. Please check the conversation.`,
-                    span: `Has recibido un nuevo mensaje de un ${userRoleType || "usuario"}. Por favor, revisa la conversación.`
+                    eng: `You have received a new message from a ${adminType? "Admin": 'User' || "user"}. Please check the conversation.`,
+                    span: `Has recibido un nuevo mensaje de un ${adminType? "Admin": 'User' || "usuario"}. Por favor, revisa la conversación.`
                 },
                 user: senderId,
                 userType: userRoleType,
