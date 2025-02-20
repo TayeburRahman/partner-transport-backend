@@ -13,6 +13,8 @@ const checkAdminAccess = (...requiredPermissions) => {
           throw new ApiError(httpStatus.UNAUTHORIZED, "Access denied. You are not authorized.");
         }  
 
+        console.log("admin", admin)
+
         const hasPermission = requiredPermissions.some((permission) => admin[permission]);
   
         if (!hasPermission) {
