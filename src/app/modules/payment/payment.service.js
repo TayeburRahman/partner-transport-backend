@@ -372,12 +372,12 @@ const validateInputs = (address, dateOfBirth, bank_info, business_profile) => {
     throw new Error("All bank information fields are required: account_holder_name, account_holder_type, account_number, country, and currency.");
   }
 
-  if (
-    !business_profile ||
-    !business_profile.business_name
-  ) {
-    throw new Error("All business profile fields are required: business_name.");
-  }
+  // if (
+  //   !business_profile ||
+  //   !business_profile?.business_name
+  // ) {
+  //   throw new Error("All business profile fields are required: business_name.");
+  // }
   return null;
 };
 
@@ -436,8 +436,8 @@ const createStripeAccount = async (token, bank_info, business_profile, user, dob
       },
       business_profile: {
         mcc: "5970",
-        name: business_profile.business_name || user.name || "Unknown",
-        url: business_profile.website || "www.example.com",
+        name: business_profile?.business_name || user.name || "Unknown",
+        url: business_profile?.website || "www.example.com",
       },
       external_account: {
         object: "bank_account",
@@ -482,8 +482,8 @@ const saveStripeAccount = async (account, user, userid, userType, address, dob, 
       currency: bank_info.currency,
     },
     business_profile: {
-      business_name: businessProfile.business_name,
-      website: businessProfile?.website,
+      business_name: businessProfile?.business_name || user.name || "Unknown",
+      website: businessProfile?.website || "www.example.com",
       product_description: businessProfile?.product_description,
     },
     dateOfBirth: new Date(dob),
@@ -538,9 +538,9 @@ const updateUserDataOfBank = async (req, res) => {
     await stripe.accounts.update(accountId, {
       account_token: accountToken.id,
       business_profile: {
-        name: business_profile.business_name,
-        url: business_profile.website,
-        product_description: business_profile.product_description,
+        name: business_profile?.business_name || "Unknown",
+        url: business_profile?.website || "www.example.com",
+        product_description: business_profile?.product_description,
       },
     });
 
@@ -603,9 +603,9 @@ const updateUserDataOfBank = async (req, res) => {
           currency: bank_info.currency,
         },
         business_profile: {
-          business_name: business_profile.business_name,
-          website: business_profile.website,
-          product_description: business_profile.product_description,
+          business_name: business_profile?.business_name || "Unknown",
+          website: business_profile?.website || "www.example.com",
+          product_description: business_profile?.product_description,
         },
         dateOfBirth: parsedDob,
         externalAccountId: newBankAccount.id,

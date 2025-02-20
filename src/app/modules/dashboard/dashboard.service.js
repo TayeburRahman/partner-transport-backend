@@ -1295,7 +1295,6 @@ const getTransactionsDetails = async (req) => {
 };
 
 // =======================
-
 const DashboardService = {
   getAllUsers,
   getUserDetails,
