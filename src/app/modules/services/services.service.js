@@ -12,7 +12,7 @@ const {
   ENUM_USER_ROLE,
 } = require("../../../utils/enums");
 const Variable = require("../variable/variable.model");
-const { Transaction } = require("../payment/payment.model");
+const { Transaction, StripeAccount } = require("../payment/payment.model");
 const { Bids } = require("../bid/bid.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
@@ -457,16 +457,16 @@ const rescheduledAction = async (req) => {
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
     updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.ACCEPTED;
     updateFields.scheduleTime = service.rescheduledTime;
-    updateFields.scheduleDate = service.rescheduledDate; 
+    updateFields.scheduleDate = service.rescheduledDate;
   } else if (rescheduledStatus === "decline") {
     updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.DECLINED;
-    updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED; 
+    updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
   }
 
   await NotificationService.sendNotification({
     title: {
-    eng: rescheduledStatus === "accepted" ? "Reschedule Request Accepted" : "Reschedule Request Declined",
-    span: rescheduledStatus === "accepted" ? "Solicitud de Reprogramación Aceptada" : "Solicitud de Reprogramación Rechazada"
+      eng: rescheduledStatus === "accepted" ? "Reschedule Request Accepted" : "Reschedule Request Declined",
+      span: rescheduledStatus === "accepted" ? "Solicitud de Reprogramación Aceptada" : "Solicitud de Reprogramación Rechazada"
     },
     message: {
       eng: `The reschedule request for service has been ${rescheduledStatus}.`,
@@ -582,17 +582,17 @@ const getUserServicesWithinOneHour = async (req) => {
       select: "_id category",
     });
 
-    const variable = await Variable.findOne();
-      const surcharge = Number(variable?.surcharge || 0);
-    
-      if (role === ENUM_USER_ROLE.USER) {
-        services = services.map((data) => ({ 
-          ...data._doc,
-          winBid: data.mainService === 'move' 
-            ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 
-            : data.winBid,
-        }));
-      }
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);
+
+  if (role === ENUM_USER_ROLE.USER) {
+    services = services.map((data) => ({
+      ...data._doc,
+      winBid: data.mainService === 'move'
+        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100
+        : data.winBid,
+    }));
+  }
 
   // console.log("Fetched services:", services);
   return services;
@@ -760,11 +760,31 @@ const updateServicesStatusUser = async (req) => {
     }
 
     if (status === "delivery-confirmed") {
-      const amount = Number(transaction.partnerAmount);
-      console.log("M-transactionAmount======", amount)  
+      // const amount = Number(transaction.partnerAmount);
+      // console.log("M-transactionAmount======", amount)  
 
-      receivedUser.wallet += amount;
-      await receivedUser.save();
+      // receivedUser.wallet += amount;
+      // await receivedUser.save();
+
+      // const balance = await stripe.balance.retrieve({
+      //   stripeAccount: bankAccount.stripeAccountId,  
+      // });
+
+      const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser })
+
+      if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+        throw new ApiError(400, "Invalid bank account data provided!");
+      }
+
+      const payout = await stripe.payouts.create(
+        {
+          amount: amountInCent,
+          currency: 'mxn',
+        },
+        {
+          stripeAccount: bankAccount.stripeAccountId,
+        },
+      );
 
       transaction.isFinish = true;
       await transaction.save();
@@ -937,12 +957,27 @@ const updateSellServicesStatusPartner = async (req) => {
   }
 
   try {
-    if (status === "delivery-confirmed") { 
-      const amount = Number(transaction.partnerAmount);
-      console.log("S-transactionAmount======", amount) 
+    if (status === "delivery-confirmed") {
+      const amount = Number(transaction.partnerAmount); 
 
-      receivedUser.wallet = (receivedUser.wallet || 0) + amount;
-      await receivedUser.save();
+      // receivedUser.wallet = (receivedUser.wallet || 0) + amount;
+      // await receivedUser.save();
+
+      const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser })
+
+      if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+        throw new ApiError(400, "Invalid bank account data provided!");
+      }
+
+      const payout = await stripe.payouts.create(
+        {
+          amount: amountInCent,
+          currency: 'mxn',
+        },
+        {
+          stripeAccount: bankAccount.stripeAccountId,
+        },
+      );
 
       transaction.isFinish = true;
       await transaction.save();

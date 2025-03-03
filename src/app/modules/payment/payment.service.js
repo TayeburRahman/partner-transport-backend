@@ -42,20 +42,7 @@ const createCheckoutSessionStripe = async (req) => {
     const service = await Services.findById(serviceId)
     if (!service) {
       throw new ApiError(httpStatus.NOT_FOUND, 'invalid service ID.');
-    }
-
-    // let packagePrice 
-    // if(service.mainService === 'move'){ 
-    //   if (service.price) {
-    //     packagePrice =  Number(service.winBid) + (service.winBid * surcharge) / 100; 
-    //   } 
-    // }else{
-    //   packagePrice = Number(service.winBid);
-    // }  
-
-    // if (!packagePrice) {
-    //   throw new ApiError(httpStatus.NOT_FOUND, 'No conform the partner for service');
-    // }
+    }  
 
     let receiveUser;
     let receiveUserRole;
@@ -69,8 +56,13 @@ const createCheckoutSessionStripe = async (req) => {
       throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
     }
 
-    const unitAmount = Number(price) * 100;
-
+    const bankAccount = await StripeAccount.findOne({user: receiveUser}) 
+    
+    if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
+      throw new ApiError(400, "The Payment Receive User Account Information Missing!");
+    }
+  
+    const unitAmount = Number(price) * 100; 
 
     let session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -179,11 +171,22 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       }
     };
 
-    const newTransaction = await Transaction.create(transactionData);
+  const newTransaction = await Transaction.create(transactionData); 
 
-    console.log("========", newTransaction)
+      // ----
+  const bankAccount = await StripeAccount.findOne({user: receiveUser}) 
+  
+  if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+    throw new ApiError(400, "Invalid bank account data provided!");
+  } 
+  const amountInCent = totalAmount * 100;
 
-    return { status: "success", result: newTransaction };
+  const transfer = await stripe.transfers.create({
+    amount: amountInCent,
+    currency: 'mxn',
+    destination: bankAccount.stripeAccountId,
+  }); 
+  console.log("transfer", transfer)
 
   } catch (error) {
     console.error('Error processing Stripe payment:', error);
