@@ -4,7 +4,8 @@ const ApiError = require("../../../errors/ApiError");
 const Services = require("./services.model");
 const httpStatus = require("http-status");
 const Partner = require("../partner/partner.model");
-
+const config = require("../../../config");
+const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const {
   ENUM_SERVICE_STATUS,
   ENUM_SERVICE_TYPE,
@@ -17,6 +18,7 @@ const { Bids } = require("../bid/bid.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
 const VariableCount = require("../variable/variable.count");
+ 
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -760,31 +762,53 @@ const updateServicesStatusUser = async (req) => {
     }
 
     if (status === "delivery-confirmed") {
-      // const amount = Number(transaction.partnerAmount);
-      // console.log("M-transactionAmount======", amount)  
+      const amount = Number(transaction.partnerAmount);
+      const amountInCent = amount * 100; // Ensure this is in cents for Stripe.
 
-      // receivedUser.wallet += amount;
-      // await receivedUser.save();
-
-      // const balance = await stripe.balance.retrieve({
-      //   stripeAccount: bankAccount.stripeAccountId,  
-      // });
-
-      const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser })
+      const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
       if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
         throw new ApiError(400, "Invalid bank account data provided!");
       }
 
+      try {
+        const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+
+        if (!stripeAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account not found or invalid.");
+        }
+
+        if (!stripeAccount.charges_enabled) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account is not enabled for receiving payments.");
+        }
+
+        const externalAccount = stripeAccount.external_accounts.data.find(
+          (account) => account.id === bankAccount.externalAccountId
+        );
+
+        if (!externalAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account not found or linked to Stripe.");
+        }
+
+      } catch (error) {
+        throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
+      }
+
+      // Convert USD to MXN for the payout
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent);
+
+      // Perform the payout in MXN
       const payout = await stripe.payouts.create(
         {
-          amount: amountInCent,
+          amount: Math.round(pesoCost), // Ensure the amount is rounded correctly
           currency: 'mxn',
         },
         {
           stripeAccount: bankAccount.stripeAccountId,
-        },
+        }
       );
+
+      console.log("Payout successful:", payout);
 
       transaction.isFinish = true;
       await transaction.save();
@@ -838,6 +862,7 @@ const updateServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
 };
+
 
 //---------------
 const updateSellServicesStatusUser = async (req) => {
@@ -963,20 +988,49 @@ const updateSellServicesStatusPartner = async (req) => {
       // receivedUser.wallet = (receivedUser.wallet || 0) + amount;
       // await receivedUser.save();
 
-      const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser })
+      const amountInCent = amount * 100; // Ensure this is in cents for Stripe.
+
+      const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
       if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
         throw new ApiError(400, "Invalid bank account data provided!");
       }
 
+      try {
+        const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+
+        if (!stripeAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account not found or invalid.");
+        }
+
+        if (!stripeAccount.charges_enabled) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account is not enabled for receiving payments.");
+        }
+
+        const externalAccount = stripeAccount.external_accounts.data.find(
+          (account) => account.id === bankAccount.externalAccountId
+        );
+
+        if (!externalAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account not found or linked to Stripe.");
+        }
+
+      } catch (error) {
+        throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
+      }
+
+      // Convert USD to MXN for the payout
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent);
+
+      // Perform the payout in MXN
       const payout = await stripe.payouts.create(
         {
-          amount: amountInCent,
+          amount: Math.round(pesoCost), // Ensure the amount is rounded correctly
           currency: 'mxn',
         },
         {
           stripeAccount: bankAccount.stripeAccountId,
-        },
+        }
       );
 
       transaction.isFinish = true;

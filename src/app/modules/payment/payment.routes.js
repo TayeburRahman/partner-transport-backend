@@ -56,24 +56,11 @@ router
   // =============================
   // Withdraw 
   // =============================
-  .post("/withdraw",
-    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
-    PaymentController.withdrawRequest
-  )
-// .patch("/withdraw-success",
-//   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-//   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER_EDIT),
-//   PaymentController.withdrawSuccess
-// )
-// .get("/withdraw-user-details",
-//   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-//   PaymentController.userDetailsWithdraw
-// )
-// .get("/withdraw",
-//   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-//   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_BANK_TRANSFER),
-//   PaymentController.getWithdraw
-// )
+  // .post("/withdraw",
+  //   auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
+  //   PaymentController.withdrawRequest
+  // )
+ 
 
 
 

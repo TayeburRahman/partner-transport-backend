@@ -86,205 +86,89 @@ const transitionsHistory = async (req, res) => {
 }
 
 const withdrawRequest = async (req, res) => { 
-  const { amount } = req.query;
-  const { userId, role } = req.user;
+  // const { amount } = req.query;
+  // const { userId, role } = req.user;
 
-  console.log(amount)
+  // console.log(amount)
 
-  if (!amount || isNaN(amount) || Number(amount) <= 0) {
-    throw new ApiError(400, "Valid amount is required.");
-  } 
+  // if (!amount || isNaN(amount) || Number(amount) <= 0) {
+  //   throw new ApiError(400, "Valid amount is required.");
+  // } 
 
-  let user;
-  let roleU;
-  if (role === ENUM_USER_ROLE.PARTNER) {
-    user = await Partner.findById(userId);
-    roleU = 'Partner'
-    if (!user) {
-      throw new ApiError(404, "Partner not found.");
-    }
-  } else if (role === ENUM_USER_ROLE.USER) {
-    user = await User.findById(userId);
-     roleU = 'User'
-    if (!user) {
-      throw new ApiError(404, "User not found.");
-    }
-  } else {
-    throw new ApiError(403, "Unauthorized user type.");
-  }
+  // let user;
+  // let roleU;
+  // if (role === ENUM_USER_ROLE.PARTNER) {
+  //   user = await Partner.findById(userId);
+  //   roleU = 'Partner'
+  //   if (!user) {
+  //     throw new ApiError(404, "Partner not found.");
+  //   }
+  // } else if (role === ENUM_USER_ROLE.USER) {
+  //   user = await User.findById(userId);
+  //    roleU = 'User'
+  //   if (!user) {
+  //     throw new ApiError(404, "User not found.");
+  //   }
+  // } else {
+  //   throw new ApiError(403, "Unauthorized user type.");
+  // }
  
-  if (user.wallet < amount) {
-    throw new ApiError(400, "Insufficient balance for withdrawal.");
-  } 
-  // ----
-  const bankAccount = await StripeAccount.findOne({user: userId})
+  // if (user.wallet < amount) {
+  //   throw new ApiError(400, "Insufficient balance for withdrawal.");
+  // } 
+  // // ----
+  // const bankAccount = await StripeAccount.findOne({user: userId})
  
-  if (!bankAccount) {
-    throw new ApiError(404, "Your bank account details not found! Please update details in your profile.");
-  }  
+  // if (!bankAccount) {
+  //   throw new ApiError(404, "Your bank account details not found! Please update details in your profile.");
+  // }  
 
-  const result = await PaymentService.TransferBalance({bankAccount, amount})
+  // const result = await PaymentService.TransferBalance({bankAccount, amount})
 
-  if(!result){
-    throw new ApiError(500, "Error processing your withdrawal. Please try again later.");
-  }
-  // ------
-  user.wallet -= amount;
-  await user.save();
+  // if(!result){
+  //   throw new ApiError(500, "Error processing your withdrawal. Please try again later.");
+  // }
+  // // ------
+  // user.wallet -= amount;
+  // await user.save();
  
-  // --------------
-  const transaction = new Transaction({
-    payUserType: 'User',
-    payUser: userId,
-    receiveUserType: 'User',
-    receiveUser: userId,
-    amount: -amount,
-    partnerAmount: -amount,
-    paymentMethod: "BankTransfer",
-    transactionId: result.id,   
-    paymentStatus: "Completed",
-    isFinish: true,
-    payType: "withdraw",
-  });
-  await transaction.save();
+  // // --------------
+  // const transaction = new Transaction({
+  //   payUserType: 'User',
+  //   payUser: userId,
+  //   receiveUserType: 'User',
+  //   receiveUser: userId,
+  //   amount: -amount,
+  //   partnerAmount: -amount,
+  //   paymentMethod: "BankTransfer",
+  //   transactionId: result.id,   
+  //   paymentStatus: "Completed",
+  //   isFinish: true,
+  //   payType: "withdraw",
+  // });
+  // await transaction.save();
 
-  await NotificationService.sendNotification({
-    title: {
-      eng: "Withdrawal Successful!",
-      span: "¡Retiro Exitoso!"
-    },
-    message: {
-      eng: `You have successfully withdrawn $${amount}. The funds will be transferred to your bank account ending in ${bankAccount.bank_info.account_number.slice(-4)} shortly.`,
-      span: `Has retirado exitosamente $${amount}. Los fondos se transferirán a tu cuenta bancaria terminada en ${bankAccount.bank_info.account_number.slice(-4)} en breve`
-    },    
-    user: userId,
-    userType: roleU,
-    types: 'none', 
-  });
+  // await NotificationService.sendNotification({
+  //   title: {
+  //     eng: "Withdrawal Successful!",
+  //     span: "¡Retiro Exitoso!"
+  //   },
+  //   message: {
+  //     eng: `You have successfully withdrawn $${amount}. The funds will be transferred to your bank account ending in ${bankAccount.bank_info.account_number.slice(-4)} shortly.`,
+  //     span: `Has retirado exitosamente $${amount}. Los fondos se transferirán a tu cuenta bancaria terminada en ${bankAccount.bank_info.account_number.slice(-4)} en breve`
+  //   },    
+  //   user: userId,
+  //   userType: roleU,
+  //   types: 'none', 
+  // });
 
-  return transaction;
+  // return transaction;
 };
-
-
-
-
-
-
-
-
-// const withdrawSuccess = async (req, res) => {
-//   const { bankTransferId, withdrawId } = req.body;
-//   const { userId, role, emailAuth } = req.user;
-
-//   console.log("With", bankTransferId, withdrawId)
-//   try {
-//     if (!bankTransferId || !withdrawId) {
-//       throw new ApiError(400, "BankTransfer ID and Withdraw ID are required.");
-//     }
-
-//     const withdraw = await Withdraw.findById(withdrawId);
-//     if (!withdraw) {
-//       throw new ApiError(404, "Withdraw request not found.");
-//     }
-
-//     let user;
-//     if (withdraw.userType === "Partner") {
-//       user = await Partner.findById(withdraw.user);
-//       if (!user) {
-//         throw new ApiError(404, "Partner not found.");
-//       }
-//     } else if (withdraw.userType === "User") {
-//       user = await User.findById(withdraw.user);
-//       if (!user) {
-//         throw new ApiError(404, "User not found.");
-//       }
-//     } else {
-//       throw new ApiError(403, "Unauthorized user type.");
-//     }
-
-//     if (withdraw.request_amount <= 0) {
-//       throw new ApiError(400, "Invalid withdrawal amount.");
-//     }
-
-//     if (user.wallet < withdraw.request_amount) {
-//       throw new ApiError(400, "Insufficient balance for withdrawal.");
-//     }
-
-//     user.wallet -= withdraw.request_amount;
-//     await user.save();
-
-//     withdraw.status = "Completed";
-//     withdraw.bankTransferId = bankTransferId;
-//     await withdraw.save();
-// //  -------
-//     const transaction = new Transaction({
-//       payUserType: "Admin",
-//       payUser: userId,
-//       receiveUserType: withdraw.userType,
-//       receiveUser: withdraw.user,
-//       amount: -withdraw.request_amount,
-//       paymentMethod: "BankTransfer",
-//       transactionId: bankTransferId,
-//       paymentStatus: "Completed",
-//       isFinish: true,
-//       payType: "withdraw",
-//     });
-
-//     await transaction.save();
-// // ------------
-//     // Log success
-//     const newTask = {
-//       admin: userId,
-//       email: emailAuth,
-//       description: `Withdraw request with ID ${withdrawId} successfully processed for ${withdraw.userType} with ID ${withdraw.user}.`,
-//       types: "Withdraw",
-//       activity: "task",
-//       status: "Success",
-//       attended: "withdraw"
-//     };
-//     await LogsDashboardService.createTaskDB(newTask);
-
-//     return { message: "Withdraw request processed successfully." };
-//   } catch (error) {
-//     // Log failure
-//     const newTask = {
-//       admin: userId,
-//       email: emailAuth,
-//       description: `Failed to process withdraw request with ID ${withdrawId}: ${error.message || "Unknown error"}.`,
-//       types: "Withdraw",
-//       activity: "task",
-//       status: "Error",
-//     };
-//     await LogsDashboardService.createTaskDB(newTask);
-//     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
-//   }
-
-// }; 
-
-// const getWithdraw = async (req) => {
-//   const query = req.query
-//   const withdraw = new QueryBuilder(Withdraw.find()
-//     .populate({
-//       path: "user",
-//     }), query)
-//     .search(['name'])
-//     .filter()
-//     .sort()
-//     .paginate()
-//     .fields()
-
-
-//   const result = await withdraw.modelQuery;
-//   const meta = await withdraw.countTotal();
-//   return { result: result, meta };
-// }
 
 const TransitionsService = {
   transitionsHistory, 
   paymentHistory,
-  withdrawRequest,
-  // withdrawSuccess, 
-  // getWithdraw
+  withdrawRequest, 
 }
 
 module.exports = TransitionsService;

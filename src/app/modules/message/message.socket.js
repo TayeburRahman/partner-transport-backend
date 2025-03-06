@@ -8,7 +8,7 @@ const Conversation = require("./conversation.model");
 const Message = require("./message.model");
 
 
-const handleMessageData = async (receiverId, socket, io, onlineUsers) => {
+const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => { 
 
     // Get one to one - all conversation messages
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_GETALL, async (data) => {

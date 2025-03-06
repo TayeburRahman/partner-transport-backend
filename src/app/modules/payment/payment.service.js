@@ -17,32 +17,33 @@ const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
 //Stripe Payment =====================
 const createCheckoutSessionStripe = async (req) => {
   try {
-    const { serviceId, price, currency } = req.body
-    const { userId, role } = req.user
+    const { serviceId, price, currency } = req.body;
+    const { userId, role } = req.user;
 
+    // Validate required fields
     if (!currency || !Number(price) || !serviceId) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Missing required fields.');
     }
 
-    // const variable = await Variable.findOne();
-    // const surcharge = Number(variable?.surcharge || 0); 
+    console.log("price, currency", price, currency)
 
     let user;
     let payUserRole;
     if (role === ENUM_USER_ROLE.USER) {
-      user = await User.findById(userId)
-      payUserRole = 'User'
+      user = await User.findById(userId);
+      payUserRole = 'User';
     } else if (role === ENUM_USER_ROLE.PARTNER) {
-      user = await Partner.findById(userId)
-      payUserRole = 'Partner'
+      user = await Partner.findById(userId);
+      payUserRole = 'Partner';
     } else if (role === ENUM_USER_ROLE.ADMIN) {
-      user = await Admin.findById(userId)
-      payUserRole = 'Admin'
+      user = await Admin.findById(userId);
+      payUserRole = 'Admin';
     }
-    const service = await Services.findById(serviceId)
+
+    const service = await Services.findById(serviceId);
     if (!service) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'invalid service ID.');
-    }  
+      throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service ID.');
+    }
 
     let receiveUser;
     let receiveUserRole;
@@ -53,17 +54,44 @@ const createCheckoutSessionStripe = async (req) => {
       receiveUser = service.confirmedPartner;
       receiveUserRole = 'Partner';
     } else {
-      throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service type.');
+    }
+ 
+    const bankAccount = await StripeAccount.findOne({ user: receiveUser });
+
+    if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "The Payment Receive User Account Information is missing!");
     }
 
-    const bankAccount = await StripeAccount.findOne({user: receiveUser}) 
-    
-    if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
-      throw new ApiError(400, "The Payment Receive User Account Information Missing!");
-    }
-  
-    const unitAmount = Number(price) * 100; 
+    try { 
+      const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
 
+      if (!stripeAccount) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Stripe Account not found or is invalid.");
+      }
+
+      if (!stripeAccount.charges_enabled) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Stripe Account is not enabled for receiving payments.");
+      }
+ 
+      const externalAccount = stripeAccount.external_accounts.data.find(
+        (account) => account.id === bankAccount.externalAccountId
+      );
+
+      if (!externalAccount) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Payment Receiver User External account not found or linked to Stripe.");
+      }
+     
+      // if (externalAccount.status !== 'verified') {
+      //   throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account is not verified.");
+      // }  
+
+    } catch (error) {
+      throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
+    }
+ 
+    const unitAmount =  Number(price) * 100;
+ 
     let session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -77,6 +105,7 @@ const createCheckoutSessionStripe = async (req) => {
         receiveUser: receiveUser.toHexString(),
         receiveUserType: receiveUserRole,
         serviceId: serviceId,
+        stripeAccountId: bankAccount.stripeAccountId
       },
       line_items: [
         {
@@ -85,23 +114,28 @@ const createCheckoutSessionStripe = async (req) => {
             unit_amount: unitAmount,
             product_data: {
               name: service.service,
-              description: service.description
-            }
+              description: service.description,
+            },
           },
-          quantity: 1
-        }
-      ]
-    })
+          quantity: 1,
+        },
+      ],
+    });
 
+    // Return the checkout session URL
     return { url: session.url };
 
   } catch (error) {
-    throw new ApiError(400, error);
+    throw new ApiError(400, error.message);
   }
 };
 
+
+
 const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
   const sessionId = req.query.session_id;
+
+  console.log("Checking", sessionId);
 
   if (!sessionId) {
     return { status: "failed", message: "Missing session ID in the request." };
@@ -118,7 +152,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       return { status: "failed", message: "Payment not approved." };
     }
 
-    const { receiveUser, payUser, payUserType, receiveUserType, serviceId } = session.metadata; 
+    const { receiveUser, payUser, payUserType, receiveUserType, serviceId, stripeAccountId } = session.metadata;
 
     const service = await Services.findById(serviceId);
     if (!service) {
@@ -136,21 +170,23 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
 
     service.paymentStatus = 'paid';
     service.transactionId = session.payment_intent;
-    service.paymentMethod = 'Stripe',
-      await service.save(); 
+    service.paymentMethod = 'Stripe';
+    await service.save();
 
-    const amount = Number(session.amount_total)/ 100;
+    let amount = Number(session.amount_total) / 100; 
     let totalAmount = amount;
+ 
     if (session.currency === 'mxn') {
-      const { dollarCost } = await VariableCount.convertPesoToDollar(amount)
-      totalAmount = dollarCost; 
-    } 
+      const { dollarCost } = await VariableCount.convertPesoToDollar(amount);
+      totalAmount = dollarCost;
+    }
 
     const variable = await Variable.findOne();
-    const surcharge = Number(variable?.surcharge || 0); 
-    const partnerAmount = totalAmount - (totalAmount * Number(surcharge)) / 100; 
+    const surcharge = Number(variable?.surcharge || 0);
+    const partnerAmount = totalAmount - (totalAmount * surcharge) / 100;
 
-    // Create transaction data
+    console.log("amount", amount, 'totalAmount', totalAmount, "partnerAmount", partnerAmount,"surcharge", surcharge)
+ 
     const transactionData = {
       serviceId,
       payUser,
@@ -158,8 +194,8 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       receiveUser,
       receiveUserType,
       paymentMethod: 'Stripe',
-      amount: totalAmount,
-      partnerAmount: partnerAmount,
+      amount: totalAmount,  
+      partnerAmount: partnerAmount,  
       paymentStatus: "Completed",
       isFinish: false,
       payType: service.mainService,
@@ -167,32 +203,32 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       paymentDetails: {
         email: session.customer_email,
         payId: sessionId,
-        currency: "USD"
+        currency: "USD", 
       }
     };
 
-  const newTransaction = await Transaction.create(transactionData); 
+    const newTransaction = await Transaction.create(transactionData); 
 
-      // ----
-  const bankAccount = await StripeAccount.findOne({user: receiveUser}) 
-  
-  if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
-    throw new ApiError(400, "Invalid bank account data provided!");
-  } 
-  const amountInCent = totalAmount * 100;
+     const { pesoCost } = await VariableCount.convertDollarToPeso(partnerAmount); 
 
-  const transfer = await stripe.transfers.create({
-    amount: amountInCent,
-    currency: 'mxn',
-    destination: bankAccount.stripeAccountId,
-  }); 
-  console.log("transfer", transfer)
+     console.log("transferAmount", pesoCost)
+
+    const transfer = await stripe.transfers.create({
+      amount: Math.round(pesoCost * 100),
+      currency: 'mxn',
+      destination: stripeAccountId,
+    });
+
+    // console.log("Transfer successful:", transfer);
+
+    return { status: "success", result: newTransaction };
 
   } catch (error) {
     console.error('Error processing Stripe payment:', error);
     return { status: "failed", message: "Payment execution failed", error: error.message };
   }
 };
+
 
 const paymentStatusCancel = async (req, res) => {
   return { status: "canceled" }
@@ -628,52 +664,50 @@ const updateUserDataOfBank = async (req, res) => {
 };
 
 const TransferBalance = async ({ bankAccount, amount }) => {
-  try {
-    if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
-      throw new ApiError(400, "Invalid bank account data provided!");
-    }
+  // try {
+  //   if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+  //     throw new ApiError(400, "Invalid bank account data provided!");
+  //   }
 
-    if (!amount || isNaN(amount) || amount <= 0) {
-      throw new ApiError(400, "Invalid transfer amount!");
-    }
-    const amountInCent = amount * 100;
+  //   if (!amount || isNaN(amount) || amount <= 0) {
+  //     throw new ApiError(400, "Invalid transfer amount!");
+  //   }
+  //   const amountInCent = amount * 100;
 
-    const transfer = await stripe.transfers.create({
-      amount: amountInCent,
-      currency: 'mxn',
-      destination: bankAccount.stripeAccountId,
-    });
+  //   const transfer = await stripe.transfers.create({
+  //     amount: amountInCent,
+  //     currency: 'mxn',
+  //     destination: bankAccount.stripeAccountId,
+  //   });
 
-    // const balance = await stripe.balance.retrieve({
-    //   stripeAccount: bankAccount.stripeAccountId,  
-    // });
+  //   // const balance = await stripe.balance.retrieve({
+  //   //   stripeAccount: bankAccount.stripeAccountId,  
+  //   // });
 
-    // Payout to bank
-    const payout = await stripe.payouts.create(
-      {
-        amount: amountInCent,
-        currency: 'mxn',
-      },
-      {
-        stripeAccount: bankAccount.stripeAccountId,
-      },
-    );
+  //   // Payout to bank
+  //   const payout = await stripe.payouts.create(
+  //     {
+  //       amount: amountInCent,
+  //       currency: 'mxn',
+  //     },
+  //     {
+  //       stripeAccount: bankAccount.stripeAccountId,
+  //     },
+  //   );
 
-    if (!payout) {
-      throw new ApiError(500, "Failed to complete the payout.");
-    }
+  //   if (!payout) {
+  //     throw new ApiError(500, "Failed to complete the payout.");
+  //   }
 
-    console.log("Transfer ID:", transfer.id);
-    console.log("Payout ID:", payout);
-    return payout;
+  //   return payout;
 
-  } catch (error) {
-    if (error.code === 'balance_insufficient') {
-      throw new ApiError(400, "Insufficient funds in Stripe balance. Please wait for payments are available.");
-    }
-    console.error("Payout Error:", error);
-    throw new ApiError(500, "Internal server error: " + error.message);
-  }
+  // } catch (error) {
+  //   if (error.code === 'balance_insufficient') {
+  //     throw new ApiError(400, "Insufficient funds in Stripe balance. Please wait for payments are available.");
+  //   }
+  //   console.error("Payout Error:", error);
+  //   throw new ApiError(500, "Internal server error: " + error.message);
+  // }
 };
 
 

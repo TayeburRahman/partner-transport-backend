@@ -22,12 +22,12 @@ async function main() {
     const socketIO = new Server(server, {
       pingTimeout: 60000,
       cors: {
-        origin: '*',
+        origin: "*",
+        methods: ["GET", "POST"],
       },
     });
 
-    socket(socketIO);
-    // Assign Socket.IO to globally available.
+    socket(socketIO); 
     global.io = socketIO;
  
     // handle unhandled promise rejections
