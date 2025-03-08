@@ -183,9 +183,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
 
     const variable = await Variable.findOne();
     const surcharge = Number(variable?.surcharge || 0);
-    const partnerAmount = totalAmount - (totalAmount * surcharge) / 100;
-
-    console.log("amount", amount, 'totalAmount', totalAmount, "partnerAmount", partnerAmount,"surcharge", surcharge)
+    const partnerAmount = totalAmount - (totalAmount * surcharge) / 100; 
  
     const transactionData = {
       serviceId,
@@ -208,16 +206,6 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     };
 
     const newTransaction = await Transaction.create(transactionData); 
-
-     const { pesoCost } = await VariableCount.convertDollarToPeso(partnerAmount); 
-
-     console.log("transferAmount", pesoCost)
-
-    const transfer = await stripe.transfers.create({
-      amount: Math.round(pesoCost * 100),
-      currency: 'mxn',
-      destination: stripeAccountId,
-    });
 
     // console.log("Transfer successful:", transfer);
 

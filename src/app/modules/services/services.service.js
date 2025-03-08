@@ -799,7 +799,13 @@ const updateServicesStatusUser = async (req) => {
       }
 
       // Convert USD to MXN for the payout
-      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent);
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent); 
+
+      const transfer = await stripe.transfers.create({
+        amount: Math.round(pesoCost),
+        currency: 'mxn',
+        destination: bankAccount.stripeAccountId,
+      });
 
       // Perform the payout in MXN
       const payout = await stripe.payouts.create(
@@ -1024,7 +1030,13 @@ const updateSellServicesStatusPartner = async (req) => {
       }
 
       // Convert USD to MXN for the payout
-      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent);
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent); 
+
+      const transfer = await stripe.transfers.create({
+        amount: Math.round(pesoCost),
+        currency: 'mxn',
+        destination: bankAccount.stripeAccountId,
+      });
 
       // Perform the payout in MXN
       const payout = await stripe.payouts.create(
