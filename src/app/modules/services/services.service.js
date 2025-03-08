@@ -155,8 +155,8 @@ const getDetails = async (req) => {
   const { serviceId } = req.params;
   const { role } = req.user;
 
-  const variable = await Variable.findOne();
-  const surcharge = Number(variable?.surcharge || 0);
+  // const variable = await Variable.findOne();
+  // const surcharge = Number(variable?.surcharge || 0);
 
   const result = await Services.findById(serviceId)
     .populate({
@@ -188,7 +188,8 @@ const getDetails = async (req) => {
     if (result.bids && Array.isArray(result.bids)) {
       result.bids = result.bids.map((bid) => ({
         ...bid,
-        price: bid.price + (bid.price * surcharge) / 100,
+        price: bid.price 
+        // + (bid.price * surcharge) / 100,
       }));
     }
   }
@@ -584,14 +585,15 @@ const getUserServicesWithinOneHour = async (req) => {
       select: "_id category",
     });
 
-  const variable = await Variable.findOne();
-  const surcharge = Number(variable?.surcharge || 0);
+  // const variable = await Variable.findOne();
+  // const surcharge = Number(variable?.surcharge || 0);
 
   if (role === ENUM_USER_ROLE.USER) {
     services = services.map((data) => ({
       ...data._doc,
       winBid: data.mainService === 'move'
-        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100
+        ? Number(data.winBid)
+        //  + (Number(data.winBid) * surcharge) / 100
         : data.winBid,
     }));
   }
@@ -612,8 +614,8 @@ const filterUserByHistory = async (req) => {
   const { userId, role } = req.user;
   let service;
 
-  const variable = await Variable.findOne();
-  const surcharge = Number(variable?.surcharge || 0);
+  // const variable = await Variable.findOne();
+  // const surcharge = Number(variable?.surcharge || 0);
 
   if (serviceType === "move") {
     service = ["Goods", "Waste"];
@@ -654,7 +656,9 @@ const filterUserByHistory = async (req) => {
   if (role === ENUM_USER_ROLE.USER && serviceType === "move" && serviceStatus === "accepted") {
     result = result.map((data) => ({
       ...data._doc,
-      winBid: data.winBid ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 : null,
+      winBid: data.winBid ? Number(data.winBid)
+      //  + (Number(data.winBid) * surcharge) / 100 
+       : null,
     }));
   }
 

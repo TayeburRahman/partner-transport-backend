@@ -122,8 +122,8 @@ const getBitProfilePartner = async (req) => {
   const { bidId } = req.query;
   const {role} = req.user;
 
-  const variable = await Variable.findOne();
-  const surcharge = Number(variable?.surcharge || 0);  
+  // const variable = await Variable.findOne();
+  // const surcharge = Number(variable?.surcharge || 0);  
 
   let bids = await Bids.findById(bidId).populate("partner")
     .populate({ path: "service", select: "mainService" });
@@ -133,7 +133,8 @@ const getBitProfilePartner = async (req) => {
 
   if(role === ENUM_USER_ROLE.USER && bids.service.mainService === 'move'){ 
     if (bids.price) {
-      bids.price =  Number(bids.price) + (bids.price * surcharge) / 100; 
+      bids.price =  Number(bids.price) 
+      // + (bids.price * surcharge) / 100; 
     } 
   }  
 
@@ -255,16 +256,16 @@ const orderDetailsPageFileClaim = async (req) => {
       select: '_id category'
     })
 
-    const variable = await Variable.findOne();
-    const surcharge = Number(variable?.surcharge || 0); 
+    // const variable = await Variable.findOne();
+    // const surcharge = Number(variable?.surcharge || 0); 
 
     if(role === ENUM_USER_ROLE.USER && service.mainService === 'move'){ 
       if (service.price) {
-        service.winBid =  Number(service.winBid) + (service.winBid * surcharge) / 100; 
+        service.winBid =  Number(service.winBid)
+        //  + (service.winBid * surcharge) / 100; 
       } 
     }  
 
-  // .select('_id category numberOfItems scheduleTime scheduleTime scheduleDate loadingAddress deadlineTime loadingLocation paymentStatus deadlineDate unloadingAddress unloadingLocation updatedAt image winBid deadlineTime')
   const payment = await Transaction.findOne({ serviceId }).select('amount paymentMethod',)
   return { service, payment }
 }
@@ -302,10 +303,6 @@ const postReviewMove = async (req) => {
   if (!partner) {
     throw new ApiError(404, "Partner not found.");
   }
-
-  // if (service.isReviewed) {
-  //   throw new ApiError(400, "You have already reviewed this service.");
-  // }
 
   const result = await Review.create({
     comment: comment.trim(),
