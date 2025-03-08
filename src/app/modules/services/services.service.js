@@ -858,8 +858,8 @@ const updateServicesStatusUser = async (req) => {
         span: "Estado del Servicio Actualizado"
       },
       message: {
-        eng: `The service status has been updated to "${status}".`,
-        span: `El estado del servicio ha sido actualizado a "${status}".`
+        eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount.stripeAccountId.slice(-4)}.`,
+        span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount.stripeAccountId.slice(-4)}.`
       },
       user: service.confirmedPartner,
       userType: "Partner",
@@ -998,7 +998,7 @@ const updateSellServicesStatusPartner = async (req) => {
       // receivedUser.wallet = (receivedUser.wallet || 0) + amount;
       // await receivedUser.save();
 
-      const amountInCent = amount * 100; // Ensure this is in cents for Stripe.
+      const amountInCent = amount * 100; 
 
       const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
@@ -1058,8 +1058,8 @@ const updateSellServicesStatusPartner = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-          eng: `You have received a payment of ${amount}(USD) for the service.`,
-          span: `Has recibido un pago de ${amount}(USD) por el servicio.`
+          eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount.stripeAccountId.slice(-4)}.`,
+          span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount.stripeAccountId.slice(-4)}.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
