@@ -122,22 +122,29 @@ const getBitProfilePartner = async (req) => {
   const { bidId } = req.query;
   const {role} = req.user;
 
-  // const variable = await Variable.findOne();
-  // const surcharge = Number(variable?.surcharge || 0);  
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);  
 
   let bids = await Bids.findById(bidId).populate("partner")
     .populate({ path: "service", select: "mainService" });
   if (!bids) {
     throw new ApiError(404, "Bids not found!");
-  }
+  } 
 
   if(role === ENUM_USER_ROLE.USER && bids.service.mainService === 'move'){ 
     if (bids.price) {
       bids.price =  Number(bids.price) 
-      // + (bids.price * surcharge) / 100; 
+      + (bids.price * surcharge) / 100; 
     } 
-  }  
-
+  } 
+  
+  if( role === ENUM_USER_ROLE.USER && bids.service.mainService === 'sell'){
+    if(bids.price) {
+      bids.price =  Number(bids.price) 
+      - (bids.price * surcharge) / 100;
+    }
+  }
+  console.log("bids.price==", bids.price)
   const partnerId = bids.partner._id
   const all_review = await Review.find({ partnerId })
     .populate({
@@ -190,18 +197,26 @@ const filterBidsByHistory = async (req) => {
   const skip = (page - 1) * limit;
 
   try {
+    console.log("bitStatus",bitStatus)
     const bidQuery = {
       partner: userId,
       status: bitStatus || { $in: ["Win", "Outbid", "Pending"] },
     };
 
+    console.log("bidQuery",bidQuery)
+
     const totalBids = await Bids.countDocuments(bidQuery);
+
+    console.log("totalBids",totalBids)
 
     const serviceQuery = {
       ...(serviceType && { service: serviceType }),
       ...(categories && { category: { $in: categories } }),
       ...(serviceStatus && { status: serviceStatus }),
     };
+    console.log("serviceStatus",serviceStatus)
+
+    console.log("serviceQuery",serviceQuery)
 
     const filteredBids = await Bids.find(bidQuery)
       .populate({
@@ -217,12 +232,14 @@ const filterBidsByHistory = async (req) => {
           { path: "category", select: "_id category" },
         ],
       })
+      .sort({ createdAt: -1 }) 
       .skip(skip)
       .limit(parseInt(limit))
       .exec();
 
-    const result = filteredBids.filter((bid) => bid.service);
+      // console.log("filteredBids", filteredBids)
 
+    const result = filteredBids.filter((bid) => bid.service);
     const pisoVariable = await VariableCount.getPisoVariable();
 
     return {
@@ -256,13 +273,19 @@ const orderDetailsPageFileClaim = async (req) => {
       select: '_id category'
     })
 
-    // const variable = await Variable.findOne();
-    // const surcharge = Number(variable?.surcharge || 0); 
+    const variable = await Variable.findOne();
+    const surcharge = Number(variable?.surcharge || 0); 
 
     if(role === ENUM_USER_ROLE.USER && service.mainService === 'move'){ 
       if (service.price) {
         service.winBid =  Number(service.winBid)
-        //  + (service.winBid * surcharge) / 100; 
+         + (service.winBid * surcharge) / 100; 
+      } 
+    }  
+    if(role === ENUM_USER_ROLE.USER && service.mainService === 'sell'){ 
+      if (service.price) {
+        service.winBid =  Number(service.winBid)
+         - (service.winBid * surcharge) / 100; 
       } 
     }  
 
@@ -378,8 +401,14 @@ const createFileClaim = async (req, res) => {
   }) 
 
   await Notification.create({
-    title: "New File Claim Submitted",
-    message: `${user.name} has submitted a new file claim for Service ID: ${serviceId}. Please review the details.`,
+    title: {
+      eng: "New File Claim Submitted",
+      span: "Se ha enviado una nueva reclamación de archivo"
+    },
+    message: {
+      eng: `${user.name} has submitted a new file claim for Service ID: ${serviceId}. Please review the details.`,
+      span: `${user.name} ha enviado una nueva reclamación de archivo para el Servicio ID: ${serviceId}. Por favor, revise los detalles.`
+    },
     userType:"Admin",
     types: 'none',
     admin: true,

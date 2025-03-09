@@ -82,6 +82,8 @@ const getMessagesServices = async (req) => {
   const { senderId, serviceId, receiverId, page = 1, limit = 20 } = req.query;
   const {userId} = req.user; 
 
+  console.log("Partner", senderId, 'receiverId',receiverId)
+
   try {
     if(!senderId || !receiverId){
       throw new ApiError(httpStatus.BAD_REQUEST, "Missing participant ids.");
@@ -105,7 +107,7 @@ const getMessagesServices = async (req) => {
         message: "No conversation found between participants.",
       };
     }
-//  -------------
+    // -------------
     const findParticipant = async (id) => {
       let participant =
         (await User.findOne({ _id: id })) ||

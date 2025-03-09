@@ -155,8 +155,8 @@ const getDetails = async (req) => {
   const { serviceId } = req.params;
   const { role } = req.user;
 
-  // const variable = await Variable.findOne();
-  // const surcharge = Number(variable?.surcharge || 0);
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);
 
   const result = await Services.findById(serviceId)
     .populate({
@@ -184,15 +184,29 @@ const getDetails = async (req) => {
     throw new ApiError(404, "Service not found");
   }
 
+  console.log("result.bids",result.bids)
+
   if (role === ENUM_USER_ROLE.USER && result.mainService === 'move') {
     if (result.bids && Array.isArray(result.bids)) {
       result.bids = result.bids.map((bid) => ({
         ...bid,
         price: bid.price 
-        // + (bid.price * surcharge) / 100,
+        + (bid.price * surcharge) / 100,
       }));
     }
   }
+  
+  if (role === ENUM_USER_ROLE.USER && result.mainService === 'sell'){
+    if (result.bids && Array.isArray(result.bids)) {
+      result.bids = result.bids.map((bid) => ({
+        ...bid,
+        price: bid.price 
+        - (bid.price * surcharge) / 100,
+      }));
+    }
+  }
+
+  console.log("result.bids",result.bids)
 
   const pisoVariable = await VariableCount.getPisoVariable();
 
@@ -552,6 +566,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const formattedStartTime = formatTimeTo12hrs(now);
 
   const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000);
+  // console.log("getUserServicesWithinOneHour",getUserServicesWithinOneHour)
   const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
 
   const query = {
@@ -572,6 +587,7 @@ const getUserServicesWithinOneHour = async (req) => {
   }
 
   let services = await Services.find(query)
+  .sort({createdAt: -1})
     .populate({
       path: "confirmedPartner",
       select: "name email profile_image phone_number rating",
@@ -585,16 +601,14 @@ const getUserServicesWithinOneHour = async (req) => {
       select: "_id category",
     });
 
-  // const variable = await Variable.findOne();
-  // const surcharge = Number(variable?.surcharge || 0);
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);
 
   if (role === ENUM_USER_ROLE.USER) {
     services = services.map((data) => ({
       ...data._doc,
       winBid: data.mainService === 'move'
-        ? Number(data.winBid)
-        //  + (Number(data.winBid) * surcharge) / 100
-        : data.winBid,
+        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 : Number(data.winBid) - (Number(data.winBid) * surcharge) / 100,
     }));
   }
 
@@ -614,8 +628,8 @@ const filterUserByHistory = async (req) => {
   const { userId, role } = req.user;
   let service;
 
-  // const variable = await Variable.findOne();
-  // const surcharge = Number(variable?.surcharge || 0);
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);
 
   if (serviceType === "move") {
     service = ["Goods", "Waste"];
@@ -657,7 +671,16 @@ const filterUserByHistory = async (req) => {
     result = result.map((data) => ({
       ...data._doc,
       winBid: data.winBid ? Number(data.winBid)
-      //  + (Number(data.winBid) * surcharge) / 100 
+       + (Number(data.winBid) * surcharge) / 100 
+       : null,
+    }));
+  }
+
+  if (role === ENUM_USER_ROLE.USER && serviceType === "sell" && serviceStatus === "accepted") {
+    result = result.map((data) => ({
+      ...data._doc,
+      winBid: data.winBid? Number(data.winBid)
+       - (Number(data.winBid) * surcharge) / 100 
        : null,
     }));
   }
@@ -751,7 +774,7 @@ const updateServicesStatusUser = async (req) => {
   }
 
   try {
-    const transaction = await Transaction.findOne({ serviceId });
+    const transaction = await Transaction.findOne({ serviceId }); 
     if (!transaction || transaction.paymentStatus !== "Completed") {
       throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
     }
@@ -765,9 +788,11 @@ const updateServicesStatusUser = async (req) => {
       throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
     }
 
-    if (status === "delivery-confirmed") {
+    if (status === "delivery-confirmed") { 
       const amount = Number(transaction.partnerAmount);
-      const amountInCent = amount * 100; // Ensure this is in cents for Stripe.
+
+      receivedUser.wallet = (receivedUser.wallet || 0) + amount;
+      await receivedUser.save(); 
 
       const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
@@ -799,10 +824,9 @@ const updateServicesStatusUser = async (req) => {
       }
 
       // Convert USD to MXN for the payout
-      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent); 
-
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amount); 
       const transfer = await stripe.transfers.create({
-        amount: Math.round(pesoCost),
+        amount: Math.round(pesoCost * 100), 
         currency: 'mxn',
         destination: bankAccount.stripeAccountId,
       });
@@ -810,7 +834,7 @@ const updateServicesStatusUser = async (req) => {
       // Perform the payout in MXN
       const payout = await stripe.payouts.create(
         {
-          amount: Math.round(pesoCost), // Ensure the amount is rounded correctly
+          amount: Math.round(pesoCost * 100),
           currency: 'mxn',
         },
         {
@@ -829,8 +853,8 @@ const updateServicesStatusUser = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-          eng: `You have received a payment of ${amount}(USD) for the service.`,
-          span: `Has recibido un pago de ${amount}(USD) por el servicio.`
+         eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount.stripeAccountId.slice(-4)}.`,
+         span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount.stripeAccountId.slice(-4)}.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
@@ -858,8 +882,8 @@ const updateServicesStatusUser = async (req) => {
         span: "Estado del Servicio Actualizado"
       },
       message: {
-        eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount.stripeAccountId.slice(-4)}.`,
-        span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount.stripeAccountId.slice(-4)}.`
+           eng: `The service status has been updated to "${status}".`,
+          span: `El estado del servicio ha sido actualizado a "${status}".`
       },
       user: service.confirmedPartner,
       userType: "Partner",
@@ -995,10 +1019,8 @@ const updateSellServicesStatusPartner = async (req) => {
     if (status === "delivery-confirmed") {
       const amount = Number(transaction.partnerAmount); 
 
-      // receivedUser.wallet = (receivedUser.wallet || 0) + amount;
-      // await receivedUser.save();
-
-      const amountInCent = amount * 100; 
+      receivedUser.wallet = (receivedUser.wallet || 0) + amount;
+      await receivedUser.save(); 
 
       const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
@@ -1030,10 +1052,9 @@ const updateSellServicesStatusPartner = async (req) => {
       }
 
       // Convert USD to MXN for the payout
-      const { pesoCost } = await VariableCount.convertDollarToPeso(amountInCent); 
-
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amount); 
       const transfer = await stripe.transfers.create({
-        amount: Math.round(pesoCost),
+        amount: Math.round(pesoCost * 100), 
         currency: 'mxn',
         destination: bankAccount.stripeAccountId,
       });
@@ -1041,7 +1062,7 @@ const updateSellServicesStatusPartner = async (req) => {
       // Perform the payout in MXN
       const payout = await stripe.payouts.create(
         {
-          amount: Math.round(pesoCost), // Ensure the amount is rounded correctly
+          amount: Math.round(pesoCost * 100),
           currency: 'mxn',
         },
         {

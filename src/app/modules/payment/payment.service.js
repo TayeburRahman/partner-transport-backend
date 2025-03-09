@@ -25,8 +25,6 @@ const createCheckoutSessionStripe = async (req) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Missing required fields.');
     }
 
-    console.log("price, currency", price, currency)
-
     let user;
     let payUserRole;
     if (role === ENUM_USER_ROLE.USER) {
@@ -41,9 +39,15 @@ const createCheckoutSessionStripe = async (req) => {
     }
 
     const service = await Services.findById(serviceId);
+    console.log("win bit:", service.winBid)
     if (!service) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service ID.');
     }
+
+    if (!service?.winBid) {
+      throw new ApiError(404, "No Partner accepted yat!");
+    }
+  
 
     let receiveUser;
     let receiveUserRole;
@@ -130,8 +134,6 @@ const createCheckoutSessionStripe = async (req) => {
   }
 };
 
-
-
 const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
   const sessionId = req.query.session_id;
 
@@ -174,16 +176,24 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     await service.save();
 
     let amount = Number(session.amount_total) / 100; 
-    let totalAmount = amount;
- 
+
+    let totalAmount = Number(amount);
     if (session.currency === 'mxn') {
       const { dollarCost } = await VariableCount.convertPesoToDollar(amount);
       totalAmount = dollarCost;
     }
 
-    const variable = await Variable.findOne();
-    const surcharge = Number(variable?.surcharge || 0);
-    const partnerAmount = totalAmount - (totalAmount * surcharge) / 100; 
+    let receiverAmount = Number(service.winBid);
+
+    if (service.mainService === "sell") {
+       const variable = await Variable.findOne();
+       const surcharge = Number(variable?.surcharge || 0);
+      receiverAmount = Number(service.winBid) - (Number(service.winBid) * surcharge) / 100;   
+    }
+
+    // const variable = await Variable.findOne();
+    // const surcharge = Number(variable?.surcharge || 0);
+    // const receiverAmount = totalAmount - (totalAmount * surcharge) / 100; 
  
     const transactionData = {
       serviceId,
@@ -193,7 +203,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       receiveUserType,
       paymentMethod: 'Stripe',
       amount: totalAmount,  
-      partnerAmount: partnerAmount,  
+      partnerAmount: receiverAmount,  
       paymentStatus: "Completed",
       isFinish: false,
       payType: service.mainService,
@@ -205,8 +215,11 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       }
     };
 
-    const newTransaction = await Transaction.create(transactionData); 
+    console.log("transactionData", transactionData)
+    // 6.03 -> user 
+    // 5.027
 
+    const newTransaction = await Transaction.create(transactionData); 
     // console.log("Transfer successful:", transfer);
 
     return { status: "success", result: newTransaction };
@@ -216,7 +229,6 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     return { status: "failed", message: "Payment execution failed", error: error.message };
   }
 };
-
 
 const paymentStatusCancel = async (req, res) => {
   return { status: "canceled" }
