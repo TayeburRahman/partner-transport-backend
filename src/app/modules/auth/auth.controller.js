@@ -145,11 +145,12 @@ const OAuthLoginAccount = catchAsync(async (req, res) => {
 const phoneVerifications = catchAsync(async (req, res) => {
    const phone = req.body.phone;
    const countryCode = req.body.countryCode; 
-   const user= req.user;
+   const user= req.user; 
    const verifyOtp = createActivationToken().activationCode;
    const message = 'Your verification code is: ' + verifyOtp; 
    const phoneNumber = phone; 
-   const data = await sendPhoneVerificationsMessage(message, phoneNumber, verifyOtp, user, countryCode, phone)
+
+   const data = await sendPhoneVerificationsMessage(message, phoneNumber, verifyOtp, user, countryCode, phone) 
 
   sendResponse(res, {
     statusCode: 200,

@@ -772,12 +772,22 @@ const generateRandomPassword = () => {
 };  
 
 const phoneOTPVerifications = async (payload,user) => {
-  const {authId, userId, role}= user
+  const {authId, userId, role}= user;
   const findUser = await Auth.findById(authId)
-  const userDb = await User.findById(userId)
+  // console.log("userId", userId)
+  let userDb;
+  if(role === ENUM_USER_ROLE.PARTNER){
+   userDb = await Partner.findById(userId) 
+  }else if(role === ENUM_USER_ROLE.USER){
+    userDb = await User.findById(userId)
+  }
 
-  if(!payload.phone || !payload.phone_c_code){
+  if(!payload.phone_number || !payload.phone_c_code){
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Phone number and country code are require.");
+  }
+
+  if(!userDb){
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "User not found.");
   }
 
   if(!findUser){
@@ -790,8 +800,8 @@ const phoneOTPVerifications = async (payload,user) => {
 
   findUser.verifyOtp = null; 
   findUser.otpVerify = true; 
-  await findUser.save()
-  userDb.phone_number= payload.phone_number
+  await findUser.save() 
+  userDb.phone_number = payload.phone_number.toString()
   userDb.isPhoneNumberVerified = true;
   userDb.phone_c_code= payload.phone_c_code
   await userDb.save()

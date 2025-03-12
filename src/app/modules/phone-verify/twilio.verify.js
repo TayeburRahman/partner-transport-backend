@@ -31,6 +31,8 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             to: phoneNumber
         }); 
 
+        // console.log("result==",result)
+
         if (result) {
             const update = await Auth.findByIdAndUpdate(user.authId, { verifyOtp })
             if (!update) {
