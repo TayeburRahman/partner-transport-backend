@@ -16,6 +16,10 @@ const categorySchema = new Schema(
       type: String,
       required: true,
     },
+    category_spain: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
