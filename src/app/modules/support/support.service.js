@@ -166,6 +166,7 @@ const createTicket = async (req) => {
         .populate({
           path: 'user', 
         })
+        .sort({createdAt: -1})
         .skip(skip)
         .limit(parseInt(limit, 10));
   
