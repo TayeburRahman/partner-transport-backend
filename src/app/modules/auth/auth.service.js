@@ -771,21 +771,30 @@ const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-10);
 };  
 
-const phoneOTPVerifications = async (otp,user) => {
+const phoneOTPVerifications = async (payload,user) => {
   const {authId, userId, role}= user
   const findUser = await Auth.findById(authId)
+  const userDb = await User.findById(userId)
+
+  if(!payload.phone || !payload.phone_c_code){
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Phone number and country code are require.");
+  }
 
   if(!findUser){
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "User not found.");
   }
 
-  if(findUser?.verifyOtp !== otp){
+  if(findUser?.verifyOtp !== payload?.otp){
     throw new ApiError(httpStatus.FORBIDDEN, "Invalid your OTP.");
   }
 
-  findUser.verifyOtp = null;
-  findUser.otpVerify = true;
+  findUser.verifyOtp = null; 
+  findUser.otpVerify = true; 
   await findUser.save()
+  userDb.phone_number= payload.phone_number
+  userDb.isPhoneNumberVerified = true;
+  userDb.phone_c_code= payload.phone_c_code
+  await userDb.save()
   return findUser;
 }; 
 

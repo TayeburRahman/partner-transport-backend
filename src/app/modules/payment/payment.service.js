@@ -530,7 +530,6 @@ const saveStripeAccount = async (account, user, userid, userType, address, dob, 
   const saveData = await newStripeAccount.save();
 
   return saveData
-
 };
 
 // =================== 

@@ -160,9 +160,9 @@ const phoneVerifications = catchAsync(async (req, res) => {
 });
 
 const phoneOTPVerifications = catchAsync(async (req, res) => {
-  const otp = req.body.otp;  
+  const payload = req.body;  
   const user = req.user;  
-  const data = await AuthService.phoneOTPVerifications(otp, user)
+  const data = await AuthService.phoneOTPVerifications(payload, user)
 
  sendResponse(res, {
    statusCode: 200,
