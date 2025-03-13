@@ -565,6 +565,8 @@ const getUserServicesWithinOneHour = async (req) => {
   const formattedDate = formatDate(now);
   // const formattedStartTime = formatTimeTo12hrs(now);
 
+  console.log("extension",formattedDate)
+
   const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
   const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
 
@@ -681,11 +683,7 @@ const filterUserByHistory = async (req) => {
        - (Number(data.winBid) * surcharge) / 100 
        : null,
     }));
-  }
-
-  console.log("lcsak",result?.length);
-
-
+  } 
   const pisoVariable = await VariableCount.getPisoVariable();
   return { result, meta, piso: pisoVariable };
 };
