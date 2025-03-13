@@ -565,8 +565,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const formattedDate = formatDate(now);
   const formattedStartTime = formatTimeTo12hrs(now);
 
-  const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000);
-  // console.log("getUserServicesWithinOneHour",getUserServicesWithinOneHour)
+  const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
   const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
 
   const query = {
