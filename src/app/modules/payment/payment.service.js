@@ -2,7 +2,7 @@ const httpStatus = require("http-status");
 const Partner = require("../partner/partner.model");
 const User = require("../user/user.model");
 const Services = require("../services/services.model");
-const { ENUM_USER_ROLE } = require("../../../utils/enums");
+const { ENUM_USER_ROLE, ENUM_SERVICE_STATUS } = require("../../../utils/enums");
 const config = require("../../../config");
 const ApiError = require("../../../errors/ApiError");
 const { Transaction, StripeAccount } = require("./payment.model");
@@ -11,20 +11,42 @@ const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.servic
 const Admin = require("../admin/admin.model");
 const Variable = require("../variable/variable.model");
 const VariableCount = require("../variable/variable.count");
+const { ServicesService } = require("../services/services.service");
+const { Bids } = require("../bid/bid.model");
+const { NotificationService } = require("../notification/notification.service");
+const { default: mongoose } = require("mongoose");
 
 const DOMAIN_URL = process.env.RESET_PASS_UI_LINK;
 
 //Stripe Payment =====================
 const createCheckoutSessionStripe = async (req) => {
   try {
-    const { serviceId, price, currency } = req.body;
+    const { serviceId, price, currency, partnerId } = req.body;
     const { userId, role } = req.user;
-
-    // Validate required fields
-    if (!currency || !Number(price) || !serviceId) {
+ 
+    if (!currency || !Number(price) || !serviceId || !partnerId) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Missing required fields.');
-    }
+    } 
 
+      const partner = await Partner.findOne({ _id: partnerId }); 
+      if (!partner) {
+        throw new ApiError( 404,  "Partner account is Deactivated, please find another partner." );
+      }
+      const service = await Services.findById(serviceId); 
+      if (!service) {
+        throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service ID.');
+      }
+
+        const bidDetails = await Bids.findOne({
+          service: serviceId,
+          partner: partnerId,
+        });
+
+        if (!bidDetails?.price) {
+          throw new ApiError(404, "Bid not found for this service and partner.");
+        }
+
+      
     let user;
     let payUserRole;
     if (role === ENUM_USER_ROLE.USER) {
@@ -37,17 +59,12 @@ const createCheckoutSessionStripe = async (req) => {
       user = await Admin.findById(userId);
       payUserRole = 'Admin';
     }
+ 
+    // if (!service?.winBid) {
+    //   throw new ApiError(404, "No Partner accepted yat!");
+    // }
 
-    const service = await Services.findById(serviceId);
-    console.log("win bit:", service.winBid)
-    if (!service) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service ID.');
-    }
-
-    if (!service?.winBid) {
-      throw new ApiError(404, "No Partner accepted yat!");
-    }
-  
+    console.log("partnerId",partnerId)
 
     let receiveUser;
     let receiveUserRole;
@@ -55,7 +72,7 @@ const createCheckoutSessionStripe = async (req) => {
       receiveUser = service.user;
       receiveUserRole = 'User';
     } else if (service.mainService === "move") {
-      receiveUser = service.confirmedPartner;
+      receiveUser = new mongoose.Types.ObjectId(partnerId);
       receiveUserRole = 'Partner';
     } else {
       throw new ApiError(httpStatus.NOT_FOUND, 'Invalid service type.');
@@ -93,6 +110,8 @@ const createCheckoutSessionStripe = async (req) => {
     } catch (error) {
       throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
     }
+
+    console.log("price====", currency, price)
  
     const unitAmount =  Number(price) * 100;
  
@@ -109,7 +128,9 @@ const createCheckoutSessionStripe = async (req) => {
         receiveUser: receiveUser.toHexString(),
         receiveUserType: receiveUserRole,
         serviceId: serviceId,
-        stripeAccountId: bankAccount.stripeAccountId
+        stripeAccountId: bankAccount.stripeAccountId,
+        partnerId: partnerId,
+        winBid: bidDetails.price,
       },
       line_items: [
         {
@@ -125,8 +146,7 @@ const createCheckoutSessionStripe = async (req) => {
         },
       ],
     });
-
-    // Return the checkout session URL
+ 
     return { url: session.url };
 
   } catch (error) {
@@ -154,8 +174,8 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       return { status: "failed", message: "Payment not approved." };
     }
 
-    const { receiveUser, payUser, payUserType, receiveUserType, serviceId, stripeAccountId } = session.metadata;
-
+    const { receiveUser, payUser, payUserType, receiveUserType, serviceId, winBid, partnerId} = session.metadata;
+    // const accepted = await ServicesService.conformPartner(serviceId, partnerId)
     const service = await Services.findById(serviceId);
     if (!service) {
       return {
@@ -177,23 +197,45 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
 
     let amount = Number(session.amount_total) / 100; 
 
+  
     let totalAmount = Number(amount);
     if (session.currency === 'mxn') {
       const { dollarCost } = await VariableCount.convertPesoToDollar(amount);
       totalAmount = dollarCost;
     }
 
-    let receiverAmount = Number(service.winBid);
-
+    let receiverAmount = Number(winBid); 
     if (service.mainService === "sell") {
        const variable = await Variable.findOne();
        const surcharge = Number(variable?.surcharge || 0);
-      receiverAmount = Number(service.winBid) - (Number(service.winBid) * surcharge) / 100;   
-    }
+      receiverAmount = Number(winBid) - (Number(winBid) * surcharge) / 100;   
+    } 
 
-    // const variable = await Variable.findOne();
-    // const surcharge = Number(variable?.surcharge || 0);
-    // const receiverAmount = totalAmount - (totalAmount * surcharge) / 100; 
+       await Services.findByIdAndUpdate(
+        serviceId,
+        {
+          confirmedPartner: partnerId,
+          status: ENUM_SERVICE_STATUS.ACCEPTED,
+          winBid: winBid,
+        },
+        { new: true }
+      );
+
+       const bulkOps = [
+       {
+         updateMany: {
+           filter: { service: serviceId },
+           update: { $set: { status: "Outbid" } },
+         },
+       },
+       {
+         updateOne: {
+           filter: { service: serviceId, partner: partnerId },
+           update: { $set: { status: "Win" } },
+         },
+       },
+     ]; 
+     await Bids.bulkWrite(bulkOps);
  
     const transactionData = {
       serviceId,
@@ -215,12 +257,22 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       }
     };
 
-    console.log("transactionData", transactionData)
-    // 6.03 -> user 
-    // 5.027
-
     const newTransaction = await Transaction.create(transactionData); 
-    // console.log("Transfer successful:", transfer);
+
+    await NotificationService.sendNotification({
+      title: {
+        eng: "You’ve Won the Bid!",
+        span: "¡Has Ganado la Oferta!"
+      },
+      message: {
+        eng: "Congratulations! Your bid for service has been accepted.",
+        span: "¡Felicidades! Tu oferta por el servicio ha sido aceptada."
+      },
+      user: partnerId,
+      userType: 'Partner',
+      types: 'service',
+      getId: serviceId,
+    });
 
     return { status: "success", result: newTransaction };
 
