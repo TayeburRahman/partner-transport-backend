@@ -564,12 +564,12 @@ const getUserServicesWithinOneHour = async (req) => {
 
   const formattedDate = formatDate(now);
   // const formattedStartTime = formatTimeTo12hrs(now);
-
-  console.log("extension",formattedDate)
+ 
 
   const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
   const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
 
+  console.log("extension",formattedDate,formattedStartRange)
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
     scheduleDate: {
