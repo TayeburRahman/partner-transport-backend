@@ -563,7 +563,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const now = new Date();
 
   const formattedDate = formatDate(now);
-  const formattedStartTime = formatTimeTo12hrs(now);
+  // const formattedStartTime = formatTimeTo12hrs(now);
 
   const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
   const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
@@ -573,8 +573,7 @@ const getUserServicesWithinOneHour = async (req) => {
     scheduleDate: {
       $lte: formattedDate,
     },
-    scheduleTime: {
-      // $gte: formattedStartRange, 
+    scheduleTime: { 
       $lte: formattedStartRange
     }
   };
