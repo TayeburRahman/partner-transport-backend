@@ -683,6 +683,8 @@ const filterUserByHistory = async (req) => {
     }));
   }
 
+  console.log("lcsak",result?.length);
+
 
   const pisoVariable = await VariableCount.getPisoVariable();
   return { result, meta, piso: pisoVariable };
