@@ -509,16 +509,16 @@ const rescheduledAction = async (req) => {
 //   const now = new Date();
 
 //   const formattedDate = formatDate(now); // Today's date
-//   const formattedStartTime = formatTimeTo12hrs(now); // Current time in 12-hour format
+//   const formattedStartTime = formatTimeTo12hrs(now); 
 
 //   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-//   const formattedEndTime = formatTimeTo12hrs(oneHourLater); // Time after 1 hour
+//   const formattedEndTime = formatTimeTo12hrs(oneHourLater);  
 
 //   const query = {
 //     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
-//     scheduleDate: formattedDate, // Only today's services
+//     scheduleDate: formattedDate,  
 //     scheduleTime: {
-//       $gte: formattedStartTime, // Greater than or equal to now
+//       // $gte: formattedStartTime, // Greater than or equal to now
 //       $lte: formattedEndTime,   // Less than or equal to next hour
 //     }
 //   };
@@ -563,19 +563,18 @@ const getUserServicesWithinOneHour = async (req) => {
   const now = new Date();
 
   const formattedDate = formatDate(now);
-  // const formattedStartTime = formatTimeTo12hrs(now);
- 
+  const formattedStartTime = formatTimeTo12hrs(now);
 
   const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
   const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
 
-  console.log("extension",formattedDate,oneHourBefore, formattedStartRange)
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
     scheduleDate: {
       $lte: formattedDate,
     },
-    scheduleTime: { 
+    scheduleTime: {
+      // $gte: formattedStartRange, 
       $lte: formattedStartRange
     }
   };
@@ -615,6 +614,7 @@ const getUserServicesWithinOneHour = async (req) => {
   // console.log("Fetched services:", services);
   return services;
 };
+ 
 function formatTimeTo12hrs(date) {
   let hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, '0');
