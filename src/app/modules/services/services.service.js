@@ -18,6 +18,12 @@ const { Bids } = require("../bid/bid.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
 const VariableCount = require("../variable/variable.count");
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
  
 
 // =USER============================= 
@@ -560,13 +566,13 @@ const rescheduledAction = async (req) => {
 
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
-  const now = new Date();
+  const now = dayjs().tz("America/Mexico_City");
+  const oneHourLater = now.add(1, 'hour');
 
-  const formattedDate = formatDate(now);
-  const formattedStartTime = formatTimeTo12hrs(now);
-
-  const oneHourBefore = new Date(now.getTime() + 60 * 60 * 1000); 
-  const formattedStartRange = formatTimeTo12hrs(oneHourBefore);
+  const formattedDate = formatDate(now.toDate());  
+  const formattedStartTime = formatTimeTo12hrs(now.toDate());  
+  const formattedEndTime = formatTimeTo12hrs(oneHourLater.toDate());  
+  // console.log(now,formattedDate, formattedStartTime, formattedEndTime)
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
@@ -575,7 +581,7 @@ const getUserServicesWithinOneHour = async (req) => {
     },
     scheduleTime: {
       // $gte: formattedStartRange, 
-      $lte: formattedStartRange
+      $lte: formattedEndTime
     }
   };
 
