@@ -572,7 +572,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const formattedDate = formatDate(now.toDate());  
   const formattedStartTime = formatTimeTo12hrs(now.toDate());  
   const formattedEndTime = formatTimeTo12hrs(oneHourLater.toDate());  
-  // console.log(now,formattedDate, formattedStartTime, formattedEndTime)
+  console.log(now,formattedDate, formattedStartTime, formattedEndTime)
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
