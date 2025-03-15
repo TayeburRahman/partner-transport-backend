@@ -74,7 +74,7 @@ function formatDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
+}       
 
 const createPostDB = async (req) => {
   try {
@@ -564,15 +564,20 @@ const rescheduledAction = async (req) => {
 //   return result;
 // };
 
+// const dateNow = req.query?.current_date
+// console.log(dateNow, now, formattedDate,oneHourLater,  formattedEndTime)
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
-  const now = dayjs().tz("America/Mexico_City");
-  const oneHourLater = now.add(1, 'hour');
+  const dateNow = req.query?.current_date
+  const now = new Date();
 
-  const formattedDate = formatDate(now.toDate());  
-  const formattedStartTime = formatTimeTo12hrs(now.toDate());  
-  const formattedEndTime = formatTimeTo12hrs(oneHourLater.toDate());  
-  console.log(now,formattedDate, formattedStartTime, formattedEndTime)
+  const formattedDate = formatDate(now);  
+  const formattedStartTime = formatTimeTo12hrs(now); 
+
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const formattedEndTime = formatTimeTo12hrs(oneHourLater);  
+  
+  console.log(now, dateNow)
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },

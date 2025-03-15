@@ -155,9 +155,7 @@ const createCheckoutSessionStripe = async (req) => {
 };
 
 const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
-  const sessionId = req.query.session_id;
-
-  console.log("Checking", sessionId);
+  const sessionId = req.query.session_id; 
 
   if (!sessionId) {
     return { status: "failed", message: "Missing session ID in the request." };
@@ -330,7 +328,6 @@ const stripeRefundPayment = async (req, res) => {
       amount: Math.round(amount * 100),
       // currency: 'usd',
     });
-
     service.paymentStatus = 'refunded';
     await service.save();
 

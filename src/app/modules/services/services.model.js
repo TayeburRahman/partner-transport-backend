@@ -215,6 +215,8 @@ const ServicesSchema = new Schema(
   }
 );
 
+// status === "completed" ||  paymentStatus !== 'paid'
+
 ServicesSchema.index({ loadingLocation: "2dsphere" });
 
 const Services = model("Services", ServicesSchema);
