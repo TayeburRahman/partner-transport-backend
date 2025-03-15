@@ -68,13 +68,7 @@ const validateInputs = (data, image) => {
 
   return images;
 };
-
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}       
+     
 
 const createPostDB = async (req) => {
   try {
@@ -566,18 +560,34 @@ const rescheduledAction = async (req) => {
 
 // const dateNow = req.query?.current_date
 // console.log(dateNow, now, formattedDate,oneHourLater,  formattedEndTime)
+// const formattedStartTime = formatTimeTo12hrs(dateNow); 
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}  
+
+function formatTimeTo12hrs(date) {
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+}
+
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
-  const dateNow = req.query?.current_date
+  const dateNow = new Date(req.query?.current_date)
   const now = new Date();
 
-  const formattedDate = formatDate(now);  
-  const formattedStartTime = formatTimeTo12hrs(now); 
+  const formattedDate = formatDate(dateNow);  
 
-  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
   const formattedEndTime = formatTimeTo12hrs(oneHourLater);  
   
-  console.log(now, dateNow)
+  console.log(now,req.query?.current_date ,dateNow)
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
@@ -626,13 +636,7 @@ const getUserServicesWithinOneHour = async (req) => {
   return services;
 };
  
-function formatTimeTo12hrs(date) {
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
-  return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-}
+ 
 
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
