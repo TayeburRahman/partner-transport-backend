@@ -5,7 +5,7 @@ const Services = require("../services/services.model");
 const VariableCount = require("../variable/variable.count");
 const calculateBedCosts = require("../variable/variable.count");
 const { Review, Bids, FileClaim } = require("./bid.model");
-const { Transaction } = require("../payment/payment.model");
+const { Transaction, StripeAccount } = require("../payment/payment.model");
 const User = require("../user/user.model");
 const { NotificationService } = require("../notification/notification.service");
 const QueryBuilder = require("../../../builder/queryBuilder");
@@ -14,6 +14,8 @@ const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.servic
 const Notification = require("../notification/notification.model");
 const { ENUM_USER_ROLE } = require("../../../utils/enums");
 const Variable = require("../variable/variable.model");
+const config = require("../../../config");
+const stripe = require("stripe")(config.stripe.stripe_secret_key);
 // const Bids = require("./bid.model");
 
 const partnerBidPost = async (req) => {
@@ -32,20 +34,50 @@ const partnerBidPost = async (req) => {
     throw new ApiError(404, "Service not found");
   }
 
-  if(foundService.mainService === "move"){
+  if (foundService.mainService === "move") {
     const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
     if (price < minimumBed) {
       throw new ApiError(400, 'offer_to_low');
-    }else if( price > maximumBed) {
-      throw new ApiError( 400, 'offer_to_high');
+    } else if (price > maximumBed) {
+      throw new ApiError(400, 'offer_to_high');
     }
-  }else if(foundService.mainService === "sell"){
-    if (price < foundService.minPrice ) {
-      throw new ApiError( 400, 'offer_to_low');
+
+    const bankAccount = await StripeAccount.findOne({ user: userId });
+
+    if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Your Bank Account Information is missing!");
     }
-  }else{
+
+    try {
+      const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+
+      if (!stripeAccount) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account not found or is invalid.");
+      }
+
+      if (!stripeAccount.charges_enabled) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
+      }
+
+      const externalAccount = stripeAccount.external_accounts.data.find(
+        (account) => account.id === bankAccount.externalAccountId
+      );
+
+      if (!externalAccount) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your External account not found or linked to Stripe.");
+      }
+
+    } catch (error) {
+      throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
+    }
+
+  } else if (foundService.mainService === "sell") {
+    if (price < foundService.minPrice) {
+      throw new ApiError(400, 'offer_to_low');
+    }
+  } else {
     throw new ApiError(400, "Invalid service type, please try later.");
-  } 
+  }
 
   const existingBid = await Bids.findOne({
     service: serviceId,
@@ -120,31 +152,32 @@ const partnerBidPost = async (req) => {
 
 const getBitProfilePartner = async (req) => {
   const { bidId } = req.query;
-  const {role} = req.user;
+  const { role } = req.user;
 
   const variable = await Variable.findOne();
-  const surcharge = Number(variable?.surcharge || 0);  
+  const surcharge = Number(variable?.surcharge || 0);
 
   let bids = await Bids.findById(bidId).populate("partner")
     .populate({ path: "service", select: "mainService" });
+
   if (!bids) {
     throw new ApiError(404, "Bids not found!");
-  } 
+  }
 
-  if(role === ENUM_USER_ROLE.USER && bids.service.mainService === 'move'){ 
+  if (role === ENUM_USER_ROLE.USER && bids.service.mainService === 'move') {
     if (bids.price) {
-      bids.price =  Number(bids.price) 
-      + (bids.price * surcharge) / 100; 
-    } 
-  } 
-  
-  if( role === ENUM_USER_ROLE.USER && bids.service.mainService === 'sell'){
-    if(bids.price) {
-      bids.price =  Number(bids.price) 
-      - (bids.price * surcharge) / 100;
+      bids.price = Number(bids.price)
+        + (bids.price * surcharge) / 100;
     }
   }
-  console.log("bids.price==", bids.price)
+
+  if (role === ENUM_USER_ROLE.USER && bids.service.mainService === 'sell') {
+    if (bids.price) {
+      bids.price = Number(bids.price)
+        - (bids.price * surcharge) / 100;
+    }
+  }
+
   const partnerId = bids.partner._id
   const all_review = await Review.find({ partnerId })
     .populate({
@@ -197,26 +230,26 @@ const filterBidsByHistory = async (req) => {
   const skip = (page - 1) * limit;
 
   try {
-    console.log("bitStatus",bitStatus)
+    console.log("bitStatus", bitStatus)
     const bidQuery = {
       partner: userId,
       status: bitStatus || { $in: ["Win", "Outbid", "Pending"] },
     };
 
-    console.log("bidQuery",bidQuery)
+    console.log("bidQuery", bidQuery)
 
     const totalBids = await Bids.countDocuments(bidQuery);
 
-    console.log("totalBids",totalBids)
+    console.log("totalBids", totalBids)
 
     const serviceQuery = {
       ...(serviceType && { service: serviceType }),
       ...(categories && { category: { $in: categories } }),
       ...(serviceStatus && { status: serviceStatus }),
     };
-    console.log("serviceStatus",serviceStatus)
+    console.log("serviceStatus", serviceStatus)
 
-    console.log("serviceQuery",serviceQuery)
+    console.log("serviceQuery", serviceQuery)
 
     const filteredBids = await Bids.find(bidQuery)
       .populate({
@@ -232,12 +265,12 @@ const filterBidsByHistory = async (req) => {
           { path: "category", select: "_id category" },
         ],
       })
-      .sort({ createdAt: -1 }) 
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .exec();
 
-      // console.log("filteredBids", filteredBids)
+    // console.log("filteredBids", filteredBids)
 
     const result = filteredBids.filter((bid) => bid.service);
     const pisoVariable = await VariableCount.getPisoVariable();
@@ -273,21 +306,21 @@ const orderDetailsPageFileClaim = async (req) => {
       select: '_id category'
     })
 
-    const variable = await Variable.findOne();
-    const surcharge = Number(variable?.surcharge || 0); 
+  const variable = await Variable.findOne();
+  const surcharge = Number(variable?.surcharge || 0);
 
-    if(role === ENUM_USER_ROLE.USER && service.mainService === 'move'){ 
-      if (service.price) {
-        service.winBid =  Number(service.winBid)
-         + (service.winBid * surcharge) / 100; 
-      } 
-    }  
-    if(role === ENUM_USER_ROLE.USER && service.mainService === 'sell'){ 
-      if (service.price) {
-        service.winBid =  Number(service.winBid)
-         - (service.winBid * surcharge) / 100; 
-      } 
-    }  
+  if (role === ENUM_USER_ROLE.USER && service.mainService === 'move') {
+    if (service.price) {
+      service.winBid = Number(service.winBid)
+        + (service.winBid * surcharge) / 100;
+    }
+  }
+  if (role === ENUM_USER_ROLE.USER && service.mainService === 'sell') {
+    if (service.price) {
+      service.winBid = Number(service.winBid)
+        - (service.winBid * surcharge) / 100;
+    }
+  }
 
   const payment = await Transaction.findOne({ serviceId }).select('amount paymentMethod',)
   return { service, payment }
@@ -398,7 +431,7 @@ const createFileClaim = async (req, res) => {
     serviceId,
     description,
     userType: role === "USER" ? "User" : "Partner"
-  }) 
+  })
 
   await Notification.create({
     title: {
@@ -409,7 +442,7 @@ const createFileClaim = async (req, res) => {
       eng: `${user.name} has submitted a new file claim for Service ID: ${serviceId}. Please review the details.`,
       span: `${user.name} ha enviado una nueva reclamación de archivo para el Servicio ID: ${serviceId}. Por favor, revise los detalles.`
     },
-    userType:"Admin",
+    userType: "Admin",
     types: 'none',
     admin: true,
   });
@@ -430,7 +463,7 @@ const updateStatusFileClaim = async (req, res) => {
     throw new ApiError(400, `Invalid or missing status. Allowed values: ${allowedStatuses.join(", ")}`);
   }
 
-  try { 
+  try {
     const result = await FileClaim.findByIdAndUpdate(
       claimId,
       { status },
@@ -440,17 +473,17 @@ const updateStatusFileClaim = async (req, res) => {
     if (!result) {
       throw new ApiError(404, "File claim not found.");
     }
- 
+
     if (status === "resolved") {
-      await NotificationService.sendNotification({ 
-          title: {
-            eng: "File Claim Resolved.",
-            span: "Reclamación Resuelta."
-          },
-          message: {
-            eng: "Your claim against ${result?.userType === 'User' ? 'partner' : 'user'} has been resolved.",
-            span: "Tu reclamación contra ${result?.userType === 'User' ? 'el socio' : 'el usuario'} ha sido resuelta."
-          },
+      await NotificationService.sendNotification({
+        title: {
+          eng: "File Claim Resolved.",
+          span: "Reclamación Resuelta."
+        },
+        message: {
+          eng: "Your claim against ${result?.userType === 'User' ? 'partner' : 'user'} has been resolved.",
+          span: "Tu reclamación contra ${result?.userType === 'User' ? 'el socio' : 'el usuario'} ha sido resuelta."
+        },
         user: result.user,
         userType: result.userType,
         types: 'none',
@@ -463,9 +496,9 @@ const updateStatusFileClaim = async (req, res) => {
       email: emailAuth,
       description: `File claim with ID ${claimId} successfully updated to status '${status}'.`,
       types: "Update",
-      activity: status === "resolved"? "task":"progressing",
+      activity: status === "resolved" ? "task" : "progressing",
       status: "Success",
-      attended:"complaints"
+      attended: "complaints"
     };
     await LogsDashboardService.createTaskDB(newTask);
 
@@ -477,7 +510,7 @@ const updateStatusFileClaim = async (req, res) => {
       email: emailAuth,
       description: `Failed to update file claim with ID ${claimId}: ${error.message || "Unknown error"}.`,
       types: "Failed",
-      activity: status === "resolved"? "task":"progressing",
+      activity: status === "resolved" ? "task" : "progressing",
       status: "Error",
     };
     await LogsDashboardService.createTaskDB(newTask);
@@ -491,7 +524,7 @@ const updateStatusFileClaim = async (req, res) => {
 
 const getAllFileClaims = async (req, res) => {
   try {
-    const query = req.query; 
+    const query = req.query;
 
     const resultQuery = new QueryBuilder(
       FileClaim.find()
@@ -530,22 +563,22 @@ const getAllFileClaims = async (req, res) => {
 
 //cut-amount---
 const applyPenaltyPercent = async (req, res) => {
-  const { serviceId, amountPercent, reason, id } = req.body; 
- 
+  const { serviceId, amountPercent, reason, id } = req.body;
+
   if (!serviceId || !mongoose.isValidObjectId(serviceId)) {
     throw new ApiError(400, "Invalid or missing serviceId.");
   }
- 
+
   const fileClaim = await FileClaim.findById(id);
   if (!fileClaim) {
     throw new ApiError(400, "Invalid or missing file claim 'id'.");
   }
- 
+
   const percentValue = parseFloat(amountPercent);
   if (isNaN(percentValue) || percentValue <= 0) {
     throw new ApiError(400, "Invalid or missing cut amount percentage.");
   }
- 
+
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(404, "Service not found.");
@@ -555,12 +588,12 @@ const applyPenaltyPercent = async (req, res) => {
   if (!transaction) {
     throw new ApiError(404, "No transactions found for this service.");
   }
- 
+
   const { amount } = transaction;
   const cutAmount = Number(amount) * (percentValue / 100);
- 
+
   const fineTransaction = {
-    ...transaction.toObject(),  
+    ...transaction.toObject(),
     amount: cutAmount,
     payType: 'fine',
     finePercent: percentValue,
@@ -570,7 +603,7 @@ const applyPenaltyPercent = async (req, res) => {
   delete fineTransaction._id;
   delete fineTransaction.createdAt;
   delete fineTransaction.updatedAt;
- 
+
   if (service.mainService === "sell") {
     const user = await User.findById(service.user);
     if (!user || user.wallet === undefined) {
@@ -579,7 +612,7 @@ const applyPenaltyPercent = async (req, res) => {
 
     user.wallet -= cutAmount;
     await user.save();
- 
+
     await NotificationService.sendNotification({
       title: {
         eng: "Penalty Applied",
@@ -602,16 +635,16 @@ const applyPenaltyPercent = async (req, res) => {
 
     partner.wallet -= cutAmount;
     await partner.save();
- 
-    await NotificationService.sendNotification({ 
-        title: {
-          eng: "Penalty Applied",
-          span: "Sanción Aplicada"
-        },
-        message: {
-          eng: "A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.",
-          span: "Se ha deducido una sanción de ${percentValue}% (${reason}) de tu billetera."
-        }, 
+
+    await NotificationService.sendNotification({
+      title: {
+        eng: "Penalty Applied",
+        span: "Sanción Aplicada"
+      },
+      message: {
+        eng: "A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.",
+        span: "Se ha deducido una sanción de ${percentValue}% (${reason}) de tu billetera."
+      },
       user: partner._id,
       userType: 'Partner',
       types: 'none',
@@ -619,7 +652,7 @@ const applyPenaltyPercent = async (req, res) => {
   } else {
     throw new ApiError(400, "Unsupported service type.");
   }
- 
+
   const result = await Transaction.create(fineTransaction);
 
   return { service, result };

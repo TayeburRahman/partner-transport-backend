@@ -22,9 +22,8 @@ const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
-dayjs.extend(timezone);
+dayjs.extend(timezone); 
 
- 
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -69,12 +68,47 @@ const validateInputs = (data, image) => {
   return images;
 };
      
-
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
     const { image } = req.files || {};
     const data = req.body;
+
+    if( data?.mainService === "sell"){
+      const bankAccount = await StripeAccount.findOne({ user: userId });
+
+      if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Your Bank Account Information is missing!");
+      }
+  
+      try { 
+        const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+  
+        if (!stripeAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account not found or is invalid.");
+        }
+  
+        if (!stripeAccount.charges_enabled) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
+        }
+   
+        const externalAccount = stripeAccount.external_accounts.data.find(
+          (account) => account.id === bankAccount.externalAccountId
+        );
+  
+        if (!externalAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your External account not found or linked to Stripe.");
+        }
+       
+        // if (externalAccount.status !== 'verified') {
+        //   throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account is not verified.");
+        // }  
+  
+      } catch (error) {
+        throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
+      }
+    }
+
 
     const images = validateInputs(data, image);
 
