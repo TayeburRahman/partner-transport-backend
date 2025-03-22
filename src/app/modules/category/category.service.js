@@ -39,6 +39,7 @@ const createCategory = async (req) => {
 
 const updateCategory = async (req) => {
   const { id, ...others } = req.body;
+   console.log("=====", others)
   const { userId, emailAuth } = req.user;
 
   if (!id) {
