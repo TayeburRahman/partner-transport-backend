@@ -1,9 +1,11 @@
+const config = require("../../../config");
 const ApiError = require("../../../errors/ApiError");
 const catchAsync = require("../../../shared/catchasync");
 const sendResponse = require("../../../shared/sendResponse");
 const { StripeAccount } = require("./payment.model");
 const PaymentService = require("./payment.service");
 const TransitionsService = require("./transitions.service");
+const stripe = require("stripe")(config.stripe.stripe_secret_key);
 
   // Stripe Payment ================
 const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
@@ -74,19 +76,50 @@ const updateUserDataOfBank = catchAsync(async (req, res) => {
  });
 })
 
-const getUserBankInfo = catchAsync(async (req, res) => { 
-  const {userId} = req.user
-  const stripeAccount = await StripeAccount.findOne({ user: userId });
-
-  sendResponse(res, {
-   statusCode: 200,
-   success: true,
-   message: "get successfully.",
-   data: stripeAccount,
- });
-})
-
  
+
+const getUserBankInfo = catchAsync(async (req, res) => { 
+  const { userId } = req.user;
+  const bankAccount = await StripeAccount.findOne({ user: userId });
+ 
+  const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+
+  let verification_message
+  let sucess_verification = true;
+
+  if (!stripeAccount) {
+    sucess_verification=false;
+    verification_message="Stripe account not found or invalid.";
+  } 
+
+  const externalAccount = stripeAccount.external_accounts.data.find(
+    (account) => account.id === bankAccount.externalAccountId
+  );
+
+  if (!externalAccount) {
+    sucess_verification=false;
+    verification_message= "Bank account not found or not linked to Stripe."
+  }
+ 
+  if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
+    if (stripeAccount.requirements?.disabled_reason === "requirements.pending_verification") {
+      sucess_verification=false;
+      verification_message="Bank account verification is in progress. Please wait for the verification process to complete.";
+     
+    } else {
+      sucess_verification=false;
+      verification_message="Bank account is not eligible for transfers. Please complete bank account verification with valid information."; 
+    }
+  }
+ 
+  return sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Get successfully.",
+    data: { bankAccount, verification_message, sucess_verification },
+  });
+});
+
  
   // =============================
 

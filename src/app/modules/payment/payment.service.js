@@ -83,35 +83,26 @@ const createCheckoutSessionStripe = async (req) => {
     if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
       throw new ApiError(httpStatus.BAD_REQUEST, "The Payment Receive User Account Information is missing!");
     }
-
-    try { 
+ 
       const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
 
       if (!stripeAccount) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Stripe Account not found or is invalid.");
-      }
-
-      if (!stripeAccount.charges_enabled) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Stripe Account is not enabled for receiving payments.");
-      }
+        throw new ApiError(httpStatus.BAD_REQUEST, `Sorry, ${receiveUserRole} Bank Account not found or is invalid.`);
+      } 
  
       const externalAccount = stripeAccount.external_accounts.data.find(
         (account) => account.id === bankAccount.externalAccountId
       );
 
       if (!externalAccount) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Payment Receiver User External account not found or linked to Stripe.");
+        throw new ApiError(httpStatus.BAD_REQUEST, `Sorry, ${receiveUserRole} bank account not found or linked to Stripe.`);
       }
      
-      // if (externalAccount.status !== 'verified') {
-      //   throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account is not verified.");
-      // }  
+      if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
+        throw new ApiError(httpStatus.BAD_REQUEST, `${receiveUserRole} bank account is not eligible for transfers. Please complete ${receiveUserRole} bank account verification`);
+      } 
 
-    } catch (error) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
-    }
-
-    console.log("price====", currency, price)
+      console.log("price====", currency, price)
  
     const unitAmount =  Number(price) * 100;
  
@@ -136,7 +127,7 @@ const createCheckoutSessionStripe = async (req) => {
         {
           price_data: {
             currency: currency,
-            unit_amount: unitAmount,
+            unit_amount: Number(parseFloat(unitAmount).toFixed(2)),
             product_data: {
               name: service.service,
               description: service.description,
@@ -488,7 +479,7 @@ const createStripeToken = async (user, dob, address, bank_info) => {
           first_name: user?.name?.split(" ")[0] || "Unknown",
           last_name: user?.name?.split(" ")[1] || "Unknown",
           email: user?.email,
-          // phone: address?.phone_number,
+          phone: address?.phone_number,
           address: {
             city: address.city,
             country: bank_info.country,
@@ -571,7 +562,7 @@ const saveStripeAccount = async (account, user, userid, userType, address, dob, 
     },
     business_profile: {
       business_name: businessProfile?.business_name || user.name || "Unknown",
-      // website: businessProfile?.website || "www.example.com",
+      website: businessProfile?.website || "www.example.com",
       product_description: businessProfile?.product_description,
     },
     dateOfBirth: new Date(dob),
@@ -691,7 +682,7 @@ const updateUserDataOfBank = async (req, res) => {
         },
         business_profile: {
           business_name: business_profile?.business_name || "Unknown",
-          // website: business_profile?.website || "www.example.com",
+          website: business_profile?.website || "www.example.com",
           product_description: business_profile?.product_description,
         },
         dateOfBirth: parsedDob,

@@ -88,9 +88,9 @@ const createPostDB = async (req) => {
           throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account not found or is invalid.");
         }
   
-        if (!stripeAccount.charges_enabled) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
-        }
+        // if (!stripeAccount.charges_enabled) {
+        //   throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
+        // }
    
         const externalAccount = stripeAccount.external_accounts.data.find(
           (account) => account.id === bankAccount.externalAccountId
@@ -852,10 +852,10 @@ const updateServicesStatusUser = async (req) => {
 
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account not found or invalid.");
-        }
+        } 
 
-        if (!stripeAccount.charges_enabled) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account is not enabled for receiving payments.");
+        if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Partner stripe account is not eligible for transfers. Please ask him to complete verification.");
         }
 
         const externalAccount = stripeAccount.external_accounts.data.find(
@@ -940,6 +940,7 @@ const updateServicesStatusUser = async (req) => {
 
     return updatedService;
   } catch (error) {
+    console.log(error)
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
 };
@@ -1080,10 +1081,10 @@ const updateSellServicesStatusPartner = async (req) => {
 
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account not found or invalid.");
-        }
+        } 
 
-        if (!stripeAccount.charges_enabled) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account is not enabled for receiving payments.");
+        if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Your bank account is not eligible for transfers. Please complete verification.");
         }
 
         const externalAccount = stripeAccount.external_accounts.data.find(

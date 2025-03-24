@@ -55,9 +55,9 @@ const partnerBidPost = async (req) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account not found or is invalid.");
       }
 
-      if (!stripeAccount.charges_enabled) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
-      }
+      // if (!stripeAccount.charges_enabled) {
+      //   throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
+      // }
 
       const externalAccount = stripeAccount.external_accounts.data.find(
         (account) => account.id === bankAccount.externalAccountId

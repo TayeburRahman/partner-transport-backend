@@ -39,7 +39,7 @@ const createCategory = async (req) => {
 
 const updateCategory = async (req) => {
   const { id, ...others } = req.body;
-   console.log("=====", others)
+  //  console.log("=====", others)
   const { userId, emailAuth } = req.user;
 
   if (!id) {
@@ -69,6 +69,7 @@ const updateCategory = async (req) => {
       activity: "reglue",
       status: "Success",
     };
+    
     await LogsDashboardService.createTaskDB(newTask);
    //------
     return result;
