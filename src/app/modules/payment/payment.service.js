@@ -80,11 +80,11 @@ const createCheckoutSessionStripe = async (req) => {
  
     const bankAccount = await StripeAccount.findOne({ user: receiveUser });
 
-    if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+    if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Information is missing!");
     }
  
-      const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+      const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
 
       if (!stripeAccount) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
@@ -119,7 +119,7 @@ const createCheckoutSessionStripe = async (req) => {
         receiveUser: receiveUser.toHexString(),
         receiveUserType: receiveUserRole,
         serviceId: serviceId,
-        stripeAccountId: bankAccount.stripeAccountId,
+        stripeAccountId: bankAccount?.stripeAccountId,
         partnerId: partnerId,
         winBid: bidDetails.price,
       },

@@ -77,12 +77,12 @@ const createPostDB = async (req) => {
     if( data?.mainService === "sell"){
       const bankAccount = await StripeAccount.findOne({ user: userId });
 
-      if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+      if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations in your profile.");
       }
   
       try { 
-        const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+        const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
   
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Unable to find or validate your bank account.");
@@ -837,12 +837,12 @@ const updateServicesStatusUser = async (req) => {
 
       const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
-      if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+      if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
         throw new ApiError(400, "Invalid bank account data provided!");
       }
 
       try {
-        const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+        const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
 
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
@@ -1066,12 +1066,12 @@ const updateSellServicesStatusPartner = async (req) => {
 
       const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
-      if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+      if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
         throw new ApiError(400, "Invalid bank account data provided!");
       }
 
       try {
-        const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+        const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
 
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
