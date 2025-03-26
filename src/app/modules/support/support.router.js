@@ -27,7 +27,7 @@ router
   .get(
     "/get-ticket-details/:id",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER), 
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SUPPORT),
+    // checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SUPPORT),
     SupportController.getTicketDetails
   )
 
