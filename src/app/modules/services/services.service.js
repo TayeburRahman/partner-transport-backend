@@ -92,7 +92,7 @@ const createPostDB = async (req) => {
         //   throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
         // }
    
-        const externalAccount = stripeAccount.external_accounts.data.find(
+        const externalAccount = stripeAccount.external_accounts?.data?.find(
           (account) => account.id === bankAccount.externalAccountId
         );
   
@@ -852,7 +852,7 @@ const updateServicesStatusUser = async (req) => {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
         }
   
-        const externalAccount = stripeAccount.external_accounts.data.find(
+        const externalAccount = stripeAccount.external_accounts?.data?.find(
           (account) => account.id === bankAccount.externalAccountId
         );
   
@@ -1081,7 +1081,7 @@ const updateSellServicesStatusPartner = async (req) => {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
         }
   
-        const externalAccount = stripeAccount.external_accounts.data.find(
+        const externalAccount = stripeAccount.external_accounts?.data?.find(
           (account) => account.id === bankAccount.externalAccountId
         );
   

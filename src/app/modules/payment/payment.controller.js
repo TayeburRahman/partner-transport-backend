@@ -92,7 +92,7 @@ const getUserBankInfo = catchAsync(async (req, res) => {
     verification_message="Stripe account not found or invalid.";
   } 
 
-  const externalAccount = stripeAccount.external_accounts.data.find(
+  const externalAccount = stripeAccount.external_accounts?.data?.find(
     (account) => account.id === bankAccount.externalAccountId
   );
 

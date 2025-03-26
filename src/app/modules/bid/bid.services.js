@@ -59,7 +59,7 @@ const partnerBidPost = async (req) => {
       //   throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
       // }
 
-      const externalAccount = stripeAccount.external_accounts.data.find(
+      const externalAccount = stripeAccount.external_accounts?.data.find(
         (account) => account.id === bankAccount.externalAccountId
       );
 

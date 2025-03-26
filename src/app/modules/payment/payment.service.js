@@ -94,7 +94,7 @@ const createCheckoutSessionStripe = async (req) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
       }
 
-      const externalAccount = stripeAccount.external_accounts.data.find(
+      const externalAccount = stripeAccount.external_accounts?.data?.find(
         (account) => account.id === bankAccount.externalAccountId
       );
 
@@ -406,7 +406,7 @@ const createConnectedAccountWithBank = async (req, res) => {
     const account = await createStripeAccount(token, bank_info, business_profile, existingUser, dob);
 
     // Save Stripe account if creation was successful
-    if (account.id && account.external_accounts.data.length) {
+    if (account.id && account?.external_accounts?.data?.length) {
       const saveData = await saveStripeAccount(account, existingUser, userId, userType, address, dob, business_profile, bank_info);
       return {
         saveData,
@@ -542,7 +542,7 @@ const saveStripeAccount = async (account, user, userid, userType, address, dob, 
     user: userid,
     userType: userType,
     stripeAccountId: account.id,
-    externalAccountId: account.external_accounts?.data[0].id,
+    externalAccountId: account.external_accounts?.data[0]?.id,
     address: {
       line1: address.line1,
       city: address.city,
@@ -626,7 +626,7 @@ const updateUserDataOfBank = async (req, res) => {
 
     if (existingBankAccountId) {
       const account = await stripe.accounts.retrieve(accountId);
-      const activeBankAccount = account.external_accounts.data.find(
+      const activeBankAccount = account.external_accounts?.data?.find(
         (bank) => bank.id === existingBankAccountId
       );
 
