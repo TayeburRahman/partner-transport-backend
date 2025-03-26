@@ -489,6 +489,7 @@ const createStripeToken = async (user, dob, address, bank_info) => {
           },
           metadata: {
             rfc: address.personal_rfc,
+            personal_rfc: address.personal_rfc,
           },
         },
         business_type: "individual",
@@ -516,6 +517,7 @@ const createStripeAccount = async (token, bank_info, business_profile, user, dob
       business_profile: {
         mcc: "5970",
         name: business_profile?.business_name || user.name || "Unknown",
+        product_description: business_profile?.product_description,
         // url: business_profile?.website || "www.example.com",
       },
       external_account: {
@@ -532,7 +534,7 @@ const createStripeAccount = async (token, bank_info, business_profile, user, dob
     console.error("Error creating Stripe account:", error);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Error creating Stripe account: " + error.message);
   }
-};
+}; 
 
 const saveStripeAccount = async (account, user, userid, userType, address, dob, businessProfile, bank_info) => {
 
