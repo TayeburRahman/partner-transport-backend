@@ -81,25 +81,25 @@ const createCheckoutSessionStripe = async (req) => {
     const bankAccount = await StripeAccount.findOne({ user: receiveUser });
 
     if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "The Payment Receive User Account Information is missing!");
+      throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Information is missing!");
     }
  
       const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
 
       if (!stripeAccount) {
-        throw new ApiError(httpStatus.BAD_REQUEST, `Sorry, ${receiveUserRole} Bank Account not found or is invalid.`);
+        throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
       } 
- 
+
+      if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
+      }
+
       const externalAccount = stripeAccount.external_accounts.data.find(
         (account) => account.id === bankAccount.externalAccountId
       );
 
       if (!externalAccount) {
-        throw new ApiError(httpStatus.BAD_REQUEST, `Sorry, ${receiveUserRole} bank account not found or linked to Stripe.`);
-      }
-     
-      if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
-        throw new ApiError(httpStatus.BAD_REQUEST, `${receiveUserRole} bank account is not eligible for transfers. Please complete ${receiveUserRole} bank account verification`);
+        throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
       } 
 
       console.log("price====", currency, price)

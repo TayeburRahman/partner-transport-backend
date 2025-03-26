@@ -103,8 +103,7 @@ const UserSchema = new Schema(
     address_postal_code:{
       type: String,
       default: null,
-    },
-
+    }, 
     status: {
       type: String,
       enum: ["active", "deactivate"],

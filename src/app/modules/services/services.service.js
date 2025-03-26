@@ -78,14 +78,14 @@ const createPostDB = async (req) => {
       const bankAccount = await StripeAccount.findOne({ user: userId });
 
       if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Your Bank Account Information is missing!");
+        throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations in your profile.");
       }
   
       try { 
         const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
   
         if (!stripeAccount) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account not found or is invalid.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Unable to find or validate your bank account.");
         }
   
         // if (!stripeAccount.charges_enabled) {
@@ -97,12 +97,8 @@ const createPostDB = async (req) => {
         );
   
         if (!externalAccount) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your External account not found or linked to Stripe.");
-        }
-       
-        // if (externalAccount.status !== 'verified') {
-        //   throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account is not verified.");
-        // }  
+          throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations.");
+        } 
   
       } catch (error) {
         throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
@@ -239,8 +235,6 @@ const getDetails = async (req) => {
       }));
     }
   }
-
-  console.log("result.bids",result.bids)
 
   const pisoVariable = await VariableCount.getPisoVariable();
 
@@ -851,19 +845,19 @@ const updateServicesStatusUser = async (req) => {
         const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
 
         if (!stripeAccount) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account not found or invalid.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
         } 
-
+  
         if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Partner stripe account is not eligible for transfers. Please ask him to complete verification.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
         }
-
+  
         const externalAccount = stripeAccount.external_accounts.data.find(
           (account) => account.id === bankAccount.externalAccountId
         );
-
+  
         if (!externalAccount) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account not found or linked to Stripe.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
         }
 
       } catch (error) {
@@ -1080,19 +1074,19 @@ const updateSellServicesStatusPartner = async (req) => {
         const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
 
         if (!stripeAccount) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Account not found or invalid.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
         } 
-
+  
         if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Your bank account is not eligible for transfers. Please complete verification.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
         }
-
+  
         const externalAccount = stripeAccount.external_accounts.data.find(
           (account) => account.id === bankAccount.externalAccountId
         );
-
+  
         if (!externalAccount) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receiver User External account not found or linked to Stripe.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
         }
 
       } catch (error) {

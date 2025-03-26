@@ -45,14 +45,14 @@ const partnerBidPost = async (req) => {
     const bankAccount = await StripeAccount.findOne({ user: userId });
 
     if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Your Bank Account Information is missing!");
+      throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations in your profile.");
     }
 
     try {
       const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
 
       if (!stripeAccount) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account not found or is invalid.");
+        throw new ApiError(httpStatus.BAD_REQUEST, "Unable to find or validate your bank account.");
       }
 
       // if (!stripeAccount.charges_enabled) {
@@ -64,8 +64,8 @@ const partnerBidPost = async (req) => {
       );
 
       if (!externalAccount) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your External account not found or linked to Stripe.");
-      }
+        throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations.");
+      } 
 
     } catch (error) {
       throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
