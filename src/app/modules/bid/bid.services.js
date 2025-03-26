@@ -44,12 +44,12 @@ const partnerBidPost = async (req) => {
 
     const bankAccount = await StripeAccount.findOne({ user: userId });
 
-    if (!bankAccount || !bankAccount.stripeAccountId || !bankAccount.externalAccountId) {
+    if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations in your profile.");
     }
 
-    try {
-      const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+    try { 
+      const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
 
       if (!stripeAccount) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Unable to find or validate your bank account.");

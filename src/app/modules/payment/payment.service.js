@@ -588,7 +588,7 @@ const updateUserDataOfBank = async (req, res) => {
       throw new ApiError(404, "Stripe account not found.");
     }
 
-    const accountId = stripeAccount.stripeAccountId;
+    const accountId = stripeAccount?.stripeAccountId;
 
     const accountToken = await stripe.tokens.create({
       account: {

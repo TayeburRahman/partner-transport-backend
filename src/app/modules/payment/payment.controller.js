@@ -82,7 +82,7 @@ const getUserBankInfo = catchAsync(async (req, res) => {
   const { userId } = req.user;
   const bankAccount = await StripeAccount.findOne({ user: userId });
  
-  const stripeAccount = await stripe.accounts.retrieve(bankAccount.stripeAccountId);
+  const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
 
   let verification_message
   let sucess_verification = true;

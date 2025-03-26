@@ -869,7 +869,7 @@ const updateServicesStatusUser = async (req) => {
       const transfer = await stripe.transfers.create({
         amount: Math.round(pesoCost * 100), 
         currency: 'mxn',
-        destination: bankAccount.stripeAccountId,
+        destination: bankAccount?.stripeAccountId,
       });
 
       // Perform the payout in MXN
@@ -879,7 +879,7 @@ const updateServicesStatusUser = async (req) => {
           currency: 'mxn',
         },
         {
-          stripeAccount: bankAccount.stripeAccountId,
+          stripeAccount: bankAccount?.stripeAccountId,
         }
       );
 
@@ -894,8 +894,8 @@ const updateServicesStatusUser = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-         eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount.stripeAccountId.slice(-4)}.`,
-         span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount.stripeAccountId.slice(-4)}.`
+         eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
+         span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
@@ -1098,7 +1098,7 @@ const updateSellServicesStatusPartner = async (req) => {
       const transfer = await stripe.transfers.create({
         amount: Math.round(pesoCost * 100), 
         currency: 'mxn',
-        destination: bankAccount.stripeAccountId,
+        destination: bankAccount?.stripeAccountId,
       });
 
       // Perform the payout in MXN
@@ -1108,7 +1108,7 @@ const updateSellServicesStatusPartner = async (req) => {
           currency: 'mxn',
         },
         {
-          stripeAccount: bankAccount.stripeAccountId,
+          stripeAccount: bankAccount?.stripeAccountId,
         }
       );
 
@@ -1121,8 +1121,8 @@ const updateSellServicesStatusPartner = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-          eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount.stripeAccountId.slice(-4)}.`,
-          span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount.stripeAccountId.slice(-4)}.`
+          eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
+          span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
