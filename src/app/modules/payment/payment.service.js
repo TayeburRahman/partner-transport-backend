@@ -695,7 +695,7 @@ const updateUserDataOfBank = async (req, res) => {
     );
 
     return {
-      message: "User data updated successfully.",
+      message: "User data updated successfully!",
       updatedStripeAccount,
     };
   } catch (error) {
