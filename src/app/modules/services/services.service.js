@@ -663,8 +663,6 @@ const getUserServicesWithinOneHour = async (req) => {
   // console.log("Fetched services:", services);
   return services;
 };
- 
- 
 
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
@@ -938,7 +936,6 @@ const updateServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
   }
 };
-
 
 //---------------
 const updateSellServicesStatusUser = async (req) => {
