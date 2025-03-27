@@ -815,7 +815,7 @@ const updateServicesStatusUser = async (req) => {
   }
 
   try {
-    const transaction = await Transaction.findOne({ serviceId }); 
+    const transaction = await Transaction.findOne({ serviceId, active: true }); 
     if (!transaction || transaction.paymentStatus !== "Completed") {
       throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
     }
@@ -969,7 +969,7 @@ const updateSellServicesStatusUser = async (req) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Partner must arrive and user must confirm arrival before delivery.");
   }
 
-  const transaction = await Transaction.findOne({ serviceId });
+  const transaction = await Transaction.findOne({ serviceId, active: true });
   if (!transaction || transaction.paymentStatus !== "Completed") {
     throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
   }
@@ -1040,7 +1040,7 @@ const updateSellServicesStatusPartner = async (req) => {
   }
 
   const transaction = await Transaction.findOne(
-    { serviceId },
+    { serviceId, active: true },
     "paymentStatus receiveUserType receiveUser amount isFinish"
   );
 

@@ -68,6 +68,7 @@ const paypalRefundPayment = async (req, res) => {
   
       const transactionData = {
         serviceId,
+        active: true,
         payUser: user._id,
         payUserType: payUserRole,
         receiveUser,
@@ -148,7 +149,7 @@ const paypalRefundPayment = async (req, res) => {
           }
   
           if (service.paymentStatus === 'paid') {
-            const existingTransaction = await Transaction.findOne({ serviceId: service._id });
+            const existingTransaction = await Transaction.findOne({ serviceId: service._id, active: true });
             return resolve({ status: "success", result: existingTransaction });
           }
   
@@ -171,6 +172,7 @@ const paypalRefundPayment = async (req, res) => {
             isFinish: false,
             transactionId: saleId,
             payType: service.mainService,
+            active: true,
             paymentDetails: {
               email: payment.payer.payer_info.email,
               payId: paymentId,

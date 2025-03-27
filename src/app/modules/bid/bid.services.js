@@ -322,7 +322,7 @@ const orderDetailsPageFileClaim = async (req) => {
     }
   }
 
-  const payment = await Transaction.findOne({ serviceId }).select('amount paymentMethod',)
+  const payment = await Transaction.findOne({ serviceId, active: true }).select('amount paymentMethod',)
   return { service, payment }
 }
 
@@ -565,6 +565,8 @@ const getAllFileClaims = async (req, res) => {
 const applyPenaltyPercent = async (req, res) => {
   const { serviceId, amountPercent, reason, id } = req.body;
 
+  console.log("applyPenaltyPercent", amountPercent)
+
   if (!serviceId || !mongoose.isValidObjectId(serviceId)) {
     throw new ApiError(400, "Invalid or missing serviceId.");
   }
@@ -584,22 +586,24 @@ const applyPenaltyPercent = async (req, res) => {
     throw new ApiError(404, "Service not found.");
   }
 
-  const transaction = await Transaction.findOne({ serviceId });
-  if (!transaction) {
+  const transaction = await Transaction.findOne({ serviceId, active: true });
+  if (!transaction?.partnerAmount) {
     throw new ApiError(404, "No transactions found for this service.");
   }
 
-  const { amount } = transaction;
-  const cutAmount = Number(amount) * (percentValue / 100);
+  const { partnerAmount } = transaction;
+  const cutAmount = Number(partnerAmount) * (percentValue / 100);
 
   const fineTransaction = {
     ...transaction.toObject(),
-    amount: cutAmount,
+    partnerAmount: cutAmount,
     payType: 'fine',
     finePercent: percentValue,
     fineReason: reason,
+    active: true,
     fileClaimImage: fileClaim.fileClaimImage,
   };
+
   delete fineTransaction._id;
   delete fineTransaction.createdAt;
   delete fineTransaction.updatedAt;
@@ -642,8 +646,8 @@ const applyPenaltyPercent = async (req, res) => {
         span: "Sanción Aplicada"
       },
       message: {
-        eng: "A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.",
-        span: "Se ha deducido una sanción de ${percentValue}% (${reason}) de tu billetera."
+        eng: `A penalty of ${percentValue}% (${reason}) has been deducted from your wallet.`,
+        span: `Se ha deducido una sanción de ${percentValue}% (${reason}) de tu billetera.`,
       },
       user: partner._id,
       userType: 'Partner',
@@ -654,6 +658,8 @@ const applyPenaltyPercent = async (req, res) => {
   }
 
   const result = await Transaction.create(fineTransaction);
+  transaction.active = false;
+  await transaction.save();
 
   return { service, result };
 };

@@ -179,8 +179,6 @@ router
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_VARIABLE_MANAGE, ENUM_ADMIN_ACCESS.ACC_TO_EDIT),
     DashboardController.editMinMaxBidAmount
   )
-
-
   .patch(
     "/search",
     // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
@@ -210,7 +208,6 @@ router
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION), 
     DashboardController.getTransactionsDetails
   )
-
   // =File Claim================================
   .patch(
     "/status-file-claim",

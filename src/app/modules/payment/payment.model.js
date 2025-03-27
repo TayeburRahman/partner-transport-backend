@@ -65,6 +65,10 @@ const transactionSchema = new Schema({
     type: String,
     default: null,
   },
+  active:{
+    type: Boolean,
+    default: true
+  },
   paymentDetails: {
     email: {
       type: String,

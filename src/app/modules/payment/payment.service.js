@@ -175,7 +175,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     }
 
     if (service.paymentStatus === 'paid') {
-      const existingTransaction = await Transaction.findOne({ serviceId: service._id });
+      const existingTransaction = await Transaction.findOne({ serviceId: service._id, active: true });
       return { status: "success", result: existingTransaction };
     }
 

@@ -19,6 +19,7 @@ const auth = require("../../middlewares/auth");
 const { NotificationService } = require("../notification/notification.service");
 const VariableCount = require("../variable/variable.count");
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
+const { default: mongoose } = require("mongoose");
 
 const getYearRange = (year) => {
   const startDate = new Date(`${year}-01-01`);
@@ -602,10 +603,10 @@ const deletePrivacyPolicy = async (query) => {
   return result;
 };
 
-//=Auction Management ========================
+//=Auction Management========================
 const getAllAuctions = async (query) => {
   const page = Number.isInteger(parseInt(query.page)) ? parseInt(query.page) : 1;
-  const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10;
+  const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10; 
 
   const matchQuery = {
     ...query.searchTerm
@@ -619,7 +620,7 @@ const getAllAuctions = async (query) => {
     ...(query.mainService ? { mainService: query.mainService } : {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.service ? { service: query.service } : {}),
-    ...(query.category ? { category: { $in: query.category.split(',') } } : {}),
+    ...(query.category ? { category: { $in: query.category.split(',').map(id => new mongoose.Types.ObjectId(id)) } } : {}),
   };
 
   const pipeline = [
@@ -657,25 +658,21 @@ const getAllAuctions = async (query) => {
       },
     },
     {
-      $unwind: { path: "$category" },
-    },
-    {
       $facet: {
-        data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+        data: [{ $sort: { _id: -1 } }, { $skip: (page - 1) * limit }, { $limit: limit }],
         meta: [{ $count: "total" }],
       },
     },
   ];
 
-  const [result] = await Services.aggregate(pipeline).sort({ _id: -1 } )
-  
-  ;
+  const [result] = await Services.aggregate(pipeline); 
 
   return {
     meta: result.meta[0] || { total: 0 },
     data: result.data.reverse(),
   };
 };
+
 
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
@@ -810,6 +807,7 @@ const parseDateTime = (date, time) => {
 
   return new Date(year, month - 1, day, adjustedHours, minutes);
 };
+
 const filterAndSortServices = async (req, res) => {
   const {
     service,
