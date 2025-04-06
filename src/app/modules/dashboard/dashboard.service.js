@@ -1238,7 +1238,7 @@ const getTransactionsHistory = async (req) => {
         populate: {
           path: "category",
           select: "_id category",
-        },
+        }
       })
       , query)
       .search(["paymentStatus", "transactionId"])

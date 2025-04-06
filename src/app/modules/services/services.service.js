@@ -213,8 +213,7 @@ const getDetails = async (req) => {
   if (!result) {
     throw new ApiError(404, "Service not found");
   }
-
-  console.log("result.bids",result.bids)
+ 
 
   if (role === ENUM_USER_ROLE.USER && result.mainService === 'move') {
     if (result.bids && Array.isArray(result.bids)) {
