@@ -18,10 +18,10 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             message: "Invalid phone number format. Use E.164 format (e.g., +1234567890)."
         };
     }
-    // console.log("phoneNumber", phoneNumber, user)
-    // console.log("Twilio SID:", config.twilio.account_sid);
-    // console.log("Twilio Auth Token:", config.twilio.auth_token);
-    // console.log("Twilio From Number:", config.twilio.phone_number);
+    console.log("phoneNumber", phoneNumber, user)
+    console.log("Twilio SID:", config.twilio.account_sid);
+    console.log("Twilio Auth Token:", config.twilio.auth_token);
+    console.log("Twilio From Number:", config.twilio.phone_number);
 
 
     try {
@@ -31,7 +31,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             to: phoneNumber
         }); 
 
-        // console.log("result==",result)
+        console.log("result==",result)
 
         if (result) {
             const update = await Auth.findByIdAndUpdate(user.authId, { verifyOtp })
@@ -49,6 +49,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             if (!result) {
                 throw new ApiError(404, "Error updating verify code in the database. Please try again!")
             }
+
         } 
 
         return {
