@@ -114,9 +114,8 @@ const getUserBankInfo = catchAsync(async (req, res) => {
       }
     }
 
-   }catch(error){
-
-    console.log("===================Not found Stripe.", error)
+   }catch(error){ 
+    verification_message = "Your Account Not Found, Please update your bank account information!"
    } 
  
   return sendResponse(res, {
