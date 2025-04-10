@@ -115,7 +115,8 @@ const getUserBankInfo = catchAsync(async (req, res) => {
     }
 
    }catch(error){
-    console.log("===================Not found Stripe.", error.message)
+
+    console.log("===================Not found Stripe.", error)
    } 
  
   return sendResponse(res, {
