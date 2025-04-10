@@ -82,7 +82,12 @@ const getUserBankInfo = catchAsync(async (req, res) => {
   const { userId } = req.user;
   const bankAccount = await StripeAccount.findOne({ user: userId });
  
-  const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
+  let stripeAccount;
+   try{
+     stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
+   }catch{
+    console.log("===================Not found Stripe.")
+   }
 
   let verification_message
   let sucess_verification = true;
