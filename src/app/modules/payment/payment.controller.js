@@ -82,40 +82,41 @@ const getUserBankInfo = catchAsync(async (req, res) => {
   const { userId } = req.user;
   const bankAccount = await StripeAccount.findOne({ user: userId });
  
-  let stripeAccount;
-   try{
-     stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
-   }catch{
-    console.log("===================Not found Stripe.")
-   }
-
+  
   let verification_message
   let sucess_verification = true;
 
-  if (!stripeAccount) {
-    sucess_verification=false;
-    verification_message="Stripe account not found or invalid.";
-  } 
+   try{
+    const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
 
-  const externalAccount = stripeAccount.external_accounts?.data?.find(
-    (account) => account.id === bankAccount.externalAccountId
-  );
-
-  if (!externalAccount) {
-    sucess_verification=false;
-    verification_message= "Bank account not found or not linked to Stripe."
-  }
- 
-  if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
-    if (stripeAccount.requirements?.disabled_reason === "requirements.pending_verification") {
+     if (!stripeAccount) {
       sucess_verification=false;
-      verification_message="Bank account verification is in progress. Please wait for the verification process to complete.";
-     
-    } else {
+      verification_message="Stripe account not found or invalid.";
+    } 
+  
+    const externalAccount = stripeAccount?.external_accounts?.data?.find(
+      (account) => account.id === bankAccount.externalAccountId
+    );
+  
+    if (!externalAccount) {
       sucess_verification=false;
-      verification_message="Bank account is not eligible for transfers. Please complete bank account verification with valid information."; 
+      verification_message= "Bank account not found or not linked to Stripe."
     }
-  }
+   
+    if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
+      if (stripeAccount.requirements?.disabled_reason === "requirements.pending_verification") {
+        sucess_verification=false;
+        verification_message="Bank account verification is in progress. Please wait for the verification process to complete.";
+       
+      } else {
+        sucess_verification=false;
+        verification_message="Bank account is not eligible for transfers. Please complete bank account verification with valid information."; 
+      }
+    }
+
+   }catch{
+    console.log("===================Not found Stripe.")
+   } 
  
   return sendResponse(res, {
     statusCode: 200,
