@@ -7,6 +7,7 @@ const config = require("../../../config");
 const ApiError = require("../../../errors/ApiError");
 const { Transaction, StripeAccount } = require("./payment.model");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
+const stripePublic = require("stripe")(config.stripe.stripe_public_key);
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const Admin = require("../admin/admin.model");
 const Variable = require("../variable/variable.model");
@@ -468,7 +469,7 @@ const createStripeToken = async (user, dob, address, bank_info) => {
       throw new Error("Invalid date format for dob");
     }
 
-    return await stripe.tokens.create({
+    return await stripePublic.tokens.create({
       account: {
         individual: {
           dob: {
@@ -592,7 +593,7 @@ const updateUserDataOfBank = async (req, res) => {
 
     const accountId = stripeAccount?.stripeAccountId;
 
-    const accountToken = await stripe.tokens.create({
+    const accountToken = await stripePublic.tokens.create({
       account: {
         individual: {
           address: {

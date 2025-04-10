@@ -35,12 +35,7 @@ app.use(bodyParser.json());
 app.use(express.static("uploads")); // Serve static files from 'uploads'
 
 // All Routes
-app.use("/", routes);
-
-// app.get("/payment/success", async (req, res) => {
-//   res.render("index");
-// });
-
+app.use("/", routes); 
 // Home route to render index.ejs
 app.get("/", async (req, res) => {
   res.json("Welcome to Xmoveit");

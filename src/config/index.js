@@ -51,6 +51,7 @@ const config = {
   },
   stripe: {
     stripe_secret_key: process.env.STRIPE_SECRET_KEY,
+    stripe_public_key:process.env.STRIPE_PUBLIC_KEY,
     endpoint_secret:process.env.ENDPOINT_SECRET_WEBHOOK_STRIPE, 
   },
   paypal: {
