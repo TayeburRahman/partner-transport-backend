@@ -13,6 +13,7 @@ app.use(
   cors({
     origin: [  
       "http://143.198.238.107:4173",
+      "http://dashboard.xmoveit.com",
       "http://192.168.12.90:3001",
       "http://10.0.60.43:3001",
       "http://10.0.60.43:3002"
