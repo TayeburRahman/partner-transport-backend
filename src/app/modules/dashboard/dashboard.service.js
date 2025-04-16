@@ -673,7 +673,6 @@ const getAllAuctions = async (query) => {
   };
 };
 
-
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
 
@@ -1281,6 +1280,7 @@ const getTransactionsDetails = async (req) => {
           select: "_id category",
         },
       });
+
     if (!result) {
       throw new ApiError(404, "Transaction not found.");
     }
