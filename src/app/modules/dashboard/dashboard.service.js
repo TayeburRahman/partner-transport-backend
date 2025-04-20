@@ -182,7 +182,7 @@ const getPaddingPartner = async (query) => {
 
 const getAllPartner = async (query) => {
   const partnerQuery = new QueryBuilder(
-    Partner.find().populate("authId"),
+    Partner.find({status: "approved"}).populate("authId"),
     query
   )
     .search(["name", "email"])
