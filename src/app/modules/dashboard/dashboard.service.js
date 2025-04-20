@@ -898,7 +898,7 @@ const getTotalIncomeUserAuction = async (req, res) => {
   ]);
 
   const usersResult = await User.find({})
-  const partnerResult = await Partner.find({})
+  const partnerResult = await Partner.find({status: "approved"})
   const servicesResult = await Services.find({})
 
   // Check if resultIncome is empty
