@@ -29,16 +29,14 @@ router
   //====================
   // Bank Transfer Payment ------------
   //====================
-  .post("/stripe_bank/create",
-    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
-    PaymentController.createConnectedAccountWithBank)
+  .post("/stripe_bank/create", PaymentController.createConnectedAccountWithBank)
   .get("/stripe_bank/success", PaymentController.saveStripeAccount)
-
+  .get("/stripe_bank/update_save", PaymentController.updateStripeAccount)
     
-  // .patch("/stripe_bank/update",
-  //   auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
-  //   PaymentController.updateUserDataOfBank)
-  .get("/stripe_bank/success_update", PaymentController.updateStripeAccount)
+  // .patch("/stripe_bank/update", 
+  //   PaymentController.updatesConnectedAccountWithBank)
+
+ 
    
 
   .get("/stripe_bank/get",

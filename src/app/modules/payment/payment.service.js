@@ -374,36 +374,43 @@ const stripeRefundPayment = async (req, res) => {
 //Create Connect account ===================== 
 const createConnectedAccountWithBank = async (req, res) => {
   try {
-    const { userId, role } = req.query;
+    const { userId, role, accountId} = req.query;
 
     if(!userId || !role){
       throw new ApiError(400, "UserId and role not found!")
     }
 
-    let existingUser;
-    let userType;
-    if (role === "USER") {
-      userType = "User"
+    let existingUser; 
+    if (role === "USER") { 
       existingUser = await User.findById(userId);
-    } else if (role === "PARTNER") {
-      userType = "Partner"
+    } else if (role === "PARTNER") { 
       existingUser = await Partner.findById(userId);
     }
     if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
 
+  let accountLink;
 
+   if(!accountId){
     const account = await stripe.accounts.create({
       type: "express",
       country: "MX",
       email: existingUser?.email,
     });
 
-    const accountLink = await stripe.accountLinks.create({
+     accountLink = await stripe.accountLinks.create({
       account: account.id,
       refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}`,  
       return_url: `${DOMAIN_URL}/payment/stripe_bank/success?userId=${userId}&role=${role}&accountId=${account.id}`,
       type: "account_onboarding",
     });
+   }else{
+     accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}&accountId=${accountId}`,  
+      return_url: `${DOMAIN_URL}/payment/stripe_bank/update_save?userId=${userId}&role=${role}&accountId=${accountId}`,
+      type: "account_onboarding",
+    }); 
+   } 
 
     return { url: accountLink.url}
 
@@ -474,68 +481,27 @@ const saveStripeAccount = async (req, res) => {
   }
 };
 
-const updatesConnectedAccountWithBank = async (req, res) => {
-  try {
-    const {accountId} = req.query;
-    const { userId, role } = req.user;
-
-    if(!accountId){
-      throw new ApiError(400, "accountId not found!")
-    }
-
-    let existingUser;
-    let userType;
-    if (role === "USER") {
-      userType = "User"
-      existingUser = await User.findById(userId);
-    } else if (role === "PARTNER") {
-      userType = "Partner"
-      existingUser = await Partner.findById(userId);
-    }
-    if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
-
-
-    const accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: `${DOMAIN_URL}/payment/stripe_bank/update?userId=${userId}&role=${role}`,  
-      return_url: `${DOMAIN_URL}/payment/stripe_bank/success?userId=${userId}&role=${role}&accountId=${accountId}`,
-      type: "account_update",
-    });
-   
-
-    return { url: accountLink.url}
-
-  
-  } catch (error) {
-    throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
-  }
-};
-  
 const updateStripeAccount = async (req, res) => {
   try {
     const { userId, role, accountId } = req.query; 
 
     if (!userId || !role || !accountId) {
-      return res.status(400).json({ message: "Missing query parameters" });
+      throw new ApiError(400, "Missing query parameters") 
     }
  
-    let user;
-    let userType;
-    if (role === "USER") {
-      userType = "User";
+    let user; 
+    if (role === "USER") { 
       user = await User.findById(userId);
-    } else if (role === "PARTNER") {
-      userType = "Partner";
+    } else if (role === "PARTNER") { 
       user = await Partner.findById(userId);
     }
-    if (!user) return res.status(404).json({ message: `${role} not found.` });
+
+    if (!user) throw new ApiError(400, `${role} not found.`)  
 
     const account = await stripe.accounts.retrieve(accountId);
+   
+    if(!account?.individual) throw new ApiError(400, 'Stripe account not found.')  
 
-    if (!account.details_submitted) {
-      return res.status(400).json({ message: "Onboarding not completed" });
-    }
-  
     const individual = account?.individual;
     const bank_info = account.external_accounts?.data[0] || {}; 
     const business_name = `${individual?.first_name} ${individual?.last_name}`
@@ -543,35 +509,53 @@ const updateStripeAccount = async (req, res) => {
     console.log("=======", bank_info)
     console.log("account", account.individual)
 
-    const newStripeAccount = StripeAccount({
-      name: user?.name || "Unknown",
-      email: user?.email,
-      user: userId,
-      userType: userType,
-      stripeAccountId: accountId,
-      externalAccountId: account.external_accounts?.data[0]?.id, 
-      bank_info: {
-        bank_name: bank_info?.bank_name,
-        account_holder_name: bank_info?.account_holder_name || user?.name, 
-        account_number: "****" + bank_info?.last4,
-        routing_number: bank_info?.routing_number || null,
-        country: bank_info?.country || "MX",
-        currency: bank_info?.currency || "mxn",
+    const newStripeAccount = await StripeAccount.findOneAndUpdate(
+      { user: userId, stripeAccountId: accountId },
+      {
+        name: user?.name || "Unknown",
+        bank_info: {
+          bank_name: bank_info?.bank_name || null,
+          account_holder_name: bank_info?.account_holder_name || user?.name,
+          account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
+          routing_number: bank_info?.routing_number || null,
+          country: bank_info?.country || "MX",
+          currency: bank_info?.currency || "mxn",
+        },
+        business_profile: {
+          business_name: business_name || user.name,
+          website: bank_info?.url || "www.example.com",
+        },
       },
-      business_profile: {
-        business_name: business_name  || user.name,
-        website: bank_info?.url || "www.example.com", 
-      }, 
-    });
-
-    newStripeAccount.save()
-
+      { new: true }
+    );
      return newStripeAccount;
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+const updatesConnectedAccountWithBank = async (req, res) => {
+  try {
+    const {accountId, userId, role } = req.query; 
+
+    if(!accountId || !userId || !role ){
+      throw new ApiError(400, "accountId or userId or role not found!")
+    }  
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${DOMAIN_URL}/payment/stripe_bank/update?userId=${userId}&role=${role}&accountId=${accountId}`,  
+      return_url: `${DOMAIN_URL}/payment/stripe_bank/update_save?userId=${userId}&role=${role}&accountId=${accountId}`,
+      type: "account_onboarding",
+    }); 
+
+    return { url: accountLink.url}  
+  } catch (error) {
+    throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
+  }
+};
+  
+ 
 
 // =================== 
 const TransferBalance = async ({ bankAccount, amount }) => {

@@ -183,6 +183,18 @@ const updateStripeAccount = catchAsync(async (req, res) => {
  });
 }) 
  
+
+const updatesConnectedAccountWithBank = catchAsync(async (req, res) => {
+  const result = await PaymentService.updatesConnectedAccountWithBank(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Get successfully.",
+   data: result,
+ });
+}) 
+
+ 
  
  
 
@@ -197,8 +209,8 @@ const updateStripeAccount = catchAsync(async (req, res) => {
     paymentHistory,
     withdrawRequest,
     saveStripeAccount, 
-    updateStripeAccount
-     
+    updateStripeAccount,
+    updatesConnectedAccountWithBank
   };
   
   module.exports = { PaymentController };
