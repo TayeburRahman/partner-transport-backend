@@ -399,8 +399,12 @@ const createAndUpdateConnectedAccount = async (req, res) => {
         type: "express",
         country: "MX",
         email: existingUser?.email,  
+        capabilities: {
+          transfers: { requested: true },
+          card_payments: { requested: true },
+        },
       }); 
-      
+
       accountLink = await stripe.accountLinks.create({
         account: account.id,
         refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}`,
