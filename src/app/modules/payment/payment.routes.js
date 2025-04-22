@@ -6,7 +6,6 @@ const bodyParser = require("body-parser");
 const checkAdminAccess = require("../../middlewares/checkAdminAccess"); 
 
 const router = Router();
-
 router
   //====================
   // Payments Stripe ------------

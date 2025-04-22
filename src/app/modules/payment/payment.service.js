@@ -376,6 +376,8 @@ const createAndUpdateConnectedAccount = async (req, res) => {
   try {
     const { userId, role, accountId } = req.query;
 
+    console.log("rtr", userId, role)
+
     if (!userId || !role) {
       throw new ApiError(400, "UserId and role not found!");
     }
