@@ -372,53 +372,56 @@ const stripeRefundPayment = async (req, res) => {
 };
 
 //Create Connect account ===================== 
-const createConnectedAccountWithBank = async (req, res) => {
+const createAndUpdateConnectedAccount = async (req, res) => {
   try {
-    const { userId, role, accountId} = req.query;
+    const { userId, role, accountId } = req.query;
 
-    if(!userId || !role){
-      throw new ApiError(400, "UserId and role not found!")
+    if (!userId || !role) {
+      throw new ApiError(400, "UserId and role not found!");
     }
 
-    let existingUser; 
-    if (role === "USER") { 
+    let existingUser;
+    if (role === "USER") {
       existingUser = await User.findById(userId);
-    } else if (role === "PARTNER") { 
+    } else if (role === "PARTNER") {
       existingUser = await Partner.findById(userId);
     }
-    if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
+    if (!existingUser) {
+      throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
+    }
 
-  let accountLink;
+    let accountLink;
+ 
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "MX",
+        email: existingUser?.email, 
+      });
 
-   if(!accountId){
-    const account = await stripe.accounts.create({
-      type: "express",
-      country: "MX",
-      email: existingUser?.email,
-    });
+      accountLink = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}`,
+        return_url: `${DOMAIN_URL}/payment/stripe_bank/success?userId=${userId}&role=${role}&accountId=${account.id}`,
+        type: "account_onboarding",
+      });
+    } else { 
+      accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}&accountId=${accountId}`,
+        return_url: `${DOMAIN_URL}/payment/stripe_bank/update_save?userId=${userId}&role=${role}&accountId=${accountId}`,
+        type: "account_onboarding", 
+      });
+    } 
 
-     accountLink = await stripe.accountLinks.create({
-      account: account.id,
-      refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}`,  
-      return_url: `${DOMAIN_URL}/payment/stripe_bank/success?userId=${userId}&role=${role}&accountId=${account.id}`,
-      type: "account_onboarding",
-    });
-   }else{
-     accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}&accountId=${accountId}`,  
-      return_url: `${DOMAIN_URL}/payment/stripe_bank/update_save?userId=${userId}&role=${role}&accountId=${accountId}`,
-      type: "account_onboarding",
-    }); 
-   } 
+    return  { url: accountLink.url };
 
-    return { url: accountLink.url}
-
-  
   } catch (error) {
+    console.error("Stripe Error:", error);
     throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
   }
 };
+
 const saveStripeAccount = async (req, res) => {
   try {
     const { userId, role, accountId } = req.query; 
@@ -533,28 +536,7 @@ const updateStripeAccount = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
-};
-
-const updatesConnectedAccountWithBank = async (req, res) => {
-  try {
-    const {accountId, userId, role } = req.query; 
-
-    if(!accountId || !userId || !role ){
-      throw new ApiError(400, "accountId or userId or role not found!")
-    }  
-    const accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: `${DOMAIN_URL}/payment/stripe_bank/update?userId=${userId}&role=${role}&accountId=${accountId}`,  
-      return_url: `${DOMAIN_URL}/payment/stripe_bank/update_save?userId=${userId}&role=${role}&accountId=${accountId}`,
-      type: "account_onboarding",
-    }); 
-
-    return { url: accountLink.url}  
-  } catch (error) {
-    throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
-  }
-};
-  
+}; 
  
 
 // =================== 
@@ -610,14 +592,13 @@ const TransferBalance = async ({ bankAccount, amount }) => {
 
 //Bank Transfer Payment ------------
 const PaymentService = {
-  createConnectedAccountWithBank,
+  createAndUpdateConnectedAccount,
   createCheckoutSessionStripe,
   paymentStatusCancel,
   stripeCheckAndUpdateStatusSuccess,
   stripeRefundPayment,
   TransferBalance, 
-  saveStripeAccount,
-  updatesConnectedAccountWithBank,
+  saveStripeAccount, 
   updateStripeAccount
 }
 

@@ -3,8 +3,7 @@ const auth = require("../../middlewares/auth");
 const { ENUM_USER_ROLE, ENUM_ADMIN_ACCESS } = require("../../../utils/enums");
 const { PaymentController } = require("./payment.controller");
 const bodyParser = require("body-parser");
-const checkAdminAccess = require("../../middlewares/checkAdminAccess");
-const { uploadFile } = require("../../middlewares/fileUploader");
+const checkAdminAccess = require("../../middlewares/checkAdminAccess"); 
 
 const router = Router();
 
@@ -29,15 +28,9 @@ router
   //====================
   // Bank Transfer Payment ------------
   //====================
-  .post("/stripe_bank/create", PaymentController.createConnectedAccountWithBank)
+  .post("/stripe_bank/create", PaymentController.createAndUpdateConnectedAccount)
   .get("/stripe_bank/success", PaymentController.saveStripeAccount)
   .get("/stripe_bank/update_save", PaymentController.updateStripeAccount)
-    
-  // .patch("/stripe_bank/update", 
-  //   PaymentController.updatesConnectedAccountWithBank)
-
- 
-   
 
   .get("/stripe_bank/get",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
