@@ -29,7 +29,7 @@ router
   //====================
   .post("/stripe_bank/create", PaymentController.createAndUpdateConnectedAccount)
   .get("/stripe_bank/success", PaymentController.saveStripeAccount)
-  .get("/stripe_bank/update_save", PaymentController.updateStripeAccount)
+  .get("/stripe_bank/success/update", PaymentController.updateStripeAccount)
 
   .get("/stripe_bank/get",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),

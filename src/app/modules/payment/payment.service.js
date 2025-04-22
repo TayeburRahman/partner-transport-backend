@@ -411,7 +411,7 @@ const createAndUpdateConnectedAccount = async (req, res) => {
       accountLink = await stripe.accountLinks.create({
         account: accountId,
         refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}&accountId=${accountId}`,
-        return_url: `${DOMAIN_URL}/payment/stripe_bank/update_save?userId=${userId}&role=${role}&accountId=${accountId}`,
+        return_url: `${DOMAIN_URL}/payment/stripe_bank/success/update?userId=${userId}&role=${role}&accountId=${accountId}`,
         type: "account_onboarding", 
       });
     } 
