@@ -133,25 +133,23 @@ const AddressSchema = new mongoose.Schema({
 });
 
 const BankInfoSchema = new mongoose.Schema({
-  account_holder_name: { type: String, required: true },
-  account_holder_type: { type: String, required: true, enum: ['individual', 'company'] },
+  bank_name: {type: String},
+  account_holder_name: { type: String },  
   account_number: { type: String, required: true },
   routing_number: { type: String}, 
-  country: { type: String, required: true },
-  currency: { type: String, required: true }
+  country: { type: String },
+  currency: { type: String }
 });
 
 const BusinessProfileSchema = new mongoose.Schema({
   business_name: { type: String, required: true },
-  website: { type: String, },
-  product_description: { type: String}
+  website: { type: String, }, 
 });
 
 const stripeAccountSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    default: "Unknown",
+    required: true, 
   },
   email: {
     type: String,
@@ -170,11 +168,7 @@ const stripeAccountSchema = new mongoose.Schema({
   stripeAccountId: {
     type: String,
     required: true,
-  },
-  address: { 
-    type: AddressSchema, 
-    required: true 
-  },
+  }, 
   bank_info: { 
     type: BankInfoSchema, 
     required: true
@@ -184,13 +178,8 @@ const stripeAccountSchema = new mongoose.Schema({
     required: true 
   },
   externalAccountId:{
-    type: String, 
-    required: true
-  },
-  dateOfBirth: { 
-    type: Date, 
-    required: true 
-  }
+    type: String,  
+  }, 
 }); 
 
 const StripeAccount = mongoose.model("StripeAccount", stripeAccountSchema);  

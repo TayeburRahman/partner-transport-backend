@@ -6,7 +6,6 @@ const Services = require("../services/services.model");
 const Partner = require("./partner.model"); 
 
 
-
 const handlePartnerData = async (receiverId, role, socket, io) => {
 
     // update Partner information of location 

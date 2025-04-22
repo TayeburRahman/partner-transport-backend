@@ -32,10 +32,14 @@ router
   .post("/stripe_bank/create",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
     PaymentController.createConnectedAccountWithBank)
+  .get("/stripe_bank/success", PaymentController.saveStripeAccount)
 
-  .patch("/stripe_bank/update",
-    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
-    PaymentController.updateUserDataOfBank)
+    
+  // .patch("/stripe_bank/update",
+  //   auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),
+  //   PaymentController.updateUserDataOfBank)
+  .get("/stripe_bank/success_update", PaymentController.updateStripeAccount)
+   
 
   .get("/stripe_bank/get",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.SUPER_ADMIN),

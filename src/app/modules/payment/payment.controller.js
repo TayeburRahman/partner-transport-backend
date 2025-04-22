@@ -66,15 +66,15 @@ const createCheckoutSessionStripe  = catchAsync(async (req, res) => {
     data: result,
   });
 });
-const updateUserDataOfBank = catchAsync(async (req, res) => {
-  const result = await PaymentService.updateUserDataOfBank(req); 
-  sendResponse(res, {
-   statusCode: 200,
-   success: true,
-   message: "Update bank info successfully.",
-   data: result,
- });
-})
+// const updateUserDataOfBank = catchAsync(async (req, res) => {
+//   const result = await PaymentService.updateUserDataOfBank(req); 
+//   sendResponse(res, {
+//    statusCode: 200,
+//    success: true,
+//    message: "Update bank info successfully.",
+//    data: result,
+//  });
+// })
 
  
 
@@ -162,27 +162,28 @@ const withdrawRequest = catchAsync(async (req, res) => {
  });
 })
 
-// const withdrawSuccess = catchAsync(async (req, res) => {
-//   const result = await TransitionsService.withdrawSuccess(req); 
-//   sendResponse(res, {
-//    statusCode: 200,
-//    success: true,
-//    message: "Withdraw request processed successfully.",
-//    data: result,
-//  });
-// })
+// ==========================
+const saveStripeAccount = catchAsync(async (req, res) => {
+  const result = await PaymentService.saveStripeAccount(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Save successfully.",
+   data: result,
+ });
+}) 
 
-// const getWithdraw = catchAsync(async (req, res) => {
-//   const result = await TransitionsService.getWithdraw(req); 
-//   sendResponse(res, {
-//    statusCode: 200,
-//    success: true,
-//    message: "get successfully.",
-//    data: result,
-//  });
-// }) 
+const updateStripeAccount = catchAsync(async (req, res) => {
+  const result = await PaymentService.updateStripeAccount(req); 
+  sendResponse(res, {
+   statusCode: 200,
+   success: true,
+   message: "Save successfully.",
+   data: result,
+ });
+}) 
  
-
+ 
  
 
   const PaymentController = { 
@@ -195,9 +196,8 @@ const withdrawRequest = catchAsync(async (req, res) => {
     transitionsHistory, 
     paymentHistory,
     withdrawRequest,
-    // withdrawSuccess,
-    updateUserDataOfBank,
-    // getWithdraw
+    saveStripeAccount, 
+    updateStripeAccount
      
   };
   

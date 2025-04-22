@@ -880,7 +880,7 @@ const filterAndSortServices = async (req, res) => {
   return { sortedServices, meta, piso: pisoVariable };
 };
 
-//=Total Income/User/Auction ========================
+//=Total Income/User/Auction ==============
 const getTotalIncomeUserAuction = async (req, res) => {
 
   const resultIncome = await Transaction.aggregate([

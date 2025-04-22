@@ -288,3 +288,306 @@ const createCheckoutSessionPaypal = async (req, res) => {
       throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Paypal server error: ' + error);
     }
   };
+
+  // =======================================
+  const updateUserDataOfBank = async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { address, bank_info, business_profile, dateOfBirth } = req.body;
+  
+      const parsedDob = new Date(dateOfBirth);
+      if (isNaN(parsedDob)) {
+        throw new ApiError(404, "Invalid date format for dateOfBirth.");
+      }
+  
+      const stripeAccount = await StripeAccount.findOne({ user: userId });
+      if (!stripeAccount) {
+        throw new ApiError(404, "Stripe account not found.");
+      }
+  
+      const accountId = stripeAccount?.stripeAccountId;
+  
+      const accountToken = await stripePublic.tokens.create({
+        account: {
+          individual: {
+            address: {
+              line1: address.line1,
+              city: address.city,
+              state: address.state,
+              postal_code: address.postal_code,
+              country: bank_info.country,
+            },
+            dob: {
+              day: parsedDob.getDate(),
+              month: parsedDob.getMonth() + 1,
+              year: parsedDob.getFullYear(),
+            },
+            // phone: address.phone_number,
+            metadata: {
+              personal_rfc: address.personal_rfc,
+            },
+          },
+        },
+      });
+  
+      await stripe.accounts.update(accountId, {
+        account_token: accountToken.id,
+        business_profile: {
+          name: business_profile?.business_name || "Unknown",
+          // url: business_profile?.website || "www.example.com",
+          product_description: business_profile?.product_description,
+        },
+      });
+  
+      let existingBankAccountId = stripeAccount.externalAccountId;
+  
+      if (existingBankAccountId) {
+        const account = await stripe.accounts.retrieve(accountId);
+        const activeBankAccount = account.external_accounts?.data?.find(
+          (bank) => bank.id === existingBankAccountId
+        );
+  
+        if (!activeBankAccount) {
+          existingBankAccountId = null;
+        }
+      }
+  
+      const newBankAccount = await stripe.accounts.createExternalAccount(accountId, {
+        external_account: {
+          object: "bank_account",
+          account_holder_name: bank_info.account_holder_name,
+          account_holder_type: bank_info.account_holder_type,
+          account_number: bank_info.account_number,
+          country: bank_info.country,
+          currency: bank_info.currency,
+        },
+      });
+  
+      await stripe.accounts.updateExternalAccount(accountId, newBankAccount.id, {
+        default_for_currency: true,
+      });
+  
+      if (existingBankAccountId) {
+        try {
+          await stripe.accounts.deleteExternalAccount(accountId, existingBankAccountId);
+        } catch (error) {
+          if (error.type === "invalid_request_error" && error.code === "resource_missing") {
+          } else {
+            throw new ApiError(404, error.message);
+          }
+        }
+      }
+  
+      const updatedStripeAccount = await StripeAccount.findOneAndUpdate(
+        { user: userId },
+        {
+          address: {
+            line1: address.line1,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postal_code,
+            country: address.country,
+            phone_number: address.phone_number,
+            personal_rfc: address.personal_rfc,
+          },
+          bank_info: {
+            account_holder_name: bank_info.account_holder_name,
+            account_holder_type: bank_info.account_holder_type,
+            account_number: bank_info.account_number,
+            country: bank_info.country,
+            currency: bank_info.currency,
+          },
+          business_profile: {
+            business_name: business_profile?.business_name || "Unknown",
+            website: business_profile?.website || "www.example.com",
+            product_description: business_profile?.product_description,
+          },
+          dateOfBirth: parsedDob,
+          externalAccountId: newBankAccount.id,
+          updatedAt: new Date(),
+        },
+        { new: true, upsert: true }
+      );
+  
+      return {
+        message: "User data updated successfully!",
+        updatedStripeAccount,
+      };
+    } catch (error) {
+      console.error("Error updating user data:", error);
+      throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
+    }
+  };
+
+
+  const createConnectedAccountWithBank = async (req, res) => {
+      try {
+        const { userId, role } = req.user;
+    
+        const address = req.body.address;
+        const bank_info = req.body.bank_info;
+        const business_profile = req.body.business_profile;
+        const dob = req.body.dateOfBirth;
+    
+        // Input validation
+        const validationError = validateInputs(address, dob, bank_info, business_profile);
+        if (validationError) throw new ApiError(httpStatus.BAD_REQUEST, validationError);
+    
+        // Find the user
+        let existingUser;
+        let userType;
+        if (role === "USER") {
+          userType = "User"
+          existingUser = await User.findById(userId);
+        } else if (role === "PARTNER") {
+          userType = "Partner"
+          existingUser = await Partner.findById(userId);
+        }
+        if (!existingUser) throw new ApiError(httpStatus.NOT_FOUND, `${role} not found.`);
+    
+        // Handle KYC files and create token in parallel
+        const [token] = await Promise.all([
+          createStripeToken(existingUser, dob, address, bank_info),
+        ]);
+    
+        // Create the Stripe account
+        const account = await createStripeAccount(token, bank_info, business_profile, existingUser, dob);
+    
+        // Save Stripe account if creation was successful
+        if (account.id && account?.external_accounts?.data?.length) {
+          const saveData = await saveStripeAccount(account, existingUser, userId, userType, address, dob, business_profile, bank_info);
+          return {
+            saveData,
+            account,
+            success: true,
+            message: "Account created successfully.",
+          };
+        } else {
+          throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create the Stripe account.");
+        }
+      } catch (error) {
+        throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
+      }
+    };
+    const validateInputs = (address, dateOfBirth, bank_info, business_profile) => {
+    
+      if (
+        !address ||
+        !address.line1 ||
+        !address.city ||
+        !address.state ||
+        !address.country ||
+        !address.postal_code
+      ) {
+        throw new Error("All address fields are required: line1, city, state, country, postal_code, phone_number, and personal_rfc.");
+      }
+    
+      // Validate date of birth
+      if (!dateOfBirth || isNaN(Date.parse(dateOfBirth))) {
+        throw new Error("A valid date of birth is required.");
+      }
+    
+      if (
+        !bank_info ||
+        !bank_info.account_holder_name ||
+        !bank_info.account_holder_type ||
+        !bank_info.account_number ||
+        !bank_info.country ||
+        !bank_info.currency
+      ) {
+        throw new Error("All bank information fields are required: account_holder_name, account_holder_type, account_number, country, and currency.");
+      }
+    
+      // if (
+      //   !business_profile ||
+      //   !business_profile?.business_name
+      // ) {
+      //   throw new Error("All business profile fields are required: business_name.");
+      // }
+      return null;
+    };
+    const createStripeToken = async (user, dob, address, bank_info) => {
+      try {
+        // Ensure dob is a valid Date object
+        const parsedDob = new Date(dob);
+        if (isNaN(parsedDob)) {
+          throw new Error("Invalid date format for dob");
+        }
+    
+        return await stripePublic.tokens.create({
+          account: {
+            individual: {
+              dob: {
+                day: parsedDob.getDate(),
+                month: parsedDob.getMonth() + 1,
+                year: parsedDob.getFullYear(),
+              },
+              first_name: user?.name?.split(" ")[0] || "Unknown",
+              last_name: user?.name?.split(" ")[1] || "Unknown",
+              email: user?.email,
+              phone: address?.phone_number,
+              address: {
+                city: address.city,
+                country: bank_info.country,
+                line1: address.line1,
+                postal_code: address.postal_code,
+                state: address.state,
+              },
+              metadata: {
+                rfc: address.personal_rfc,
+                personal_rfc: address.personal_rfc,
+              },
+            },
+            business_type: "individual",
+            tos_shown_and_accepted: true,
+          },
+        });
+      } catch (error) {
+        console.error("Error creating Stripe token:", error);
+        throw new ApiError(
+          httpStatus.INTERNAL_SERVER_ERROR,
+          "Error creating Stripe token: " + error.message
+        );
+      }
+    };
+    const createStripeAccount = async (token, bank_info, business_profile, user, dob) => {
+      // console.log("Creating Stripe account",  token, bank_info, business_profile, user)
+      try {
+        return await stripe.accounts.create({
+          type: "custom",
+          account_token: token.id,
+          capabilities: {
+            transfers: { requested: true },
+          },
+          business_profile: {
+            mcc: "5970",
+            name: business_profile?.business_name || user.name || "Unknown",
+            product_description: business_profile?.product_description,
+            // url: business_profile?.website || "www.example.com",
+          },
+          external_account: {
+            object: "bank_account",
+            account_holder_name: bank_info.account_holder_name,
+            account_holder_type: bank_info.account_holder_type,
+            account_number: bank_info.account_number,
+            routing_number: bank_info.routing_number,
+            country: bank_info.country,
+            currency: bank_info.currency,
+          },
+        });
+      } catch (error) {
+        console.error("Error creating Stripe account:", error);
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Error creating Stripe account: " + error.message);
+      }
+    }; 
+
+
+
+
+
+
+
+
+
+
+
