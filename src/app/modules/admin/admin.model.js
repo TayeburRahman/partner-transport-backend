@@ -65,6 +65,7 @@ const AdminSchema = new Schema(
     accTo_audit_dashboard: { type: Boolean, default: false },
     accTo_supervision_dashboard: { type: Boolean, default: false },
     accTo_activity_log: { type: Boolean, default: false },
+    accTo_activity_log_edit: { type: Boolean, default: false },
   },
   {
     timestamps: true,

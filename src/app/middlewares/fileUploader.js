@@ -99,7 +99,7 @@ const uploadFile = () => {
     { name: "vehicleFrontImage", maxCount: 1 },
     { name: "vehicleBackImage", maxCount: 1 },
     { name: "vehicleSideImage", maxCount: 1 },
-    { name: "image", maxCount: 10 },
+    { name: "image", maxCount: 20 },
     { name: "fileClaimImage", maxCount: 10 },
      
   ]);
