@@ -484,6 +484,30 @@ const saveStripeAccount = async (req, res) => {
 
     newStripeAccount.save()
 
+    if (role === "USER") {
+      await User.findByIdAndUpdate(
+        userId, 
+        {  
+          bank_name: bank_info?.bank_name || null,
+          bank_holder_name: bank_info?.account_holder_name || user?.name,
+          bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
+          routing_number: bank_info?.routing_number || null,
+        },
+        { new: true }
+      );
+    } else if (role === "PARTNER") {
+      await Partner.findByIdAndUpdate(
+        userId,  
+        {  
+          bank_name: bank_info?.bank_name || null,
+          bank_holder_name: bank_info?.account_holder_name || user?.name,
+          bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
+          routing_number: bank_info?.routing_number || null,
+        },
+        { new: true }
+      );
+    }
+
      return newStripeAccount;
   } catch (err) {
     console.error(err);
@@ -515,9 +539,7 @@ const updateStripeAccount = async (req, res) => {
     const individual = account?.individual;
     const bank_info = account.external_accounts?.data[0] || {}; 
     const business_name = `${individual?.first_name} ${individual?.last_name}`
- 
-    console.log("=======", bank_info)
-    console.log("account", account.individual)
+  
 
     const newStripeAccount = await StripeAccount.findOneAndUpdate(
       { user: userId, stripeAccountId: accountId },
@@ -538,13 +560,39 @@ const updateStripeAccount = async (req, res) => {
       },
       { new: true }
     );
+
+    if (role === "USER") {
+      await User.findByIdAndUpdate(
+        userId, 
+        {  
+          bank_name: bank_info?.bank_name || null,
+          bank_holder_name: bank_info?.account_holder_name || user?.name,
+          bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
+          routing_number: bank_info?.routing_number || null,
+        },
+        { new: true }
+      );
+    } else if (role === "PARTNER") {
+      await Partner.findByIdAndUpdate(
+        userId,  
+        {  
+          bank_name: bank_info?.bank_name || null,
+          bank_holder_name: bank_info?.account_holder_name || user?.name,
+          bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
+          routing_number: bank_info?.routing_number || null,
+        },
+        { new: true }
+      );
+    }
+    
+
+   
      return newStripeAccount;
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 }; 
- 
 
 // =================== 
 const TransferBalance = async ({ bankAccount, amount }) => {

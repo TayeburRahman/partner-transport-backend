@@ -112,6 +112,10 @@ const PartnerSchema = new Schema(
       type: String,
       default: null,
     },
+    bank_name:{
+      type: String, 
+      default: null,
+    },
     bank_holder_type: {
       type: String,
       default: null,

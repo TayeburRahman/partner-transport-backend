@@ -58,12 +58,13 @@ router
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_EDIT),
     DashboardController.deleteUser
   )
-  .get(
-    "/get_all_user",
-    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_MANAGE),
-    DashboardController.getAllUsers
-  )
+  
+  // .get(
+  //   "/get_all_user",
+  //   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  //   checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_MANAGE),
+  //   DashboardController.getAllUsers
+  // )
 
   // Partner ========================
   .get(
@@ -184,6 +185,13 @@ router
     // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.filterAndSortServices
   )
+
+  .patch(
+    "/search_custom",
+    // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.filterAndSortServicesCustom
+  )
+
   .post(
     "/notice/user",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
@@ -227,6 +235,8 @@ router
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SUPPORT),
     BidController.getAllFileClaims
   )
+
+   
 // variable ========================
 
 

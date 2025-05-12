@@ -327,6 +327,18 @@ const getTransactionsDetails = catchAsync(
     });
   },
 ); 
+
+const filterAndSortServicesCustom = catchAsync(async (req, res) => {
+  const result = await DashboardService.filterAndSortServicesCustom(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Retrieved successfully",
+    data: result,
+  });
+});
+
+ 
  
 const DashboardController = {
   getAllUsers,
@@ -360,7 +372,8 @@ const DashboardController = {
   sendNoticePartner,
   getTransactionsHistory,
   getTransactionsDetails,
-  updateProfile
+  updateProfile,
+  filterAndSortServicesCustom
 };
 
 module.exports = { DashboardController };

@@ -186,6 +186,7 @@ const ServicesSchema = new Schema(
     confirmedPartner: {
       type: mongoose.Schema.ObjectId,
       ref: "Partner",
+      default: null
     },
     paymentStatus: {
       type: String,

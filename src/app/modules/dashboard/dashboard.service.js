@@ -8,8 +8,7 @@ const Admin = require("../admin/admin.model");
 const { TermsConditions, PrivacyPolicy } = require("../manage/manage.model");
 const { ENUM_PARTNER_AC_STATUS } = require("../../../utils/enums");
 const { sendEmail } = require("../../../utils/sendEmail");
-const approvedBody = require("../../../mails/approvedBody");
-const { resetEmailTemplate } = require("../../../mails/reset.email");
+const approvedBody = require("../../../mails/approvedBody"); 
 const disapprovedBody = require("../../../mails/disapprovedBody");
 const Services = require("../services/services.model");
 const Variable = require("../variable/variable.model");
@@ -37,6 +36,8 @@ const getAllUsers = async (query) => {
 
   const result = await userQuery.modelQuery;
   const meta = await userQuery.countTotal();
+
+  // console.log("=======", result)
 
   return {
     meta,
@@ -659,7 +660,11 @@ const getAllAuctions = async (query) => {
     },
     {
       $facet: {
-        data: [{ $sort: { _id: -1 } }, { $skip: (page - 1) * limit }, { $limit: limit }],
+        data: [
+          { $sort: { createdAt: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit }
+        ],
         meta: [{ $count: "total" }],
       },
     },
@@ -667,11 +672,19 @@ const getAllAuctions = async (query) => {
 
   const [result] = await Services.aggregate(pipeline); 
 
+  console.log(result.data)
+
   return {
-    meta: result.meta[0] || { total: 0 },
-    data: result.data.reverse(),
+    meta: {
+      page,
+      limit,
+      total: result.meta[0]?.total || 0,
+      totalPage: Math.ceil((result.meta[0]?.total || 0) / limit)
+    },
+    data: result.data,
   };
 };
+
 
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
@@ -879,6 +892,145 @@ const filterAndSortServices = async (req, res) => {
 
   return { sortedServices, meta, piso: pisoVariable };
 };
+
+const filterAndSortServicesCustom = async (req, res) => {
+  try {
+    const {
+      service,
+      sortBy,
+      sortOrder,
+      page = 1,
+      limit = 10,
+      serviceStatus,
+      longitude,
+      latitude,
+    } = req.query;
+
+    const categories = req.body.categories || [];
+
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    const filterQuery = {};
+
+    // Service name search
+    if (service) {
+      filterQuery.service = { $regex: service, $options: "i" };
+    }
+
+    // Category filter
+    if (categories && categories.length > 0) {
+      const catArray = Array.isArray(categories) ? categories : [categories];
+      filterQuery.category = { $in: catArray };
+    }
+
+    // Status filter
+    if (serviceStatus) {
+      const statusArray = Array.isArray(serviceStatus) ? serviceStatus : [serviceStatus];
+      filterQuery.status = { $in: statusArray };
+    }
+
+    // Radius distance
+    const { coverageRadius = 10 } = await Variable.findOne({}) || {};
+    const maxDistance = Number(coverageRadius) * 1000;
+
+    // Geo query if longitude & latitude provided
+    const geoQuery = (longitude && latitude)
+      ? [{
+          $geoNear: {
+            near: {
+              type: "Point",
+              coordinates: [parseFloat(longitude), parseFloat(latitude)],
+            },
+            distanceField: "distance",
+            spherical: true,
+            maxDistance,
+          }
+        }]
+      : [];
+
+    // Aggregation pipeline
+    const pipeline = [
+      ...geoQuery,
+      { $match: filterQuery },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+      { $sort: { createdAt: -1 } },
+      { $skip: (pageNumber - 1) * limitNumber },
+      { $limit: limitNumber }
+    ];
+
+    const services = await Services.aggregate(pipeline);
+
+    const total = await Services.countDocuments(filterQuery);
+    const meta = { total, page: pageNumber, limit: limitNumber };
+
+    // Defensive date parser
+    const parseDateTime = (dateStr, timeStr) => {
+      if (!dateStr || !timeStr) return null;
+      const [hourStr, minuteStr] = timeStr.split(":");
+      const hour = parseInt(hourStr, 10) || 0;
+      const minute = parseInt(minuteStr, 10) || 0;
+
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return null;
+
+      date.setHours(hour);
+      date.setMinutes(minute);
+      return date;
+    };
+
+    const getRelevantDate = (service) => {
+      if (!service || typeof service !== 'object') return null;
+
+      if (sortBy === 'deadline' && service.deadlineDate && service.deadlineTime) {
+        return parseDateTime(service.deadlineDate, service.deadlineTime);
+      } else if (sortBy === 'schedule' && service.scheduleDate && service.scheduleTime) {
+        return parseDateTime(service.scheduleDate, service.scheduleTime);
+      }
+      return null;
+    };
+
+    const sortedServices = services.sort((a, b) => {
+      const dateA = getRelevantDate(a);
+      const dateB = getRelevantDate(b);
+
+      if (!dateA || !dateB) return 0;
+
+      if (sortOrder === "endSoon") {
+        return dateA - dateB;
+      }
+
+      if (sortOrder === "laterFast") {
+        return dateB - dateA;
+      }
+
+      return 0;
+    });
+
+    const pisoVariable = await VariableCount.getPisoVariable();
+
+    return  {
+      sortedServices,
+      meta,
+      piso: pisoVariable,
+    };
+
+  } catch (err) {
+    console.error("filterAndSortServicesCustom error", err);
+    throw new ApiError( 404,"Internal Server Error" );
+  }
+};
+
+
+
 
 //=Total Income/User/Auction ==============
 const getTotalIncomeUserAuction = async (req, res) => {
@@ -1325,7 +1477,8 @@ const DashboardService = {
   getTransactionsHistory,
   getTransactionsDetails,
   getPaddingPartner,
-  updateProfile
+  updateProfile,
+  filterAndSortServicesCustom
 
 };
 

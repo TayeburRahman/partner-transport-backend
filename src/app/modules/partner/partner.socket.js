@@ -11,7 +11,7 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
     // update Partner information of location 
     socket.on(ENUM_SOCKET_EVENT.PARTNER_LOCATION, async (data) => {
 
-        const { latitude, longitude, address } = data;
+        const { latitude, longitude, address } = data; 
 
         if (!receiverId || !data?.longitude || !data?.latitude) { 
             socket.emit('error', {
@@ -29,6 +29,8 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
                 projection: { location: 1 },
             }
         ); 
+
+        console.log("============", updatedPartner)
 
         if (!updatedPartner) {
             throw new ApiError(httpStatus.NOT_FOUND, 'Partner not found!');

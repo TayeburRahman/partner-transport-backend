@@ -21,8 +21,32 @@ const VariableCount = require("../variable/variable.count");
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
+const cron = require("node-cron");
 dayjs.extend(utc);
 dayjs.extend(timezone); 
+
+
+
+cron.schedule("* * * * *", async () => {
+  try {
+    const now = new Date();
+    
+    const result = await Services.deleteMany({
+      confirmedPartner: null,
+      paymentStatus: "pending",
+      scheduleDate: { $lte: now },
+    });
+
+    if (result.deletedCount > 0) {
+      logger.info(
+        `Deleted ${result.deletedCount} expired auctions with no offers or confirmation`
+      );
+    }
+  } catch (error) {
+    logger.error("Error deleting expired auctions:", error);
+  }
+});
+
 
 
 // =USER============================= 
@@ -425,7 +449,7 @@ const searchNearby = async (req) => {
   }
 
   const { coverageRadius } = await Variable.findOne({});
-
+  
   const nearbyServices = await Services.aggregate([
     {
       $geoNear: {
@@ -1159,7 +1183,6 @@ const updateSellServicesStatusPartner = async (req) => {
     throw error;
   }
 };
-
 
 // Status===========================
 
