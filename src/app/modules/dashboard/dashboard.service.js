@@ -685,7 +685,6 @@ const getAllAuctions = async (query) => {
   };
 };
 
-
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
 
@@ -1028,9 +1027,6 @@ const filterAndSortServicesCustom = async (req, res) => {
     throw new ApiError( 404,"Internal Server Error" );
   }
 };
-
-
-
 
 //=Total Income/User/Auction ==============
 const getTotalIncomeUserAuction = async (req, res) => {
