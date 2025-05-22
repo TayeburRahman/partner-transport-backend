@@ -148,7 +148,7 @@ const registrationAccount = async (req) => {
  
  
   if (role === "USER"
-    //  || role === "PARTNER"
+     || role === "PARTNER"
   ) {
     sendEmail({
       email: auth.email,
@@ -210,14 +210,22 @@ const activateAccount = async (payload) => {
   if (existAuth.activationCode !== activation_code) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Code didn't match!");
   }
-  const auth = await Auth.findOneAndUpdate(
-    { email: userEmail },
-    { isActive: true },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
+
+  const auth = null;
+  if (existAuth.role === ENUM_USER_ROLE.USER) {
+    auth = await Auth.findOneAndUpdate(
+      { email: userEmail },
+      { isActive: true },
+      {
+        new: true,
+        runValidators: true,
+      });
+  }
+
+  if (existAuth.role === ENUM_USER_ROLE.PARTNER){
+    return { message: "Code verify successfully!", status: "success"}
+  }
+ 
   let result = {};
 
   if (existAuth.role === ENUM_USER_ROLE.USER) {
@@ -243,10 +251,10 @@ const activateAccount = async (payload) => {
 
   const accessToken = jwtHelpers.createToken(
     {
-      authId: existAuth._id,
-      role: existAuth.role,
-      userId: result._id,
-      emailAuth: result.email
+      authId: existAuth?._id,
+      role: existAuth?.role,
+      userId: result?._id,
+      emailAuth: result?.email
     },
     config.jwt.secret,
     config.jwt.expires_in
