@@ -211,14 +211,14 @@ const activateAccount = async (payload) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Code didn't match!");
   }
 
-  const auth = null;
+  let auth = null;
   if (existAuth.role === ENUM_USER_ROLE.USER) {
     auth = await Auth.findOneAndUpdate(
       { email: userEmail },
       { isActive: true },
       {
         new: true,
-        runValidators: true,
+      runValidators: true,
       });
   }
 
