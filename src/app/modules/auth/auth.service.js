@@ -266,7 +266,6 @@ const activateAccount = async (payload) => {
     config.jwt.refresh_expires_in
   );
 
-
   return {
     id: auth._id,
     role: auth.role,

@@ -290,6 +290,7 @@ const getUserPostHistory = async (req) => {
 
 const deletePostDB = async (req) => {
   const { serviceId } = req.params;
+  console.log('=====', serviceId)
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(404, "Service not found");
