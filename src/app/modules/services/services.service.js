@@ -30,6 +30,8 @@ dayjs.extend(timezone);
 cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
+
+    console.log("===", now)
     
     const result = await Services.deleteMany({
       confirmedPartner: null,
