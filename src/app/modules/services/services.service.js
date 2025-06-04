@@ -32,6 +32,20 @@ cron.schedule("* * * * *", async () => {
     const now = new Date();
 
     console.log("===", now)
+    const time = (now + 5)
+
+    const mexicoTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Mexico_City',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(now);
+
+    console.log('mexicoTime', mexicoTime)
     
     const result = await Services.deleteMany({
       confirmedPartner: null,
