@@ -44,7 +44,7 @@ cron.schedule("* * * * *", async () => {
       hour12: false
     }).format(now);
 
-    const parts = formatter.formatToParts(now);
+    const parts = mexicoTime.formatToParts(now);
 
     // Extract parts
     const get = (type) => parts.find(p => p.type === type).value;
