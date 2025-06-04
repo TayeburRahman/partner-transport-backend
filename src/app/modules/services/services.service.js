@@ -31,8 +31,6 @@ cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
 
-    console.log("===", now) 
-
     const mexicoTime = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/Mexico_City',
       year: 'numeric',
@@ -43,25 +41,6 @@ cron.schedule("* * * * *", async () => {
       second: '2-digit',
       hour12: false
     }).format(now);
-
-    console.log("===",  new Date(mexicoTime))
-
-    const parts = mexicoTime.formatToParts(now);
-
-    // Extract parts
-    const get = (type) => parts.find(p => p.type === type).value;
-    
-    const year = get('year');
-    const month = get('month');
-    const day = get('day');
-    const hour = get('hour');
-    const minute = get('minute');
-    const second = get('second');
-    
-    // Manually construct ISO-like string (no milliseconds, no Z)
-    const mexicoISO = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
-    
-    console.log("Mexico ISO Time (no Z):", mexicoISO);
     
     const result = await Services.deleteMany({
       confirmedPartner: null,
@@ -132,7 +111,7 @@ const createPostDB = async (req) => {
       const bankAccount = await StripeAccount.findOne({ user: userId });
 
       if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations in your profile.");
+        throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank information in your profile.");
       }
   
       try { 
@@ -151,7 +130,7 @@ const createPostDB = async (req) => {
         );
   
         if (!externalAccount) {
-          throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations.");
+          throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank information.");
         } 
   
       } catch (error) {
@@ -912,6 +891,7 @@ const updateServicesStatusUser = async (req) => {
         }
 
       } catch (error) {
+      
         throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
       }
 

@@ -396,7 +396,7 @@ const createAndUpdateConnectedAccount = async (req, res) => {
  
     if (!accountId) {
       const account = await stripe.accounts.create({
-        type: "express",
+        type: "full",
         country: "MX",
         email: existingUser?.email,  
         capabilities: {
