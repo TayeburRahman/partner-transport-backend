@@ -66,7 +66,7 @@ cron.schedule("* * * * *", async () => {
     const result = await Services.deleteMany({
       confirmedPartner: null,
       paymentStatus: "pending",
-      scheduleDate: { $lte: mexicoISO },
+      scheduleDate: { $lte: new Date(mexicoTime) },
     });
 
     if (result.deletedCount > 0) {
