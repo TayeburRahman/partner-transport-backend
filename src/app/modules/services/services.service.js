@@ -31,8 +31,7 @@ cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
 
-    console.log("===", now)
-    const time = (now + 5)
+    console.log("===", now) 
 
     const mexicoTime = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/Mexico_City',
@@ -45,12 +44,27 @@ cron.schedule("* * * * *", async () => {
       hour12: false
     }).format(now);
 
-    console.log('mexicoTime', mexicoTime)
+    const parts = formatter.formatToParts(now);
+
+    // Extract parts
+    const get = (type) => parts.find(p => p.type === type).value;
+    
+    const year = get('year');
+    const month = get('month');
+    const day = get('day');
+    const hour = get('hour');
+    const minute = get('minute');
+    const second = get('second');
+    
+    // Manually construct ISO-like string (no milliseconds, no Z)
+    const mexicoISO = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+    
+    console.log("Mexico ISO Time (no Z):", mexicoISO);
     
     const result = await Services.deleteMany({
       confirmedPartner: null,
       paymentStatus: "pending",
-      scheduleDate: { $lte: now },
+      scheduleDate: { $lte: mexicoISO },
     });
 
     if (result.deletedCount > 0) {
