@@ -960,7 +960,7 @@ const filterAndSortServicesCustom = async (req, res) => {
           as: "category"
         }
       },
-      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+      // { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
       { $sort: { createdAt: -1 } },
       { $skip: (pageNumber - 1) * limitNumber },
       { $limit: limitNumber }
@@ -971,6 +971,7 @@ const filterAndSortServicesCustom = async (req, res) => {
     const total = await Services.countDocuments(filterQuery);
     const meta = { total, page: pageNumber, limit: limitNumber };
 
+    console.log("services", services)
     // Defensive date parser
     const parseDateTime = (dateStr, timeStr) => {
       if (!dateStr || !timeStr) return null;

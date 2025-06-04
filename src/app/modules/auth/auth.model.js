@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const config = require("../../../config");
 const validator = require("validator");
-
 const { Schema, model } = mongoose;
 
 const AuthSchema = new Schema(
@@ -70,8 +69,7 @@ const AuthSchema = new Schema(
       type: Boolean,
       default: false,
     },
-  },
-  {
+  },{
     timestamps: true,
   }
 );

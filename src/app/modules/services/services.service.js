@@ -47,8 +47,6 @@ cron.schedule("* * * * *", async () => {
   }
 });
 
-
-
 // =USER============================= 
 const validateInputs = (data, image) => {
   const requiredFields = [
@@ -486,7 +484,6 @@ const searchNearby = async (req) => {
       },
     },
   ])
-
 
   const populatedServices = await Services.populate(nearbyServices, 'category');
 
