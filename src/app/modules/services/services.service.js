@@ -44,6 +44,8 @@ cron.schedule("* * * * *", async () => {
       hour12: false
     }).format(now);
 
+    console.log("===",  new Date(mexicoTime))
+
     const parts = mexicoTime.formatToParts(now);
 
     // Extract parts
