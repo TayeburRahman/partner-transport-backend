@@ -396,7 +396,7 @@ const createAndUpdateConnectedAccount = async (req, res) => {
  
     if (!accountId) {
       const account = await stripe.accounts.create({
-        type: "full",
+        type: "express",
         country: "MX",
         email: existingUser?.email,  
         capabilities: {
@@ -449,6 +449,7 @@ const saveStripeAccount = async (req, res) => {
     if (!user) return res.status(404).json({ message: `${role} not found.` });
 
     const account = await stripe.accounts.retrieve(accountId);
+    console.log("account", account)
 
     if (!account.details_submitted) {
       return res.status(400).json({ message: "Onboarding not completed" });
@@ -533,6 +534,8 @@ const updateStripeAccount = async (req, res) => {
     if (!user) throw new ApiError(400, `${role} not found.`)  
 
     const account = await stripe.accounts.retrieve(accountId);
+
+    console.log("========",account)
    
     if(!account?.individual) throw new ApiError(400, 'Stripe account not found.')  
 
