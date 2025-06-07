@@ -289,7 +289,7 @@ const createCheckoutSessionPaypal = async (req, res) => {
     }
   };
 
-  // =======================================
+  // ===========================
   const updateUserDataOfBank = async (req, res) => {
     try {
       const { userId, role } = req.user;
@@ -418,7 +418,6 @@ const createCheckoutSessionPaypal = async (req, res) => {
       throw new ApiError(error.statusCode || 500, error.message || "Internal Server Error");
     }
   };
-
 
   const createConnectedAccountWithBank = async (req, res) => {
       try {
