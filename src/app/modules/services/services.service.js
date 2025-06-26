@@ -41,6 +41,8 @@ cron.schedule("* * * * *", async () => {
       second: '2-digit',
       hour12: false
     }).format(now);
+
+    console.log("mexicoTime", mexicoTime)
     
     const result = await Services.deleteMany({
       confirmedPartner: null,
@@ -63,7 +65,9 @@ const validateInputs = (data, image) => {
   const requiredFields = [
     "service", "category", "scheduleDate", "scheduleTime", "numberOfItems", "weightKG", "description", "deadlineDate", "deadlineTime",
     "isLoaderNeeded", "loadFloorNo", "loadingAddress", "loadLongitude",
-    "loadLatitude", "mainService"
+    "loadLatitude", "mainService", 
+    "localScheduleDate", // start
+    "loclScheduleTime" // end
   ];
 
   for (const field of requiredFields) {
@@ -163,6 +167,8 @@ const createPostDB = async (req) => {
       unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
+      localScheduleDate: data.localScheduleDate,
+      loclScheduleTime: data.loclScheduleTime,
       image: images,
       doYouForWaste: data.doYouForWaste,
       minPrice: data?.minPrice,

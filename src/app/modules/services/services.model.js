@@ -142,6 +142,14 @@ const ServicesSchema = new Schema(
       type: Number,
       default: null
     },
+    localScheduleDate: {
+      type: Date,
+      required: true,
+    },
+    loclScheduleTime: {
+      type: Date,
+      required: true,
+    }, 
     status: {
       type: String,
       enum: [
