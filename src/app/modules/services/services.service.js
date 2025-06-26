@@ -29,20 +29,11 @@ dayjs.extend(timezone);
 
 cron.schedule("* * * * *", async () => {
   try {
-    const now = new Date();
+    // const now = new Date();
 
-    const mexicoTime = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Mexico_City',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    }).format(now);
+    const mexicoTime = DateTime.now().setZone("America/Mexico_City").toISO();
 
-    console.log("mexicoTime", mexicoTime)
+    console.log("mexicoTime",  new Date(mexicoTime) )
     
     const result = await Services.deleteMany({
       confirmedPartner: null,
