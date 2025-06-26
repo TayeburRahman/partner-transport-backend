@@ -31,14 +31,14 @@ cron.schedule("* * * * *", async () => {
   try {
     // const now = new Date();
 
-    const mexicoTime = DateTime.now().setZone("America/Mexico_City").toISO();
+    const mexicoTime = DateTime.now().setZone("America/Mexico_City").toJSDate();
 
-    console.log("mexicoTime",  new Date(mexicoTime) )
+    console.log("mexicoTime", mexicoTime)
     
     const result = await Services.deleteMany({
       confirmedPartner: null,
       paymentStatus: "pending",
-      localScheduleDate: { $lte: new Date(mexicoTime) },
+      localScheduleDate: { $lte:  mexicoTime },
     });
 
     if (result.deletedCount > 0) {
