@@ -36,6 +36,12 @@ cron.schedule("* * * * *", async () => {
 
     console.log("Now in UTC (converted from Mexico):", nowUtc);
 
+    const data = await Services.find({
+      paymentStatus: "pending",
+      localScheduleDate: { $lte: nowUtc },
+    })
+    console.log("data", data)
+
     const result = await Services.deleteMany({ 
       paymentStatus: "pending",
       localScheduleDate: { $lte: nowUtc },
