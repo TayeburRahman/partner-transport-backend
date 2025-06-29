@@ -25,20 +25,20 @@ const cron = require("node-cron");
 dayjs.extend(utc);
 dayjs.extend(timezone); 
 const { DateTime } = require("luxon");
-
+ 
 
 cron.schedule("* * * * *", async () => {
   try {
-    // const now = new Date();
+    const nowUtc = DateTime.now()
+      .setZone("America/Mexico_City")
+      .toUTC()
+      .toJSDate();
 
-    const mexicoTime = DateTime.now().setZone("America/Mexico_City").toJSDate();
+    console.log("Now in UTC (converted from Mexico):", nowUtc);
 
-    console.log("mexicoTime", mexicoTime)
-    
-    const result = await Services.deleteMany({
-      confirmedPartner: null,
+    const result = await Services.deleteMany({ 
       paymentStatus: "pending",
-      localScheduleDate: { $lte:  mexicoTime },
+      localScheduleDate: { $lte: nowUtc },
     });
 
     if (result.deletedCount > 0) {
@@ -50,6 +50,7 @@ cron.schedule("* * * * *", async () => {
     logger.error("Error deleting expired auctions:", error);
   }
 });
+
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -648,13 +649,13 @@ const getUserServicesWithinOneHour = async (req) => {
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
-    scheduleDate: {
-      $lte: formattedDate,
+    localScheduleDate: {
+      $lte: dateNow,
     },
-    scheduleTime: {
-      // $gte: formattedStartRange, 
-      $lte: formattedEndTime
-    }
+    // scheduleTime: {
+    //   // $gte: formattedStartRange, 
+    //   $lte: formattedEndTime
+    // }
   };
 
   if (role === 'USER') {
