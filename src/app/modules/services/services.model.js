@@ -143,11 +143,11 @@ const ServicesSchema = new Schema(
       default: null
     },
     localScheduleDate: {
-      type: Date,
+      type: String,
       required: true,
     },
     loclScheduleTime: {
-      type: Date,
+      type: String,
       required: true,
     }, 
     status: {
