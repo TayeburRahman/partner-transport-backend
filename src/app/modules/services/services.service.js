@@ -144,9 +144,17 @@ const createPostDB = async (req) => {
     const images = validateInputs(data, image);
 
     const distance = Number(data.distance);
-    const formattedDistance = parseFloat(distance?.toFixed(3));
+    const formattedDistance = parseFloat(distance?.toFixed(3)); 
+
+    const mexicoScheduleTime = DateTime.fromISO(data.loclScheduleTime)
+  .setZone("America/Mexico_City")
+  .toFormat("yyyy-MM-dd HH:mm:ss");
+
+const mexicoScheduleDate = DateTime.fromISO(data.localScheduleDate)
+  .setZone("America/Mexico_City")
+  .toFormat("yyyy-MM-dd HH:mm:ss");
      
-    console.log("data.loclScheduleTime,", data.loclScheduleTime, data.localScheduleDate)
+ 
     const serviceData = {
       user: userId,
       mainService: data.mainService,
@@ -166,8 +174,8 @@ const createPostDB = async (req) => {
       unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
-      localScheduleDate: data.localScheduleDate,
-      loclScheduleTime: data.loclScheduleTime,
+      localScheduleDate: data.mexicoScheduleDate,
+      loclScheduleTime: data.mexicoScheduleTime,
       image: images,
       doYouForWaste: data.doYouForWaste,
       minPrice: data?.minPrice,
