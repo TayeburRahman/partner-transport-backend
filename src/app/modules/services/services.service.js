@@ -25,26 +25,20 @@ const cron = require("node-cron");
 dayjs.extend(utc);
 dayjs.extend(timezone); 
 const { DateTime } = require("luxon");
- 
+
 
 cron.schedule("* * * * *", async () => {
   try {
-    const nowUtc = DateTime.now()
-      .setZone("America/Mexico_City")
-      .toUTC()
-      .toJSDate();
+    // const now = new Date();
 
-    console.log("Now in UTC (converted from Mexico):", nowUtc);
+    const nowMexico = DateTime.now().setZone("America/Mexico_City");
+    const nowUtc = nowMexico.toUTC().toJSDate();
 
-    const data = await Services.find({
-      paymentStatus: "pending",
-      localScheduleDate: { $lte: nowUtc },
-    })
-    console.log("data", data)
-
+    console.log("mexicoTime",nowMexico, nowUtc)
+    
     const result = await Services.deleteMany({ 
       paymentStatus: "pending",
-      localScheduleDate: { $lte: nowUtc },
+      localScheduleDate: { $lte:  nowUtc },
     });
 
     if (result.deletedCount > 0) {
@@ -56,7 +50,6 @@ cron.schedule("* * * * *", async () => {
     logger.error("Error deleting expired auctions:", error);
   }
 });
-
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -144,17 +137,8 @@ const createPostDB = async (req) => {
     const images = validateInputs(data, image);
 
     const distance = Number(data.distance);
-    const formattedDistance = parseFloat(distance?.toFixed(3)); 
+    const formattedDistance = parseFloat(distance?.toFixed(3));
 
-    const mexicoScheduleTime = DateTime.fromISO(data.loclScheduleTime)
-  .setZone("America/Mexico_City")
-  .toFormat("yyyy-MM-dd HH:mm:ss");
-
-const mexicoScheduleDate = DateTime.fromISO(data.localScheduleDate)
-  .setZone("America/Mexico_City")
-  .toFormat("yyyy-MM-dd HH:mm:ss");
-     
- 
     const serviceData = {
       user: userId,
       mainService: data.mainService,
@@ -174,8 +158,8 @@ const mexicoScheduleDate = DateTime.fromISO(data.localScheduleDate)
       unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
-      localScheduleDate: data.mexicoScheduleDate,
-      loclScheduleTime: data.mexicoScheduleTime,
+      localScheduleDate: data.localScheduleDate,
+      loclScheduleTime: data.loclScheduleTime,
       image: images,
       doYouForWaste: data.doYouForWaste,
       minPrice: data?.minPrice,
