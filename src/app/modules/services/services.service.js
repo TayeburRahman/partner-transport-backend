@@ -145,7 +145,8 @@ const createPostDB = async (req) => {
 
     const distance = Number(data.distance);
     const formattedDistance = parseFloat(distance?.toFixed(3));
-
+     
+    console.log("data.loclScheduleTime,", data.loclScheduleTime, data.localScheduleDate)
     const serviceData = {
       user: userId,
       mainService: data.mainService,
