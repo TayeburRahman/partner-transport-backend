@@ -133,6 +133,8 @@ const createPostDB = async (req) => {
       }
     }
 
+    console.log("data.localScheduleDate data.loclScheduleTime", data.localScheduleDate, data.loclScheduleTime,)
+
 
     const images = validateInputs(data, image);
 
