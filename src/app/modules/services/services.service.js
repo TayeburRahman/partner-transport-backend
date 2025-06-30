@@ -38,7 +38,7 @@ cron.schedule("* * * * *", async () => {
     
     const result = await Services.deleteMany({ 
       paymentStatus: "pending",
-      localScheduleDate: { $lte:  now },
+      startDate: { $lte:  now },
     });
 
     if (result.deletedCount > 0) {
@@ -57,8 +57,8 @@ const validateInputs = (data, image) => {
     "service", "category", "scheduleDate", "scheduleTime", "numberOfItems", "weightKG", "description", "deadlineDate", "deadlineTime",
     "isLoaderNeeded", "loadFloorNo", "loadingAddress", "loadLongitude",
     "loadLatitude", "mainService", 
-    "localScheduleDate", // start
-    "loclScheduleTime" // end
+    "startDate", // start
+    "endDate" // end
   ];
 
   for (const field of requiredFields) {
@@ -650,7 +650,7 @@ const getUserServicesWithinOneHour = async (req) => {
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
-    localScheduleDate: {
+    startDate: {
       $lte: dateNow,
     },
     // scheduleTime: {
