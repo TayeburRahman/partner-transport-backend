@@ -133,7 +133,7 @@ const createPostDB = async (req) => {
       }
     }
 
-    console.log("data.localScheduleDate data.loclScheduleTime", data.localScheduleDate, data.loclScheduleTime,)
+    console.log("data.localScheduleDate data.loclScheduleTime", data.startDate, data.endDate,)
 
 
     const images = validateInputs(data, image);
@@ -160,8 +160,8 @@ const createPostDB = async (req) => {
       unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
-      startDate: new Date(data.localScheduleDate),
-      endDate: new Date(data.loclScheduleTime),
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
       image: images,
       doYouForWaste: data.doYouForWaste,
       minPrice: data?.minPrice,
