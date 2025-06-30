@@ -641,10 +641,11 @@ const getUserServicesWithinOneHour = async (req) => {
   const dateNow = new Date(req.query?.current_date)
   const now = new Date();
 
-  const formattedDate = formatDate(dateNow);  
+  console.log("dateNow", dateNow)
 
-  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
-  const formattedEndTime = formatTimeTo12hrs(oneHourLater);  
+  // const formattedDate = formatDate(dateNow);  
+  // const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
+  // const formattedEndTime = formatTimeTo12hrs(oneHourLater);  
   
   console.log(now,req.query?.current_date ,dateNow)
 
