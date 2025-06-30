@@ -29,16 +29,16 @@ const { DateTime } = require("luxon");
 
 cron.schedule("* * * * *", async () => {
   try {
-    // const now = new Date();
+    const now = new Date();
 
-    const nowMexico = DateTime.now().setZone("America/Mexico_City");
-    const nowUtc = nowMexico.toUTC().toJSDate();
+    // const nowMexico = DateTime.now().setZone("America/Mexico_City");
+    // const nowUtc = nowMexico.toUTC().toJSDate();
 
-    console.log("mexicoTime",nowMexico, nowUtc)
+    console.log("mexicoTime", now)
     
     const result = await Services.deleteMany({ 
       paymentStatus: "pending",
-      localScheduleDate: { $lte:  nowUtc },
+      localScheduleDate: { $lte:  now },
     });
 
     if (result.deletedCount > 0) {
