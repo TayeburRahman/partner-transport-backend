@@ -12,9 +12,9 @@
 // const sendEmail = async (options) => {
 //   const transporter = nodemailer.createTransport({
 //     host: config.smtp.smtp_host,
-//     // service: config.smtp.smtp_service,
+//     service: config.smtp.smtp_service,
 //     port: parseInt(config.smtp.smtp_port),
-//     secure: Number(config.smtp.smtp_port) === 465,
+//     // secure: true,
 //     auth: {
 //       user: config.smtp.smtp_mail,
 //       pass: config.smtp.smtp_password,
@@ -26,7 +26,7 @@
 //   const mailOptions = {
 //     from: `${config.smtp.NAME} <${config.smtp.smtp_mail}>`,
 //     to: email,
-//     // date: formattedDate,
+//     date: formattedDate,
 //     signed_by: "xmoveit.com",
 //     subject,
 //     html,
@@ -36,6 +36,7 @@
 // };
 
 // module.exports = { sendEmail };
+
 
 const nodemailer = require('nodemailer');
 const config = require('../config');
@@ -48,15 +49,23 @@ const isSecure = false;
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.sendgrid.net',
-  port: 587,            // 465 if you prefer SSL
-  secure: false,        // true if you use 465
+  port: 587,        
+  secure: false,     
   requireTLS: true,     
   auth: {
     user:'apikey',    
     pass: config.smtp.smtp_password,
   } 
 });
-// console.log('transporter',transporter)
+// transporter.verify((err, success) => {
+//   if (err) {
+//     console.error('SMTP connect error:', err);
+//   } else {
+//     console.log('SMTP server is ready to take messages');
+//   }
+// });
+
+ 
 console.log("smtp_mail",config.smtp.smtp_mail, config.smtp.NAME )
 async function sendEmail({ email, subject, html }) {
   const mailOptions = await transporter.sendMail({
@@ -77,3 +86,4 @@ async function sendEmail({ email, subject, html }) {
 }
 
 module.exports = { sendEmail };
+
