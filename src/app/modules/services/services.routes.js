@@ -20,8 +20,8 @@ router
     uploadFile(),
     ServicesController.updatePostDB
   )
-  .get("/details/:serviceId", 
-    auth(ENUM_USER_ROLE.USER,ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  .get("/details/:serviceId",
+    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     ServicesController.getDetails)
 
   .get(
@@ -84,7 +84,7 @@ router
     auth(ENUM_USER_ROLE.PARTNER),
     ServicesController.updateSellServicesStatusPartner
   )
-  
+
   .get(
     "/user/within_one_hour",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
@@ -93,7 +93,6 @@ router
   .post("/review",
     auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
     BidController.postReviewMove)
-
   .get(
     "/review-partner",
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN),
