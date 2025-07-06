@@ -56,7 +56,7 @@ const registrationSuccessEmailBody = (userData) => `
         <h1>${userData?.activationCode}</h1>
         <p>Please enter this code on the activation page within the next 5 minutes.</p>
         <p>If you didn't register for Xmoveit, please ignore this email.</p>
-        <p>If you have any questions, please contact us at <a href="mailto:tayebur@gmail.com">tayeburrahman@gmail.com</a>.</p>
+        <p>If you have any questions, please contact us at <a href="mailto:tayebur@gmail.com">xmoveit.db@gmail.com</a>.</p>
       </div>
     </body>
   </html>
