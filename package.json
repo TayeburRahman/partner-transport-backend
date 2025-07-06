@@ -19,6 +19,7 @@
   "description": "mobile app for a single vendor business",
   "dependencies": {
     "@paypal/checkout-server-sdk": "^1.0.3",
+    "@sendgrid/mail": "^8.1.5",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",

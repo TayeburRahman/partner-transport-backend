@@ -38,6 +38,7 @@ const config = {
     smtp_mail: process.env.SMTP_MAIL,
     smtp_password: process.env.SMTP_PASSWORD,
     NAME: process.env.SERVICE_NAME,
+    smtp_password: process.env.SENDGRID_API_KEY, 
   },
   cloudinary: {
     cloud_name: process.env.CLOUD_NAME,
