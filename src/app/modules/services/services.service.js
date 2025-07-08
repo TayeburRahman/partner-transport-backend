@@ -414,7 +414,7 @@ const rescheduledPostUser = async (req) => {
   const { serviceId } = req.params;
   const { rescheduledReason, rescheduledTime, rescheduledDate, rescheduledDateTime } = req.body;
 
-  if (!rescheduledDate || !rescheduledTime || rescheduledDateTime) {
+  if (!rescheduledDate || !rescheduledTime || !rescheduledDateTime) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "Rescheduled Time and Date are required!"
