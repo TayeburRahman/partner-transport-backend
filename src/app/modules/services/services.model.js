@@ -146,6 +146,9 @@ const ServicesSchema = new Schema(
       type: Date,
       required: true,
     },
+    rescheduledDateTime: {
+      type: Date, 
+    }, 
     endDate: {
       type: Date,
       required: true,

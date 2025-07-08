@@ -412,9 +412,9 @@ const getServicePostUser = async (req) => {
 const rescheduledPostUser = async (req) => {
   const { userId } = req.user;
   const { serviceId } = req.params;
-  const { rescheduledReason, rescheduledTime, rescheduledDate } = req.body;
+  const { rescheduledReason, rescheduledTime, rescheduledDate, rescheduledDateTime } = req.body;
 
-  if (!rescheduledDate || !rescheduledTime) {
+  if (!rescheduledDate || !rescheduledTime || rescheduledDateTime) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "Rescheduled Time and Date are required!"
@@ -432,6 +432,7 @@ const rescheduledPostUser = async (req) => {
       rescheduledReason,
       rescheduledTime,
       rescheduledDate,
+      rescheduledDateTime,
       rescheduledStatus: "pending",
       status: ENUM_SERVICE_STATUS.RESCHEDULED,
     },
@@ -534,6 +535,7 @@ const rescheduledAction = async (req) => {
     updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.ACCEPTED;
     updateFields.scheduleTime = service.rescheduledTime;
     updateFields.scheduleDate = service.rescheduledDate;
+    updateFields.startDate = service.rescheduledDateTime;
   } else if (rescheduledStatus === "decline") {
     updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.DECLINED;
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
