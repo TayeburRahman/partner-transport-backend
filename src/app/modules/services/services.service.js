@@ -421,6 +421,8 @@ const rescheduledPostUser = async (req) => {
     );
   }
 
+  console.log("rescheduledDateTime", rescheduledDateTime)
+
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found!");
@@ -540,6 +542,8 @@ const rescheduledAction = async (req) => {
     updateFields.rescheduledStatus = ENUM_SERVICE_STATUS.DECLINED;
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
   }
+
+  console.log(" updateFields.startDate",  updateFields.startDate)
 
   await NotificationService.sendNotification({
     title: {
