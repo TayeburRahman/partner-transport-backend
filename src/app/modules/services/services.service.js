@@ -543,7 +543,7 @@ const rescheduledAction = async (req) => {
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
   }
 
-  console.log(" updateFields.startDate",  updateFields.startDate)
+  console.log(" updateFields.startDate",  updateFields.startDate, serviceId)
 
   await NotificationService.sendNotification({
     title: {
@@ -646,6 +646,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const dateNow = new Date(req.query?.current_date)
   const now = new Date();
+  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000); 
 
   console.log("dateNow====", dateNow) 
  
@@ -655,7 +656,8 @@ const getUserServicesWithinOneHour = async (req) => {
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
     startDate: {
-      $lte: now,
+      $gte: now,
+      $lte: oneHourLater,
     },
     // scheduleTime: {
     //   // $gte: formattedStartRange, 
