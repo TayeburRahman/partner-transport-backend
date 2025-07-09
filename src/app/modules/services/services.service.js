@@ -866,7 +866,7 @@ const updateServicesStatusUser = async (req) => {
 
     if (status === "delivery-confirmed") { 
       const amount = Number(transaction.partnerAmount);
-
+      console.log("status===========amount", amount)
       receivedUser.wallet = (receivedUser.wallet || 0) + amount;
       await receivedUser.save(); 
 
@@ -1095,7 +1095,7 @@ const updateSellServicesStatusPartner = async (req) => {
   try {
     if (status === "delivery-confirmed") {
       const amount = Number(transaction.partnerAmount); 
-
+      console.log("===========amount", amount)
       receivedUser.wallet = (receivedUser.wallet || 0) + amount;
       await receivedUser.save(); 
 
