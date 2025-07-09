@@ -459,9 +459,9 @@ const searchNearby = async (req) => {
   if (isNaN(lng) || isNaN(lat)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid longitude or latitude");
   }
-
+  console.log("===", longitude, latitude)
   const { coverageRadius } = await Variable.findOne({});
-  
+
   const nearbyServices = await Services.aggregate([
     {
       $geoNear: {
@@ -471,13 +471,11 @@ const searchNearby = async (req) => {
         },
         distanceField: "distance",
         spherical: true,
-        maxDistance: coverageRadius ? Number(coverageRadius * 1000) : Number(10000 * 1000),
-      },
-    },
-    {
-      $match: {
-        status: ENUM_SERVICE_STATUS.PENDING,
-        service: service,
+        maxDistance: coverageRadius ? Number(coverageRadius * 1000) : 10000 * 1000,
+        query: {
+          status: ENUM_SERVICE_STATUS.PENDING,
+          ...(service && { service }),
+        },
       },
     },
     {
@@ -492,19 +490,19 @@ const searchNearby = async (req) => {
         scheduleTime: 1,
         deadlineDate: 1,
         deadlineTime: 1,
-        deadlineDate: 1,
         loadingLocation: 1,
       },
     },
-  ])
+  ]);
 
-  const populatedServices = await Services.populate(nearbyServices, 'category');
+  const populatedServices = await Services.populate(nearbyServices, { path: 'category' });
 
   return {
     count: populatedServices.length,
     populatedServices,
   };
 };
+
 
 const rescheduledAction = async (req) => {
   const { serviceId, rescheduledStatus } = req.query;
