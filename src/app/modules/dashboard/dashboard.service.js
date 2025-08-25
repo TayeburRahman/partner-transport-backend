@@ -609,6 +609,10 @@ const getAllAuctions = async (query) => {
   const page = Number.isInteger(parseInt(query.page)) ? parseInt(query.page) : 1;
   const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10; 
 
+  // Default sort
+  const sortField = query.sortBy || "createdAt";  
+  const sortOrder = query.order === "asc" ? 1 : -1; 
+
   const matchQuery = {
     ...query.searchTerm
       ? {
@@ -641,15 +645,9 @@ const getAllAuctions = async (query) => {
         as: "confirmedPartner",
       },
     },
-    {
-      $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
-    },
-    {
-      $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true },
-    },
-    {
-      $match: matchQuery,
-    },
+    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
+    { $match: matchQuery },
     {
       $lookup: {
         from: "categories",
@@ -661,18 +659,16 @@ const getAllAuctions = async (query) => {
     {
       $facet: {
         data: [
-          { $sort: { createdAt: -1 } },
+          { $sort: { [sortField]: sortOrder } }, 
           { $skip: (page - 1) * limit },
-          { $limit: limit }
+          { $limit: limit },
         ],
         meta: [{ $count: "total" }],
       },
     },
   ];
 
-  const [result] = await Services.aggregate(pipeline); 
-
-  console.log(result.data)
+  const [result] = await Services.aggregate(pipeline);
 
   return {
     meta: {
@@ -684,6 +680,7 @@ const getAllAuctions = async (query) => {
     data: result.data,
   };
 };
+
 
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
@@ -972,6 +969,7 @@ const filterAndSortServicesCustom = async (req, res) => {
     const meta = { total, page: pageNumber, limit: limitNumber };
 
     console.log("services", services)
+    
     // Defensive date parser
     const parseDateTime = (dateStr, timeStr) => {
       if (!dateStr || !timeStr) return null;

@@ -678,7 +678,7 @@ const statusServicesDetails = async (req, res) => {
     })
     .populate({
       path: 'confirmedPartner',
-      select: 'name email profile_image rating'
+      select: 'name email profile_image rating location'
     })
     .populate({
       path: 'category',

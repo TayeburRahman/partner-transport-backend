@@ -23,6 +23,7 @@ const createVariable = async (req) => {
         activity: "reglue",
         status: "Success",
       };
+      
       await LogsDashboardService.createTaskDB(newTask);
   
       return result;

@@ -1,4 +1,3 @@
-
 const sendResponse = require("../../../shared/sendResponse");
 const catchAsync = require("../../../shared/catchasync");
 const { VariableService } = require("./variable.service");

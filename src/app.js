@@ -16,7 +16,8 @@ app.use(
       "https://dashboard.xmoveit.com",
       "http://192.168.12.90:3001",
       "http://10.0.60.43:3001",
-      "http://10.0.60.43:3002"
+      "http://10.0.60.43:3002",
+      "http://10.10.20.31:3001"
     ],
     credentials: true,
   })

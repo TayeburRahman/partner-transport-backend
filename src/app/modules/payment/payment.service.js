@@ -129,7 +129,7 @@ const createCheckoutSessionStripe = async (req) => {
             unit_amount: Number(parseFloat(unitAmount).toFixed(2)),
             product_data: {
               name: service.service,
-              description: service.description,
+              description:  `Service ID: ${serviceId} | ${service.description}`,
             },
           },
           quantity: 1,

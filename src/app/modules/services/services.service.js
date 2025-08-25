@@ -8,8 +8,7 @@ const config = require("../../../config");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const {
   ENUM_SERVICE_STATUS,
-  ENUM_SERVICE_TYPE,
-  ENUM_PARTNER_AC_STATUS,
+  ENUM_SERVICE_TYPE, 
   ENUM_USER_ROLE,
 } = require("../../../utils/enums");
 const Variable = require("../variable/variable.model");
@@ -23,8 +22,7 @@ const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 const cron = require("node-cron");
 dayjs.extend(utc);
-dayjs.extend(timezone); 
-const { DateTime } = require("luxon");
+dayjs.extend(timezone);  
 
 
 cron.schedule("* * * * *", async () => {
@@ -141,6 +139,8 @@ const createPostDB = async (req) => {
     const distance = Number(data.distance);
     const formattedDistance = parseFloat(distance?.toFixed(3));
 
+    console.log("===", data.unloadFloorNo)
+
     const serviceData = {
       user: userId,
       mainService: data.mainService,
@@ -157,7 +157,7 @@ const createPostDB = async (req) => {
       isLoaderNeeded: data.isLoaderNeeded,
       loadFloorNo: data.loadFloorNo,
       isUnloaderNeeded: data.isUnloaderNeeded,
-      unloadFloorNo: data.unloadFloorNo,
+      unloadFloorNo: data.unloadFloorNo ,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
       startDate: new Date(data.startDate),
@@ -566,64 +566,6 @@ const rescheduledAction = async (req) => {
 
   return result;
 };
-
-// const getUserServicesWithinOneHour = async (req) => {
-//   const { userId, role } = req.user;
-//   const now = new Date();
-
-//   const formattedDate = formatDate(now); // Today's date
-//   const formattedStartTime = formatTimeTo12hrs(now); 
-
-//   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-//   const formattedEndTime = formatTimeTo12hrs(oneHourLater);  
-
-//   const query = {
-//     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
-//     scheduleDate: formattedDate,  
-//     scheduleTime: {
-//       // $gte: formattedStartTime, // Greater than or equal to now
-//       $lte: formattedEndTime,   // Less than or equal to next hour
-//     }
-//   };
-
-//   if (role === 'USER') {
-//     query.user = userId;
-//   } else if (role === 'PARTNER') {
-//     query.confirmedPartner = userId;
-//   }
-
-//   let result = await Services.find(query)
-//     .populate({
-//       path: "confirmedPartner",
-//       select: "name email profile_image phone_number rating",
-//     })
-//     .populate({
-//       path: "user",
-//       select: "name email profile_image phone_number rating",
-//     })
-//     .populate({
-//       path: "category",
-//       select: "_id category",
-//     });
-
-//   const variable = await Variable.findOne();
-//   const surcharge = Number(variable?.surcharge || 0);
-
-//   if (role === ENUM_USER_ROLE.USER) {
-//     result = result.map((data) => ({ 
-//       ...data._doc,
-//       winBid: data.mainService === 'move' 
-//         ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 
-//         : data.winBid,
-//     }));
-//   }
-
-//   return result;
-// };
-
-// const dateNow = req.query?.current_date
-// console.log(dateNow, now, formattedDate,oneHourLater,  formattedEndTime)
-// const formattedStartTime = formatTimeTo12hrs(dateNow); 
 
 function formatDate(date) {
   const year = date.getFullYear();
