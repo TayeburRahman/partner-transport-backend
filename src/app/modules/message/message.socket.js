@@ -9,7 +9,6 @@ const Message = require("./message.model");
 
 
 const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => { 
-
     // Get one to one - all conversation messages
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_GETALL, async (data) => {
         const { senderId, page } = data;
@@ -228,7 +227,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
         // =====
         if (!previousNotification && adminType) {
-            await NotificationService.sendNotification({
+          const notification =  await NotificationService.sendNotification({
                 title: {
                     eng: `New Message from ${userRoleType || "Unknown"}`,
                     span: `Nuevo Mensaje de ${userRoleType || "Desconocido"}`
@@ -243,6 +242,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
                 types: 'new-message',
                 isAdmin: adminType,
             })
+            console.log("===",notification)
         }
         // =====
         await emitMassage(senderId, newMessage, `${ENUM_SOCKET_EVENT.MESSAGE_NEW_SERVICE}/${serviceId}`)

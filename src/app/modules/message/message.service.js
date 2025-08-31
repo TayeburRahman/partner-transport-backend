@@ -5,6 +5,7 @@ const ApiError = require("../../../errors/ApiError");
 const User = require("../user/user.model");
 const Partner = require("../partner/partner.model");
 const Admin = require("../admin/admin.model");
+const Services = require("../services/services.model");
 
 const getMessages = async (req) => {
   const { senderId, receiverId, page = 1, limit = 20 } = req.query;
@@ -131,8 +132,11 @@ const getMessagesServices = async (req) => {
     const receiverRole = getRole(receiver);
     const senderRole = getRole(sender); 
 
+    const service = await Services.findById(serviceId).select('status partner_status user_status')
+
     return {
       count: conversation.messages.length,
+      service,
       conversation,
       participants: {
         sender: {

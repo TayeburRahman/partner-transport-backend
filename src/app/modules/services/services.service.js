@@ -25,29 +25,29 @@ dayjs.extend(utc);
 dayjs.extend(timezone);  
 
 
-cron.schedule("* * * * *", async () => {
-  try {
-    const now = new Date();
+// cron.schedule("* * * * *", async () => {
+//   try {
+//     const now = new Date();
 
-    // const nowMexico = DateTime.now().setZone("America/Mexico_City");
-    // const nowUtc = nowMexico.toUTC().toJSDate();
+//     // const nowMexico = DateTime.now().setZone("America/Mexico_City");
+//     // const nowUtc = nowMexico.toUTC().toJSDate();
 
-    console.log("mexicoTime", now)
+//     console.log("mexicoTime", now)
     
-    const result = await Services.deleteMany({ 
-      paymentStatus: "pending",
-      startDate: { $lte:  now },
-    });
+//     const result = await Services.deleteMany({ 
+//       paymentStatus: "pending",
+//       startDate: { $lte:  now },
+//     });
 
-    if (result.deletedCount > 0) {
-      logger.info(
-        `Deleted ${result.deletedCount} expired auctions with no offers or confirmation`
-      );
-    }
-  } catch (error) {
-    logger.error("Error deleting expired auctions:", error);
-  }
-});
+//     if (result.deletedCount > 0) {
+//       logger.info(
+//         `Deleted ${result.deletedCount} expired auctions with no offers or confirmation`
+//       );
+//     }
+//   } catch (error) {
+//     logger.error("Error deleting expired auctions:", error);
+//   }
+// });
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -596,7 +596,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
     startDate: {
-      $gte: now,
+      // $gte: now,
       $lte: oneHourLater,
     },
     // scheduleTime: {
