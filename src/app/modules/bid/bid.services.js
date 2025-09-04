@@ -303,7 +303,7 @@ const orderDetailsPageFileClaim = async (req) => {
     })
     .populate({
       path: 'category',
-      select: '_id category'
+      select: '_id category category_spain'
     })
 
   const variable = await Variable.findOne();
