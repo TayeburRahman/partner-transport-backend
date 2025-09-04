@@ -398,7 +398,7 @@ const createAndUpdateConnectedAccount = async (req, res) => {
       const account = await stripe.accounts.create({
         type: "express",
         country: "MX",
-        dob: { day: 1, month: 1, year: 1990 },
+        // dob: { day: 1, month: 1, year: 1990 },
         email: existingUser?.email,  
         capabilities: {
           transfers: { requested: true },
