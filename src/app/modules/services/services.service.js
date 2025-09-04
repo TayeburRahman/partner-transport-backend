@@ -279,7 +279,7 @@ const getUserPostHistory = async (req) => {
   const dataQuery = new QueryBuilder(Services.find({ user: userId })
     .populate({
       path: "category",
-      select: "_id category",
+      select: "_id category category_spain",
     })
     , query)
     .search([])
