@@ -623,7 +623,7 @@ const getUserServicesWithinOneHour = async (req) => {
     })
     .populate({
       path: "category",
-      select: "_id category",
+      select: "_id category category_spain",
     });
 
   const variable = await Variable.findOne();
@@ -675,7 +675,7 @@ const filterUserByHistory = async (req) => {
       })
       .populate({
         path: "category",
-        select: "_id category",
+        select: "_id category category_spain",
       }),
     query
   )
