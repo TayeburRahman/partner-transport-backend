@@ -262,7 +262,7 @@ const filterBidsByHistory = async (req) => {
         // select: "_id name status",  
         populate: [
           { path: "user", select: "_id name profile_image email" },
-          { path: "category", select: "_id category" },
+          { path: "category", select: "_id category category_spain" },
         ],
       })
       .sort({ createdAt: -1 })
