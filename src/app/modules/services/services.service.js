@@ -223,7 +223,7 @@ const getDetails = async (req) => {
   const result = await Services.findById(serviceId)
     .populate({
       path: "category",
-      select: "_id category",
+      select: "_id category category_spain",
     })
     .populate({
       path: "user",
