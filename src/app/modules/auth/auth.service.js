@@ -69,10 +69,9 @@ cron.schedule("* * * * *", async () => {
 
 const registrationAccount = async (req) => {
   const payload = req.body;
-  const files = req.files;
+  const files = req.files
   const { role, password, confirmPassword, email, ...other } = payload;
 
-  // --- Validations ---
   if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Valid Role is required!");
   }
@@ -96,46 +95,48 @@ const registrationAccount = async (req) => {
 
   if (existingAuth && !existingAuth.isActive) {
     await Promise.all([
-      existingAuth.role === "USER" && User.deleteOne({ authId: existingAuth._id }),
-      existingAuth.role === "PARTNER" && Partner.deleteOne({ authId: existingAuth._id }),
-      (existingAuth.role === "ADMIN" || existingAuth.role === "SUPER_ADMIN") &&
-        Admin.deleteOne({ authId: existingAuth._id }),
+      existingAuth.role === "USER" &&
+      User.deleteOne({ authId: existingAuth._id }),
+      existingAuth.role === "PARTNER" &&
+      Partner.deleteOne({ authId: existingAuth._id }),
+      existingAuth.role === "ADMIN" || existingAuth.role === "SUPER_ADMIN" &&
+      Admin.deleteOne({ authId: existingAuth._id }),
       Auth.deleteOne({ email }),
     ]);
   }
 
-  // --- File Upload Validation ---
-  const validateFile = (file, folder) => {
-    if (!file || !file[0]) return null;
-
-    const filePath = path.join(__dirname, "..", "public", folder, file[0].filename);
-    if (fs.existsSync(filePath)) {
-      return `/images/${folder}/${file[0].filename}`;
-    }
-    return null;
-  };
-
   const fileUploads = {};
   if (files) {
-    fileUploads.profile_image = validateFile(files.profile_image, "profile");
-    fileUploads.licensePlateImage = validateFile(files.licensePlateImage, "vehicle-licenses");
-    fileUploads.drivingLicenseImage = validateFile(files.drivingLicenseImage, "driving-licenses");
-    fileUploads.vehicleInsuranceImage = validateFile(files.vehicleInsuranceImage, "insurance");
-    fileUploads.vehicleRegistrationCardImage = validateFile(
-      files.vehicleRegistrationCardImage,
-      "vehicle-registration"
-    );
-    fileUploads.vehicleFrontImage = validateFile(files.vehicleFrontImage, "vehicle-image");
-    fileUploads.vehicleBackImage = validateFile(files.vehicleBackImage, "vehicle-image");
-    fileUploads.vehicleSideImage = validateFile(files.vehicleSideImage, "vehicle-image");
+    if (files.profile_image && files.profile_image[0]) {
+      fileUploads.profile_image = `/images/profile/${files.profile_image[0].filename}`;
+    }
+    if (files.licensePlateImage && files.licensePlateImage[0]) {
+      fileUploads.licensePlateImage = `/images/vehicle-licenses/${files.licensePlateImage[0].filename}`;
+    }
+    if (files.drivingLicenseImage && files.drivingLicenseImage[0]) {
+      fileUploads.drivingLicenseImage = `/images/driving-licenses/${files.drivingLicenseImage[0].filename}`;
+    }
+    if (files.vehicleInsuranceImage && files.vehicleInsuranceImage[0]) {
+      // check velidetions of file 
+      fileUploads.vehicleInsuranceImage = `/images/insurance/${files.vehicleInsuranceImage[0].filename}`;
+    }
+    if (
+      files.vehicleRegistrationCardImage &&
+      files.vehicleRegistrationCardImage[0]
+    ) {
+      fileUploads.vehicleRegistrationCardImage = `/images/vehicle-registration/${files.vehicleRegistrationCardImage[0].filename}`;
+    }
+    if (files.vehicleFrontImage && files.vehicleFrontImage[0]) {
+      fileUploads.vehicleFrontImage = `/images/vehicle-image/${files.vehicleFrontImage[0].filename}`;
+    }
+    if (files.vehicleBackImage && files.vehicleBackImage[0]) {
+      fileUploads.vehicleBackImage = `/images/vehicle-image/${files.vehicleBackImage[0].filename}`;
+    }
+    if (files.vehicleSideImage && files.vehicleSideImage[0]) {
+      fileUploads.vehicleSideImage = `/images/vehicle-image/${files.vehicleSideImage[0].filename}`;
+    }
   }
 
-  // Remove null fields
-  Object.keys(fileUploads).forEach(
-    (key) => fileUploads[key] === null && delete fileUploads[key]
-  );
-
-  // --- Create Auth ---
   const { activationCode } = createActivationToken();
   const auth = {
     role,
@@ -145,8 +146,11 @@ const registrationAccount = async (req) => {
     password,
     expirationTime: Date.now() + 3 * 60 * 1000,
   };
-
-  if (role === "USER" || role === "PARTNER") {
+ 
+ 
+  if (role === "USER"
+     || role === "PARTNER"
+  ) {
     sendEmail({
       email: auth.email,
       subject: "Activate Your Account",
@@ -157,10 +161,13 @@ const registrationAccount = async (req) => {
     }).catch((error) => console.error("Failed to send email:", error.message));
   }
 
+  let createAuth;
   if (role === ENUM_USER_ROLE.ADMIN || role === ENUM_USER_ROLE.SUPER_ADMIN) {
-    auth.isActive = true;
+    auth.isActive = true
+    createAuth = await Auth.create(auth);
+  } else {
+    createAuth = await Auth.create(auth);
   }
-  const createAuth = await Auth.create(auth);
   if (!createAuth) {
     throw new ApiError(500, "Failed to create auth account");
   }
@@ -168,15 +175,19 @@ const registrationAccount = async (req) => {
   other.authId = createAuth._id;
   other.email = email;
 
-  const createData = { ...other, ...fileUploads };
+  const createData = { ...other, ...fileUploads }; 
 
-  // --- Role-based user creation ---
+  // console.log("update",createData);
+
+  // Role-based user creation
   let result;
   switch (role) {
     case ENUM_USER_ROLE.USER:
       result = await User.create(createData);
       break;
     case ENUM_USER_ROLE.ADMIN:
+      result = await Admin.create(createData);
+      break;
     case ENUM_USER_ROLE.SUPER_ADMIN:
       result = await Admin.create(createData);
       break;
