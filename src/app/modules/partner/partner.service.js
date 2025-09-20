@@ -26,17 +26,17 @@ const updateProfile = async (req) => {
   };
 
   if (files) {
-    fileUploads.profile_image = validateFile(files.profile_image, "profile");
-    fileUploads.licensePlateImage = validateFile(files.licensePlateImage, "vehicle-licenses");
-    fileUploads.drivingLicenseImage = validateFile(files.drivingLicenseImage, "driving-licenses");
-    fileUploads.vehicleInsuranceImage = validateFile(files.vehicleInsuranceImage, "insurance");
-    fileUploads.vehicleRegistrationCardImage = validateFile(
+    fileUploads.profile_image =fileUploads?.profile_image? validateFile(files.profile_image, "profile"): null;
+    fileUploads.licensePlateImage = fileUploads?.licensePlateImage? validateFile(files.licensePlateImage, "vehicle-licenses"): null;
+    fileUploads.drivingLicenseImage =fileUploads?.drivingLicenseImage? validateFile(files.drivingLicenseImage, "driving-licenses"): null;
+    fileUploads.vehicleInsuranceImage =fileUploads?.vehicleInsuranceImage ? validateFile(files.vehicleInsuranceImage, "insurance"):null;
+    fileUploads.vehicleRegistrationCardImage =fileUploads?.vehicleRegistrationCardImage? validateFile(
       files.vehicleRegistrationCardImage,
       "vehicle-registration"
-    );
-    fileUploads.vehicleFrontImage = validateFile(files.vehicleFrontImage, "vehicle-image");
-    fileUploads.vehicleBackImage = validateFile(files.vehicleBackImage, "vehicle-image");
-    fileUploads.vehicleSideImage = validateFile(files.vehicleSideImage, "vehicle-image");
+    ): null;
+    fileUploads.vehicleFrontImage =fileUploads?.vehicleFrontImage? validateFile(files.vehicleFrontImage, "vehicle-image"): null;
+    fileUploads.vehicleBackImage = fileUploads?.vehicleBackImage? validateFile(files.vehicleBackImage, "vehicle-image"): null;
+    fileUploads.vehicleSideImage = fileUploads?.vehicleSideImage? validateFile(files.vehicleSideImage, "vehicle-image"): null;
   }
 
   // Remove undefined/null fields
