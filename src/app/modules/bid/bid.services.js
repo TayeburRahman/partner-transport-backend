@@ -270,11 +270,11 @@ const filterBidsByHistory = async (req) => {
       .limit(parseInt(limit))
       .exec();
 
-    // console.log("filteredBids", filteredBids)
+ 
 
     const result = filteredBids.filter((bid) => bid.service);
     const pisoVariable = await VariableCount.getPisoVariable();
-
+    console.log("filteredBids", filteredBids)
     return {
       piso: pisoVariable,
       page: parseInt(page),

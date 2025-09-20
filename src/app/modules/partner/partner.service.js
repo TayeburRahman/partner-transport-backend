@@ -13,54 +13,52 @@ const updateProfile = async (req) => {
   }
 
   const fileUploads = {};
+
+  // Helper function to validate file exists
+  const validateFile = (file, folder) => {
+    if (!file || !file[0]) return null;
+
+    const filePath = path.join(__dirname, "..", "public", folder, file[0].filename);
+    if (fs.existsSync(filePath)) {
+      return `/images/${folder}/${file[0].filename}`;
+    }
+    return null;
+  };
+
   if (files) {
-    if (files.profile_image && files.profile_image[0]) {
-      fileUploads.profile_image = `/images/profile/${files.profile_image[0].filename}`;
-    }
-    if (files.licensePlateImage && files.licensePlateImage[0]) {
-      fileUploads.licensePlateImage = `/images/vehicle-licenses/${files.licensePlateImage[0].filename}`;
-    }
-    if (files.drivingLicenseImage && files.drivingLicenseImage[0]) {
-      fileUploads.drivingLicenseImage = `/images/driving-licenses/${files.drivingLicenseImage[0].filename}`;
-    }
-    if (files.vehicleInsuranceImage && files.vehicleInsuranceImage[0]) {
-      fileUploads.vehicleInsuranceImage = `/images/insurance/${files.vehicleInsuranceImage[0].filename}`;
-    }
-    if (
-      files.vehicleRegistrationCardImage &&
-      files.vehicleRegistrationCardImage[0]
-    ) {
-      fileUploads.vehicleRegistrationCardImage = `/images/vehicle-registration/${files.vehicleRegistrationCardImage[0].filename}`;
-    }
-    if (files.vehicleFrontImage && files.vehicleFrontImage[0]) {
-      fileUploads.vehicleFrontImage = `/images/vehicle-image/${files.vehicleFrontImage[0].filename}`;
-    }
-    if (files.vehicleBackImage && files.vehicleBackImage[0]) {
-      fileUploads.vehicleBackImage = `/images/vehicle-image/${files.vehicleBackImage[0].filename}`;
-    }
-    if (files.vehicleSideImage && files.vehicleSideImage[0]) {
-      fileUploads.vehicleSideImage = `/images/vehicle-image/${files.vehicleSideImage[0].filename}`;
-    }
+    fileUploads.profile_image = validateFile(files.profile_image, "profile");
+    fileUploads.licensePlateImage = validateFile(files.licensePlateImage, "vehicle-licenses");
+    fileUploads.drivingLicenseImage = validateFile(files.drivingLicenseImage, "driving-licenses");
+    fileUploads.vehicleInsuranceImage = validateFile(files.vehicleInsuranceImage, "insurance");
+    fileUploads.vehicleRegistrationCardImage = validateFile(
+      files.vehicleRegistrationCardImage,
+      "vehicle-registration"
+    );
+    fileUploads.vehicleFrontImage = validateFile(files.vehicleFrontImage, "vehicle-image");
+    fileUploads.vehicleBackImage = validateFile(files.vehicleBackImage, "vehicle-image");
+    fileUploads.vehicleSideImage = validateFile(files.vehicleSideImage, "vehicle-image");
   }
-  
-  const updatedUserData = { ...data, ...fileUploads }; 
+
+  // Remove undefined/null fields
+  Object.keys(fileUploads).forEach(
+    (key) => fileUploads[key] === null && delete fileUploads[key]
+  );
+
+  const updatedUserData = { ...data, ...fileUploads };
 
   const [auth, result] = await Promise.all([
     Auth.findByIdAndUpdate(
       authId,
       { name: updatedUserData.name },
-      {
-        new: true,
-        runValidators: true,
-      }
+      { new: true, runValidators: true }
     ),
     Partner.findByIdAndUpdate(userId, updatedUserData, {
       new: true,
       runValidators: true,
     }),
-  ]); 
+  ]);
 
-  return {auth, result};
+  return { auth, result };
 };
 
 const getProfile = async (user) => {

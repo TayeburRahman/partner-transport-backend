@@ -685,6 +685,8 @@ const filterUserByHistory = async (req) => {
   let result = await filtered.modelQuery;
   const meta = await filtered.countTotal();
 
+  console.log('result', result)
+
   if (role === ENUM_USER_ROLE.USER && serviceType === "move" && serviceStatus === "accepted") {
     result = result.map((data) => ({
       ...data._doc,
