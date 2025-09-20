@@ -120,11 +120,11 @@ const registrationAccount = async (req) => {
       throw new ApiError(400, `Invalid file type for ${folder}. Only jpg, jpeg, png allowed.`);
     }
 
-    // check file exists
-    const filePath = path.join(__dirname, "..", "public", folder, filename);
-    if (!fs.existsSync(filePath)) {
-      throw new ApiError(400, `File not found: ${filename}`);
-    }
+    // // check file exists
+    // const filePath = path.join(__dirname, "..", "public", folder, filename);
+    // if (!fs.existsSync(filePath)) {
+    //   throw new ApiError(400, `File not found: ${filename}`);
+    // }
 
     return `/images/${folder}/${filename}`;
   };
