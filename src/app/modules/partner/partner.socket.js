@@ -32,6 +32,7 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
 
         if (!updatedPartner) {
             throw new ApiError(httpStatus.NOT_FOUND, 'Partner not found!');
+            return;
         }
 
         const { location } = updatedPartner;
