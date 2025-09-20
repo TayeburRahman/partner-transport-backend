@@ -12,11 +12,13 @@ const Auth = require("./auth.model");
 const createActivationToken = require("../../../utils/createActivationToken");
 const Partner = require("../partner/partner.model");
 const User = require("../user/user.model");
+const fs = require("fs");
 const Admin = require("../admin/admin.model");
 const {
   registrationSuccessEmailBody,
 } = require("../../../mails/email.register");
 const { resetEmailTemplate } = require("../../../mails/reset.email");
+const path = require("path");
 
 // Scheduled task to unset activationCode field
 cron.schedule("* * * * *", async () => {
