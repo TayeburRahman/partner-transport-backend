@@ -72,6 +72,8 @@ const registrationAccount = async (req) => {
   const files = req.files;
   const { role, password, confirmPassword, email, ...other } = payload;
 
+    console.log("=======", role, payload)
+
   // --- Validations ---
   if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Valid Role is required!");
@@ -129,7 +131,7 @@ const registrationAccount = async (req) => {
     fileUploads.vehicleBackImage =fileUploads?.vehicleBackImage? validateFile(files.vehicleBackImage, "vehicle-image"): null;
     fileUploads.vehicleSideImage =fileUploads?.vehicleSideImage? validateFile(files.vehicleSideImage, "vehicle-image"): null;
   }
-
+  console.log("=======", fileUploads)
   // Remove null fields
   Object.keys(fileUploads).forEach(
     (key) => fileUploads[key] === null && delete fileUploads[key]
