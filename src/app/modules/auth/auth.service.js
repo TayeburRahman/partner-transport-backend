@@ -67,12 +67,25 @@ cron.schedule("* * * * *", async () => {
   }
 });
 
+const fs = require("fs");
+const path = require("path");
+const httpStatus = require("http-status");
+const ApiError = require("../../../errors/ApiError");
+const { ENUM_USER_ROLE } = require("../../../utils/enums");
+const { createActivationToken } = require("../../../utils/token");
+const { registrationSuccessEmailBody } = require("../../../mails/templates");
+const { sendEmail } = require("../../../mails/sendEmail");
+const Auth = require("../../auth/auth.model");
+const User = require("../user/user.model");
+const Admin = require("../admin/admin.model");
+const Partner = require("./partner.model");
+
 const registrationAccount = async (req) => {
   const payload = req.body;
   const files = req.files;
   const { role, password, confirmPassword, email, ...other } = payload;
 
-    console.log("=======",   files)
+  console.log("=======", role, payload);
 
   // --- Validations ---
   if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
@@ -107,32 +120,41 @@ const registrationAccount = async (req) => {
   }
 
   // --- File Upload Validation ---
-  const validateFile = (file, folder) => {
+  const validateFile = (file, folder, allowedTypes = ["image/jpeg", "image/png", "image/jpg"]) => {
     if (!file || !file[0]) return null;
 
-    const filePath = path.join(__dirname, "..", "public", folder, file[0].filename);
-    if (fs.existsSync(filePath)) {
-      return `/images/${folder}/${file[0].filename}`;
+    const { filename, mimetype } = file[0];
+
+    // check mime type
+    if (!allowedTypes.includes(mimetype)) {
+      throw new ApiError(400, `Invalid file type for ${folder}. Only jpg, jpeg, png allowed.`);
     }
-    return null;
+
+    // check file exists
+    const filePath = path.join(__dirname, "..", "public", folder, filename);
+    if (!fs.existsSync(filePath)) {
+      throw new ApiError(400, `File not found: ${filename}`);
+    }
+
+    return `/images/${folder}/${filename}`;
   };
 
   const fileUploads = {};
   if (files) {
-    fileUploads.profile_image =fileUploads?.profile_image? validateFile(files.profile_image, "profile"): null;
-    fileUploads.licensePlateImage = fileUploads?.licensePlateImage? validateFile(files.licensePlateImage, "vehicle-licenses"): null;
-    fileUploads.drivingLicenseImage =fileUploads?.drivingLicenseImage? validateFile(files.drivingLicenseImage, "driving-licenses"): null;
-    fileUploads.vehicleInsuranceImage =fileUploads?.vehicleInsuranceImage? validateFile(files.vehicleInsuranceImage, "insurance"): null;
-    fileUploads.vehicleRegistrationCardImage = fileUploads?.vehicleRegistrationCardImage? validateFile(
+    fileUploads.profile_image = validateFile(files.profile_image, "profile");
+    fileUploads.licensePlateImage = validateFile(files.licensePlateImage, "vehicle-licenses");
+    fileUploads.drivingLicenseImage = validateFile(files.drivingLicenseImage, "driving-licenses");
+    fileUploads.vehicleInsuranceImage = validateFile(files.vehicleInsuranceImage, "insurance");
+    fileUploads.vehicleRegistrationCardImage = validateFile(
       files.vehicleRegistrationCardImage,
       "vehicle-registration"
-    ): null;
-    fileUploads.vehicleFrontImage =fileUploads?.vehicleFrontImage? validateFile(files.vehicleFrontImage, "vehicle-image"): null;
-    fileUploads.vehicleBackImage =fileUploads?.vehicleBackImage? validateFile(files.vehicleBackImage, "vehicle-image"): null;
-    fileUploads.vehicleSideImage =fileUploads?.vehicleSideImage? validateFile(files.vehicleSideImage, "vehicle-image"): null;
+    );
+    fileUploads.vehicleFrontImage = validateFile(files.vehicleFrontImage, "vehicle-image");
+    fileUploads.vehicleBackImage = validateFile(files.vehicleBackImage, "vehicle-image");
+    fileUploads.vehicleSideImage = validateFile(files.vehicleSideImage, "vehicle-image");
   }
-  console.log("=======", fileUploads)
-  // Remove null fields
+
+  // Remove null values
   Object.keys(fileUploads).forEach(
     (key) => fileUploads[key] === null && delete fileUploads[key]
   );
@@ -162,6 +184,7 @@ const registrationAccount = async (req) => {
   if (role === ENUM_USER_ROLE.ADMIN || role === ENUM_USER_ROLE.SUPER_ADMIN) {
     auth.isActive = true;
   }
+
   const createAuth = await Auth.create(auth);
   if (!createAuth) {
     throw new ApiError(500, "Failed to create auth account");
@@ -191,6 +214,7 @@ const registrationAccount = async (req) => {
 
   return { result, role, message: "Account created successfully!" };
 };
+
 
 const activateAccount = async (payload) => {
   const { activation_code, userEmail, playerId } = payload;
