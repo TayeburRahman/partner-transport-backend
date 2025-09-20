@@ -72,7 +72,7 @@ const registrationAccount = async (req) => {
   const files = req.files;
   const { role, password, confirmPassword, email, ...other } = payload;
 
-    console.log("=======", role, payload)
+    console.log("=======",   files)
 
   // --- Validations ---
   if (!role || !Object.values(ENUM_USER_ROLE).includes(role)) {
