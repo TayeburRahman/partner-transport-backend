@@ -66,19 +66,7 @@ cron.schedule("* * * * *", async () => {
     logger.error("Error removing activation codes from expired users:", error);
   }
 });
-
-const fs = require("fs");
-const path = require("path");
-const httpStatus = require("http-status");
-const ApiError = require("../../../errors/ApiError");
-const { ENUM_USER_ROLE } = require("../../../utils/enums");
-const { createActivationToken } = require("../../../utils/token");
-const { registrationSuccessEmailBody } = require("../../../mails/templates");
-const { sendEmail } = require("../../../mails/sendEmail");
-const Auth = require("../../auth/auth.model");
-const User = require("../user/user.model");
-const Admin = require("../admin/admin.model");
-const Partner = require("./partner.model");
+ 
 
 const registrationAccount = async (req) => {
   const payload = req.body;
