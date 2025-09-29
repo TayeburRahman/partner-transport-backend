@@ -3,6 +3,8 @@ const sendResponse = require("../../../shared/sendResponse");
 const catchAsync = require("../../../shared/catchasync");
 const config = require("../../../config");
 const createActivationToken = require("../../../utils/createActivationToken");
+
+
 const sendPhoneVerificationsMessage = require("../phone-verify/twilio.verify");
 
 const registrationAccount = catchAsync(async (req, res) => {
@@ -147,7 +149,7 @@ const phoneVerifications = catchAsync(async (req, res) => {
    const countryCode = req.body.countryCode; 
    const user= req.user; 
    const verifyOtp = createActivationToken().activationCode;
-   const message = 'Your verification code is: ' + verifyOtp; 
+   const message = 'Nikita verification code is: ' + verifyOtp; 
    const phoneNumber = phone; 
 
    const data = await sendPhoneVerificationsMessage(message, phoneNumber, verifyOtp, user, countryCode, phone) 
