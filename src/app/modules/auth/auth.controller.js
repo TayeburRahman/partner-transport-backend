@@ -149,7 +149,7 @@ const phoneVerifications = catchAsync(async (req, res) => {
    const countryCode = req.body.countryCode; 
    const user= req.user; 
    const verifyOtp = createActivationToken().activationCode;
-   const message = 'Nikita verification code is: ' + verifyOtp; 
+   const message = 'Your verification code is: ' + verifyOtp; 
    const phoneNumber = phone; 
 
    const data = await sendPhoneVerificationsMessage(message, phoneNumber, verifyOtp, user, countryCode, phone) 
