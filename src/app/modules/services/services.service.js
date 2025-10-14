@@ -129,9 +129,7 @@ const createPostDB = async (req) => {
       } catch (error) {
         throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
       }
-    }
-
-    console.log("data.localScheduleDate data.loclScheduleTime", data.startDate, data.endDate,)
+    } 
 
 
     const images = validateInputs(data, image);

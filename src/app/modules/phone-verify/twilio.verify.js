@@ -30,9 +30,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             body: message,
             from: config.twilio.phone_number,
             to: phoneNumber
-        }); 
-
-        console.log("result==",result)
+        });  
 
         if (result) {
             const update = await Auth.findByIdAndUpdate(user.authId, { verifyOtp })
