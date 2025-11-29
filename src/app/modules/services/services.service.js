@@ -742,11 +742,6 @@ if (status === "delivered" && service.user_status !== "confirm_downloaded") {
     // downloaded
     // delivery
 
-    // confirm_arrived
-    // confirm_goods_loaded
-    // confirm_downloaded
-    // delivery-confirmed
-
   let service_status = service.status;
   if (status === "start-trip") {
     service_status = "in-progress";

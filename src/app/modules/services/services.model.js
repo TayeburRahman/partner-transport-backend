@@ -147,12 +147,12 @@ const ServicesSchema = new Schema(
       required: true,
     },
     rescheduledDateTime: {
-      type: Date, 
-    }, 
+      type: Date,
+    },
     endDate: {
       type: Date,
       required: true,
-    }, 
+    },
     status: {
       type: String,
       enum: [
@@ -170,10 +170,10 @@ const ServicesSchema = new Schema(
       type: String,
       enum: [
         "pending",
-        "confirm-arrived",
-        "goods-loaded",
-        "partner-at-destination",
-        "delivery-confirmed"
+        "confirm_arrived",
+        "confirm_goods_loaded",
+        "confirm_downloaded",
+        "delivery-confirmed",
       ],
       default: "pending",
     },
@@ -182,8 +182,8 @@ const ServicesSchema = new Schema(
       enum: [
         "pending",
         "arrived",
-        "start-trip",
-        "arrive-at-destination",
+        "goods_loaded",
+        "downloaded",
         "delivered",
       ],
       default: "pending",
@@ -213,10 +213,10 @@ const ServicesSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    paymentMethod:{
+    paymentMethod: {
       type: String,
-      enum: ['Stripe', 'PayPal', 'applePay', 'googlePay', "BankTransfer"], 
-    }, 
+      enum: ['Stripe', 'PayPal', 'applePay', 'googlePay', "BankTransfer"],
+    },
     distance: {
       type: Number,
       default: 0.1,
