@@ -33,15 +33,23 @@ const ENUM_SERVICE_STATUS = {
   IN_PROGRESS: "in-progress",
   COMPLETED: "completed",
   CANCEL: "cancel",
-  CONFIRM_ARRIVED: "confirm-arrived",
-  GOODS_LOADED: "goods-loaded",
-  PARTNER_AT_DESTINATION: "partner-at-destination",
-  DELIVERY_CONFIRMED: "delivery-confirmed",
+ 
+  CONFIRM_ARRIVED: "confirm_arrived",
+  CONFIRM_GOODS_LOADED: "confirm_goods_loaded",
+  CONFIRM_DOWNLOADED: "confirm_downloaded",
+
+  // Partner Process Flow
+  DOWNLOADED: "downloaded",
+  GOODS_LOADED: "goods_loaded",
   ARRIVED: "arrived",
   START_TRIP: "start-trip",
-  ARRIVE_AT_DESTINATION: "arrive-at-destination",
   DELIVERED: "delivered",
+  DELIVERY_CONFIRMED: "delivery-confirmed",
+
+  // PARTNER_AT_DESTINATION: "partner-at-destination",
+  // ARRIVE_AT_DESTINATION: "arrive-at-destination",
 };
+
 
 const ENUM_SERVICE_TYPE = {
   GOODS: "Goods",

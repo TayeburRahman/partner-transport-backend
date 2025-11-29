@@ -565,21 +565,6 @@ const rescheduledAction = async (req) => {
   return result;
 };
 
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}  
-
-function formatTimeTo12hrs(date) {
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
-  return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-}
-
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const dateNow = new Date(req.query?.current_date)
@@ -723,21 +708,44 @@ const updateServicesStatusPartner = async (req) => {
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
+ 
   if (status === "arrived" && service.status !== "accepted") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm pending status before arriving.");
-  }
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "User must confirm the pending request before the partner can arrive."
+  );
+}
 
-  if (status === "start-trip" && service.user_status !== "goods-loaded") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm goods are loaded before starting the trip.");
-  }
+if (status === "goods_loaded" && service.user_status !== "confirm_arrived") {
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "User must confirm the partner has arrived before goods can be loaded."
+  );
+}
 
-  if (status === "arrive-at-destination" && (service.partner_status !== "start-trip" || service.user_status !== "goods-loaded")) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Trip must be started and goods must be loaded before arriving at the destination.");
-  }
+if (status === "downloaded" && service.partner_status !== "confirm_goods_loaded") {
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "Goods must be loaded and the trip must be started before arriving at the destination."
+  );
+}
 
-  if (status === "delivered" && service.user_status !== "partner-at-destination") {
-    throw new ApiError(httpStatus.BAD_REQUEST, "User must confirm partner is at the destination before marking as delivered.");
-  }
+if (status === "delivered" && service.user_status !== "confirm_downloaded") {
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "User must confirm the partner has reached the destination before marking as delivered."
+  );
+}
+
+    // arrived
+    // goods_loaded
+    // downloaded
+    // delivery
+
+    // confirm_arrived
+    // confirm_goods_loaded
+    // confirm_downloaded
+    // delivery-confirmed
 
   let service_status = service.status;
   if (status === "start-trip") {
@@ -803,6 +811,36 @@ const updateServicesStatusUser = async (req) => {
     if (!receivedUser) {
       throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
     }
+
+     
+if (status === "confirm_arrived" && service.partner_status !== "arrived") {
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "Partner must mark status as 'arrived' before the user can confirm arrival."
+  );
+}
+
+if (status === "confirm_goods_loaded" && service.partner_status !== "goods_loaded") {
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "Partner must mark goods as loaded before the user can confirm it."
+  );
+}
+
+if (status === "confirm_downloaded" && service.partner_status !== "downloaded") {
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "Partner must mark status as 'downloaded' before the user can confirm arrival at the destination."
+  );
+}
+
+if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
+  throw new ApiError(
+    httpStatus.BAD_REQUEST,
+    "Partner must mark status as 'delivered' before the user can confirm delivery."
+  );
+}
+
 
     if (status === "delivery-confirmed") { 
       const amount = Number(transaction.partnerAmount);
@@ -881,11 +919,17 @@ const updateServicesStatusUser = async (req) => {
     }
 
     let serviceStatus = service.status;
-    if (status === "goods-loaded") {
-      serviceStatus = "pick-up";
-    } else if (status === "delivery-confirmed") {
-      serviceStatus = "completed";
-    }
+    // if (status === "goods-loaded") {
+    //   serviceStatus = "pick-up";
+    // } else if (status === "delivery-confirmed") {
+    //   serviceStatus = "completed";
+    // }
+
+    serviceStatus = status;
+    // confirm_arrived
+    // confirm_goods_loaded
+    // confirm_downloaded
+    // delivery-confirmed
 
     const updatedService = await Services.findByIdAndUpdate(
       serviceId,
