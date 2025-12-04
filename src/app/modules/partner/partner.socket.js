@@ -47,24 +47,6 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
         status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
       });
 
-      // if (services?.length) {
-      //   services.forEach((service) => {
-      //     const { _id, confirmedPartner, user } = service;
-      //     const updateLocationPartner = {
-      //       partnerId: confirmedPartner,
-      //       serviceId: _id,
-      //       location,
-      //     }; 
-
-      //     console.log("Emitting partner location to user:", user.toString(), "for service:", _id.toString());
-          
-      //     io.to(user.toString()).emit(
-      //      `${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`,
-      //       updateLocationPartner
-      //     );
-      //   });
-      // }
-
       console.log("Emitting partner location to partner himself:", receiverId.toString());
 
       io.emit(

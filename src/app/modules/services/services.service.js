@@ -723,7 +723,7 @@ if (status === "goods_loaded" && service.user_status !== "confirm_arrived") {
   );
 }
 
-if (status === "downloaded" && service.partner_status !== "confirm_goods_loaded") {
+if (status === "downloaded" && service.user_status !== "confirm_goods_loaded") {
   throw new ApiError(
     httpStatus.BAD_REQUEST,
     "Goods must be loaded and the trip must be started before arriving at the destination."
