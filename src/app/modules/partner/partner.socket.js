@@ -17,6 +17,8 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
         });
       }
 
+      console.log(`Received location update from Partner`, latitude, longitude);
+
       const updatedPartner = await Partner.findByIdAndUpdate(
         receiverId,
         {
@@ -50,6 +52,8 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
       console.log("Emitting partner location to partner himself:", receiverId.toString());
 
       io.emit(`${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`, location );
+
+       console.log(`Received location update from Partner`, location);
  
       io.to(receiverId.toString()).emit(
         ENUM_SOCKET_EVENT.PARTNER_LOCATION,
