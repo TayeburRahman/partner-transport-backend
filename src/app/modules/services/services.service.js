@@ -770,6 +770,8 @@ if (status === "delivered" && service.user_status !== "confirm_downloaded") {
     getId: serviceId,
   });
 
+   await sendUpdateStatus( serviceId, status, "partner");
+
   return result;
 };
 
@@ -947,6 +949,8 @@ if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
       types: serviceStatus === "completed" ? "complete-status" : "ongoing",
       getId: serviceId,
     });
+
+    await sendUpdateStatus( serviceId, status, "user");
 
     return updatedService;
   } catch (error) {
