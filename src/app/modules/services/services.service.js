@@ -1191,7 +1191,7 @@ const sendUpdateStatus = (serviceId, status, userType) => {
           serviceId,
           status,
           userType
-        } );
+        });
     } else {
         console.error('Socket.IO is not initialized');
     }
