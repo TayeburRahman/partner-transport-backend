@@ -10,6 +10,7 @@ const {
   ENUM_SERVICE_STATUS,
   ENUM_SERVICE_TYPE, 
   ENUM_USER_ROLE,
+  ENUM_SOCKET_EVENT,
 } = require("../../../utils/enums");
 const Variable = require("../variable/variable.model");
 const { Transaction, StripeAccount } = require("../payment/payment.model");
@@ -1019,6 +1020,8 @@ const updateSellServicesStatusUser = async (req) => {
       getId: serviceId,
     });
 
+   await sendUpdateStatus( serviceId, status, "user");
+
     return updatedService;
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
@@ -1171,6 +1174,8 @@ const updateSellServicesStatusPartner = async (req) => {
       getId: serviceId,
     });
 
+    await sendUpdateStatus( serviceId, status, "partner");
+
     return result;
   } catch (error) {
     console.error("Error updating service status:", error);
@@ -1179,9 +1184,22 @@ const updateSellServicesStatusPartner = async (req) => {
 };
 
 // Status===========================
+const sendUpdateStatus = (serviceId, status, userType) => {
+    if (global.io) {
+        const socketIo = global.io; 
+        socketIo.emit(`${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`, {
+          serviceId,
+          status,
+          userType
+        } );
+    } else {
+        console.error('Socket.IO is not initialized');
+    }
+};
 
+// update-locations-status
 
-const ServicesService = {
+const ServicesService = { 
   createPostDB,
   updatePostDB,
   deletePostDB,

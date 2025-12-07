@@ -22,7 +22,7 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
         {
           $set: {
             "location.coordinates": [Number(longitude), Number(latitude)],
-            ...(address && { "location.address": address }), // optional address update
+            ...(address && { "location.address": address }),  
           },
         },
         {
@@ -49,25 +49,22 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
 
       console.log("Emitting partner location to partner himself:", receiverId.toString());
 
-      io.emit(
-       `${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`,
-       location
-     );
-
-      // also send back to the partner himself
+      io.emit(`${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`, location );
+ 
       io.to(receiverId.toString()).emit(
         ENUM_SOCKET_EVENT.PARTNER_LOCATION,
         location
       );
-    } catch (error) {
-      console.error("Socket error (PARTNER_LOCATION):", error);
 
+    } catch (error) {
+      console.error("Socket error (PARTNER_LOCATION):", error); 
       socket.emit("error", {
         status: error.statusCode || httpStatus.INTERNAL_SERVER_ERROR,
         message: error.message || "Something went wrong while updating partner location",
       });
     }
   });
+ 
 };
 
 module.exports = {

@@ -20,6 +20,7 @@ const ENUM_SOCKET_EVENT = {
   MESSAGE_NEW_SERVICE: "new-message-service",
   MESSAGE_GETALL: "message",
   CONVERSION: "conversion",
+  UPDATE_LOCATIONS_STATUS: "update-locations-status",
   PARTNER_LOCATION: "partner-location",
   ACTIVE_ADMIN: "active-admin",
 };
