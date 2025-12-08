@@ -381,8 +381,11 @@ const postReviewMove = async (req) => {
     rating: averageRating
   });
 
-  service.isReviewed = true;
-  await service.save();
+
+ await Services.findByIdAndUpdate(serviceId, { 
+    isReviewed: true  
+  }
+  ) 
 
   return result;
 };

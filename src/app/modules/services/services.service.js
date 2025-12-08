@@ -8,7 +8,7 @@ const config = require("../../../config");
 const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const {
   ENUM_SERVICE_STATUS,
-  ENUM_SERVICE_TYPE, 
+  ENUM_SERVICE_TYPE,
   ENUM_USER_ROLE,
   ENUM_SOCKET_EVENT,
 } = require("../../../utils/enums");
@@ -23,7 +23,7 @@ const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 const cron = require("node-cron");
 dayjs.extend(utc);
-dayjs.extend(timezone);  
+dayjs.extend(timezone);
 
 
 // cron.schedule("* * * * *", async () => {
@@ -34,7 +34,7 @@ dayjs.extend(timezone);
 //     // const nowUtc = nowMexico.toUTC().toJSDate();
 
 //     console.log("mexicoTime", now)
-    
+
 //     const result = await Services.deleteMany({ 
 //       paymentStatus: "pending",
 //       startDate: { $lte:  now },
@@ -55,7 +55,7 @@ const validateInputs = (data, image) => {
   const requiredFields = [
     "service", "category", "scheduleDate", "scheduleTime", "numberOfItems", "weightKG", "description", "deadlineDate", "deadlineTime",
     "isLoaderNeeded", "loadFloorNo", "loadingAddress", "loadLongitude",
-    "loadLatitude", "mainService", 
+    "loadLatitude", "mainService",
     "startDate", // start
     "endDate" // end
   ];
@@ -94,43 +94,43 @@ const validateInputs = (data, image) => {
 
   return images;
 };
-     
+
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
     const { image } = req.files || {};
     const data = req.body;
 
-    if( data?.mainService === "sell"){
+    if (data?.mainService === "sell") {
       const bankAccount = await StripeAccount.findOne({ user: userId });
 
       if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank information in your profile.");
       }
-  
-      try { 
+
+      try {
         const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
-  
+
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Unable to find or validate your bank account.");
         }
-  
+
         // if (!stripeAccount.charges_enabled) {
         //   throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
         // }
-   
+
         const externalAccount = stripeAccount.external_accounts?.data?.find(
           (account) => account.id === bankAccount.externalAccountId
         );
-  
+
         if (!externalAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank information.");
-        } 
-  
+        }
+
       } catch (error) {
         throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
       }
-    } 
+    }
 
 
     const images = validateInputs(data, image);
@@ -156,7 +156,7 @@ const createPostDB = async (req) => {
       isLoaderNeeded: data.isLoaderNeeded,
       loadFloorNo: data.loadFloorNo,
       isUnloaderNeeded: data.isUnloaderNeeded,
-      unloadFloorNo: data.unloadFloorNo ,
+      unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
       unloadingAddress: data.unloadingAddress,
       startDate: new Date(data.startDate),
@@ -244,24 +244,24 @@ const getDetails = async (req) => {
   if (!result) {
     throw new ApiError(404, "Service not found");
   }
- 
+
 
   if (role === ENUM_USER_ROLE.USER && result.mainService === 'move') {
     if (result.bids && Array.isArray(result.bids)) {
       result.bids = result.bids.map((bid) => ({
         ...bid,
-        price: bid.price 
-        + (bid.price * surcharge) / 100,
+        price: bid.price
+          + (bid.price * surcharge) / 100,
       }));
     }
   }
-  
-  if (role === ENUM_USER_ROLE.USER && result.mainService === 'sell'){
+
+  if (role === ENUM_USER_ROLE.USER && result.mainService === 'sell') {
     if (result.bids && Array.isArray(result.bids)) {
       result.bids = result.bids.map((bid) => ({
         ...bid,
-        price: bid.price 
-        - (bid.price * surcharge) / 100,
+        price: bid.price
+          - (bid.price * surcharge) / 100,
       }));
     }
   }
@@ -540,7 +540,7 @@ const rescheduledAction = async (req) => {
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
   }
 
-  console.log(" updateFields.startDate",  updateFields.startDate, serviceId)
+  console.log(" updateFields.startDate", updateFields.startDate, serviceId)
 
   await NotificationService.sendNotification({
     title: {
@@ -570,12 +570,12 @@ const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const dateNow = new Date(req.query?.current_date)
   const now = new Date();
-  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000); 
+  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
 
-  console.log("dateNow====", dateNow) 
- 
-  
-  console.log("==================now",now)
+  console.log("dateNow====", dateNow)
+
+
+  console.log("==================now", now)
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
@@ -596,7 +596,7 @@ const getUserServicesWithinOneHour = async (req) => {
   }
 
   let services = await Services.find(query)
-  .sort({createdAt: -1})
+    .sort({ createdAt: -1 })
     .populate({
       path: "confirmedPartner",
       select: "name email profile_image phone_number rating",
@@ -675,19 +675,19 @@ const filterUserByHistory = async (req) => {
     result = result.map((data) => ({
       ...data._doc,
       winBid: data.winBid ? Number(data.winBid)
-       + (Number(data.winBid) * surcharge) / 100 
-       : null,
+        + (Number(data.winBid) * surcharge) / 100
+        : null,
     }));
   }
 
   if (role === ENUM_USER_ROLE.USER && serviceType === "sell" && serviceStatus === "accepted") {
     result = result.map((data) => ({
       ...data._doc,
-      winBid: data.winBid? Number(data.winBid)
-       - (Number(data.winBid) * surcharge) / 100 
-       : null,
+      winBid: data.winBid ? Number(data.winBid)
+        - (Number(data.winBid) * surcharge) / 100
+        : null,
     }));
-  } 
+  }
   const pisoVariable = await VariableCount.getPisoVariable();
   return { result, meta, piso: pisoVariable };
 };
@@ -709,39 +709,39 @@ const updateServicesStatusPartner = async (req) => {
   if (!Object.values(ENUM_SERVICE_STATUS).includes(status)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status provided.");
   }
- 
+
   if (status === "arrived" && service.status !== "accepted") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "User must confirm the pending request before the partner can arrive."
-  );
-}
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "User must confirm the pending request before the partner can arrive."
+    );
+  }
 
-if (status === "goods_loaded" && service.user_status !== "confirm_arrived") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "User must confirm the partner has arrived before goods can be loaded."
-  );
-}
+  if (status === "goods_loaded" && service.user_status !== "confirm_arrived") {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "User must confirm the partner has arrived before goods can be loaded."
+    );
+  }
 
-if (status === "downloaded" && service.user_status !== "confirm_goods_loaded") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "Goods must be loaded and the trip must be started before arriving at the destination."
-  );
-}
+  if (status === "downloaded" && service.user_status !== "confirm_goods_loaded") {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Goods must be loaded and the trip must be started before arriving at the destination."
+    );
+  }
 
-if (status === "delivered" && service.user_status !== "confirm_downloaded") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "User must confirm the partner has reached the destination before marking as delivered."
-  );
-}
+  if (status === "delivered" && service.user_status !== "confirm_downloaded") {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "User must confirm the partner has reached the destination before marking as delivered."
+    );
+  }
 
-    // arrived
-    // goods_loaded
-    // downloaded
-    // delivery
+  // arrived
+  // goods_loaded
+  // downloaded
+  // delivery
 
   let service_status = service.status;
   if (status === "start-trip") {
@@ -770,7 +770,7 @@ if (status === "delivered" && service.user_status !== "confirm_downloaded") {
     getId: serviceId,
   });
 
-   await sendUpdateStatus( serviceId, status, "partner");
+  await sendUpdateStatus(serviceId, status, "partner");
 
   return result;
 };
@@ -796,7 +796,7 @@ const updateServicesStatusUser = async (req) => {
   }
 
   try {
-    const transaction = await Transaction.findOne({ serviceId, active: true }); 
+    const transaction = await Transaction.findOne({ serviceId, active: true });
     if (!transaction || transaction.paymentStatus !== "Completed") {
       throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
     }
@@ -810,41 +810,41 @@ const updateServicesStatusUser = async (req) => {
       throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
     }
 
-     
-if (status === "confirm_arrived" && service.partner_status !== "arrived") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "Partner must mark status as 'arrived' before the user can confirm arrival."
-  );
-}
 
-if (status === "confirm_goods_loaded" && service.partner_status !== "goods_loaded") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "Partner must mark goods as loaded before the user can confirm it."
-  );
-}
+    if (status === "confirm_arrived" && service.partner_status !== "arrived") {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Partner must mark status as 'arrived' before the user can confirm arrival."
+      );
+    }
 
-if (status === "confirm_downloaded" && service.partner_status !== "downloaded") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "Partner must mark status as 'downloaded' before the user can confirm arrival at the destination."
-  );
-}
+    if (status === "confirm_goods_loaded" && service.partner_status !== "goods_loaded") {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Partner must mark goods as loaded before the user can confirm it."
+      );
+    }
 
-if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
-  throw new ApiError(
-    httpStatus.BAD_REQUEST,
-    "Partner must mark status as 'delivered' before the user can confirm delivery."
-  );
-}
+    if (status === "confirm_downloaded" && service.partner_status !== "downloaded") {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Partner must mark status as 'downloaded' before the user can confirm arrival at the destination."
+      );
+    }
+
+    if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Partner must mark status as 'delivered' before the user can confirm delivery."
+      );
+    }
 
 
-    if (status === "delivery-confirmed") { 
+    if (status === "delivery-confirmed") {
       const amount = Number(transaction.partnerAmount);
       console.log("status===========amount", amount)
       receivedUser.wallet = (receivedUser.wallet || 0) + amount;
-      await receivedUser.save(); 
+      await receivedUser.save();
 
       const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
@@ -857,29 +857,29 @@ if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
 
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
-        } 
-  
+        }
+
         if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
         }
-  
+
         const externalAccount = stripeAccount.external_accounts?.data?.find(
           (account) => account.id === bankAccount.externalAccountId
         );
-  
+
         if (!externalAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
         }
 
       } catch (error) {
-      
+
         throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
       }
 
       // Convert USD to MXN for the payout
-      const { pesoCost } = await VariableCount.convertDollarToPeso(amount); 
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amount);
       const transfer = await stripe.transfers.create({
-        amount: Math.round(pesoCost * 100), 
+        amount: Math.round(pesoCost * 100),
         currency: 'mxn',
         destination: bankAccount?.stripeAccountId,
       });
@@ -906,8 +906,8 @@ if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
           span: "Pago Recibido"
         },
         message: {
-         eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
-         span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
+          eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
+          span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
@@ -941,8 +941,8 @@ if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
         span: "Estado del Servicio Actualizado"
       },
       message: {
-           eng: `The service status has been updated to "${status}".`,
-          span: `El estado del servicio ha sido actualizado a "${status}".`
+        eng: `The service status has been updated to "${status}".`,
+        span: `El estado del servicio ha sido actualizado a "${status}".`
       },
       user: service.confirmedPartner,
       userType: "Partner",
@@ -950,7 +950,7 @@ if (status === "delivery-confirmed" && service.partner_status !== "delivered") {
       getId: serviceId,
     });
 
-    await sendUpdateStatus( serviceId, status, "user");
+    await sendUpdateStatus(serviceId, status, "user");
 
     return updatedService;
   } catch (error) {
@@ -1024,7 +1024,7 @@ const updateSellServicesStatusUser = async (req) => {
       getId: serviceId,
     });
 
-   await sendUpdateStatus( serviceId, status, "user");
+    await sendUpdateStatus(serviceId, status, "user");
 
     return updatedService;
   } catch (error) {
@@ -1080,10 +1080,10 @@ const updateSellServicesStatusPartner = async (req) => {
 
   try {
     if (status === "delivery-confirmed") {
-      const amount = Number(transaction.partnerAmount); 
+      const amount = Number(transaction.partnerAmount);
       console.log("===========amount", amount)
       receivedUser.wallet = (receivedUser.wallet || 0) + amount;
-      await receivedUser.save(); 
+      await receivedUser.save();
 
       const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
 
@@ -1096,16 +1096,16 @@ const updateSellServicesStatusPartner = async (req) => {
 
         if (!stripeAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
-        } 
-  
+        }
+
         if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
         }
-  
+
         const externalAccount = stripeAccount.external_accounts?.data?.find(
           (account) => account.id === bankAccount.externalAccountId
         );
-  
+
         if (!externalAccount) {
           throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
         }
@@ -1115,9 +1115,9 @@ const updateSellServicesStatusPartner = async (req) => {
       }
 
       // Convert USD to MXN for the payout
-      const { pesoCost } = await VariableCount.convertDollarToPeso(amount); 
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amount);
       const transfer = await stripe.transfers.create({
-        amount: Math.round(pesoCost * 100), 
+        amount: Math.round(pesoCost * 100),
         currency: 'mxn',
         destination: bankAccount?.stripeAccountId,
       });
@@ -1178,7 +1178,7 @@ const updateSellServicesStatusPartner = async (req) => {
       getId: serviceId,
     });
 
-    await sendUpdateStatus( serviceId, status, "partner");
+    await sendUpdateStatus(serviceId, status, "partner");
 
     return result;
   } catch (error) {
@@ -1189,21 +1189,21 @@ const updateSellServicesStatusPartner = async (req) => {
 
 // Status===========================
 const sendUpdateStatus = (serviceId, status, userType) => {
-    if (global.io) {
-        const socketIo = global.io; 
-        socketIo.emit(`${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`, {
-          serviceId,
-          status,
-          userType
-        });
-    } else {
-        console.error('Socket.IO is not initialized');
-    }
+  if (global.io) {
+    const socketIo = global.io;
+    socketIo.emit(`${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`, {
+      serviceId,
+      status,
+      userType
+    });
+  } else {
+    console.error('Socket.IO is not initialized');
+  }
 };
 
 // update-locations-status
 
-const ServicesService = { 
+const ServicesService = {
   createPostDB,
   updatePostDB,
   deletePostDB,
