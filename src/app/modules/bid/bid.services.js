@@ -248,7 +248,6 @@ const filterBidsByHistory = async (req) => {
       ...(serviceStatus && { status: serviceStatus }),
     };
     console.log("serviceStatus", serviceStatus)
-
     console.log("serviceQuery", serviceQuery)
 
     const filteredBids = await Bids.find(bidQuery)

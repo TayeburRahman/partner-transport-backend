@@ -630,6 +630,8 @@ const filterUserByHistory = async (req) => {
   const { userId, role } = req.user;
   let service;
 
+  console.log("categories======", serviceType, serviceStatus)
+
   const variable = await Variable.findOne();
   const surcharge = Number(variable?.surcharge || 0);
 
