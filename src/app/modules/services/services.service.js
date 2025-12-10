@@ -630,8 +630,6 @@ const filterUserByHistory = async (req) => {
   const { userId, role } = req.user;
   let service;
 
-  console.log("categories======", serviceType, serviceStatus)
-
   const variable = await Variable.findOne();
   const surcharge = Number(variable?.surcharge || 0);
 
@@ -919,13 +917,11 @@ const updateServicesStatusUser = async (req) => {
     }
 
     let serviceStatus = service.status;
-    // if (status === "goods-loaded") {
-    //   serviceStatus = "pick-up";
-    // } else if (status === "delivery-confirmed") {
-    //   serviceStatus = "completed";
-    // }
-
-    serviceStatus = status;
+    if (status === "goods_loaded") {
+      serviceStatus = "pick-up";
+    } else if (status === "delivery-confirmed") {
+      serviceStatus = "completed";
+    }
     // confirm_arrived
     // confirm_goods_loaded
     // confirm_downloaded
