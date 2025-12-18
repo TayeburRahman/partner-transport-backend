@@ -217,6 +217,15 @@ const ServicesSchema = new Schema(
       type: String,
       enum: ['Stripe', 'PayPal', 'applePay', 'googlePay', "BankTransfer"],
     },
+    goodsLoadedImages: {
+      type: [String],
+      default: [],
+    },
+
+    deliveredImages: {
+      type: [String],
+      default: [],
+    },
     distance: {
       type: Number,
       default: 0.1,

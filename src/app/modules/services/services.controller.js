@@ -169,7 +169,18 @@ const updateSellServicesStatusPartner = catchAsync(async (req, res) => {
   })
 })
 
+const uploadStatusImage = catchAsync(async (req, res) => {
+  const result = await ServicesService.uploadStatusImage(req);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Status update successfully!",
+    data: result,
+  })
+})
+
 const ServicesController = {
+  uploadStatusImage,
   createPostDB,
   updatePostDB,
   deletePostDB,

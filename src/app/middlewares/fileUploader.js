@@ -4,7 +4,7 @@ const fs = require("fs");
 const uploadFile = () => {
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      let uploadPath = ""; 
+      let uploadPath = "";
       if (file.fieldname === "profile_image") {
         uploadPath = "uploads/images/profile";
       } else if (file.fieldname === "image") {
@@ -27,12 +27,15 @@ const uploadFile = () => {
         uploadPath = "uploads/images/vehicle-image";
       } else if (file.fieldname === "vehicleSideImage") {
         uploadPath = "uploads/images/vehicle-image";
-      }else if (file.fieldname === "fileClaimImage") {
+      } else if (file.fieldname === "goodsLoadedImages") {
+        uploadPath = "uploads/images/goods-loaded";
+      } else if (file.fieldname === "deliveredImages") {
+        uploadPath = "uploads/images/delivered";
+      } else if (file.fieldname === "fileClaimImage") {
         uploadPath = "uploads/images/file-claim";
       } else {
         uploadPath = "uploads";
       }
-
       if (!fs.existsSync(uploadPath)) {
         fs.mkdirSync(uploadPath, { recursive: true });
       }
@@ -65,6 +68,8 @@ const uploadFile = () => {
       "vehicleBackImage",
       "vehicleSideImage",
       "fileClaimImage",
+      "goodsLoadedImages",
+      "deliveredImages",
       "image"
     ];
 
@@ -101,7 +106,9 @@ const uploadFile = () => {
     { name: "vehicleSideImage", maxCount: 1 },
     { name: "image", maxCount: 20 },
     { name: "fileClaimImage", maxCount: 10 },
-     
+    { name: "goodsLoadedImages", maxCount: 10 },
+    { name: "deliveredImages", maxCount: 10 },
+
   ]);
 
   return upload;

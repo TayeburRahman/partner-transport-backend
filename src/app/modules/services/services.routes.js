@@ -113,6 +113,12 @@ router
     uploadFile(),
     auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
     BidController.createFileClaim
-  );
+  )
+  .post(
+  "/upload-status-image",
+  uploadFile(),
+  ServicesController.uploadStatusImage
+);
+
 
 module.exports = router;

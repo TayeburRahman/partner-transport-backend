@@ -1199,6 +1199,63 @@ const sendUpdateStatus = (serviceId, status, userType) => {
   }
 };
 
+const uploadStatusImage = async (req) => {
+  const { serviceId, status } = req.body;
+
+  if (!serviceId || !status) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "serviceId and status are required"
+    );
+  }
+
+  const service = await Services.findById(serviceId);
+
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Service not found");
+  }
+
+  // =============================
+  // GOODS LOADED
+  // =============================
+  if (status === "goods_loaded") {
+    if (!req.files?.goodsLoadedImages) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Goods loaded images are required"
+      );
+    }
+
+    service.goodsLoadedImages = req.files.goodsLoadedImages.map(
+      (file) => file.path
+    );
+    service.partner_status = "goods_loaded"; 
+  }
+
+  // =============================
+  // DELIVERED
+  // =============================
+  if (status === "delivered") {
+    if (!req.files?.deliveredImages) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Delivered images are required"
+      );
+    }
+
+    service.deliveredImages = req.files.deliveredImages.map(
+      (file) => file.path
+    );
+
+    service.partner_status = "delivered";  
+  }
+
+  await service.save();
+
+  return service;
+};
+
+
 // update-locations-status
 
 const ServicesService = {
@@ -1217,7 +1274,8 @@ const ServicesService = {
   filterUserByHistory,
   updateServicesStatusUser,
   updateSellServicesStatusUser,
-  updateSellServicesStatusPartner
+  updateSellServicesStatusPartner,
+  uploadStatusImage
 };
 
 module.exports = { ServicesService };
