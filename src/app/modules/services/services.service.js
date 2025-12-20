@@ -1185,19 +1185,7 @@ const updateSellServicesStatusPartner = async (req) => {
   }
 };
 
-// Status===========================
-const sendUpdateStatus = (serviceId, status, userType) => {
-  if (global.io) {
-    const socketIo = global.io;
-    socketIo.emit(`${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`, {
-      serviceId,
-      status,
-      userType
-    });
-  } else {
-    console.error('Socket.IO is not initialized');
-  }
-};
+ 
 
 const uploadStatusImage = async (req) => {
   const { serviceId, status } = req.body;
@@ -1264,8 +1252,22 @@ const uploadStatusImage = async (req) => {
    await sendUpdateStatus(serviceId, status, "partner");
 
   return service;
+}; 
+
+// Status===========================
+const sendUpdateStatus = (serviceId, status, userType) => {
+  if (global.io) {
+    console.log("Emitting socket event for service status update");
+    const socketIo = global.io;
+    socketIo.emit(`${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`, {
+      serviceId,
+      status,
+      userType
+    });
+  } else {
+    console.error('Socket.IO is not initialized');
+  }
 };
-// update-locations-status
 
 const ServicesService = {
   createPostDB,
