@@ -1202,6 +1202,8 @@ const sendUpdateStatus = (serviceId, status, userType) => {
 const uploadStatusImage = async (req) => {
   const { serviceId, status } = req.body;
 
+  console.log("===serviceId,status", serviceId, status)
+
   if (!serviceId || !status) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
@@ -1254,8 +1256,6 @@ const uploadStatusImage = async (req) => {
 
   return service;
 };
-
-
 // update-locations-status
 
 const ServicesService = {
