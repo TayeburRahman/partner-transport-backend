@@ -1261,6 +1261,8 @@ const uploadStatusImage = async (req) => {
 
   await service.save();
 
+   await sendUpdateStatus(serviceId, status, "partner");
+
   return service;
 };
 // update-locations-status
