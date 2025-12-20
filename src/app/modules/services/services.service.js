@@ -1204,6 +1204,13 @@ const uploadStatusImage = async (req) => {
 
   console.log("===serviceId,status", serviceId, status)
 
+  if(status !== "goods_loaded" || status !== "delivered") {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Invalid status. Only 'goods_loaded' and 'delivered' are allowed."
+    );
+  }
+
   if (!serviceId || !status) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
