@@ -452,6 +452,8 @@ const searchNearby = async (req) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Missing longitude or latitude");
   }
 
+  console.log("search nearby with longitude and latitude", longitude, latitude)
+
   const lng = Number(longitude);
   const lat = Number(latitude);
 
@@ -460,6 +462,8 @@ const searchNearby = async (req) => {
   }
   console.log("===", longitude, latitude)
   const { coverageRadius } = await Variable.findOne({});
+
+  console.log("coverageRadius===", coverageRadius)
 
   const nearbyServices = await Services.aggregate([
     {
@@ -1184,8 +1188,6 @@ const updateSellServicesStatusPartner = async (req) => {
     throw error;
   }
 };
-
- 
 
 const uploadStatusImage = async (req) => {
   const { serviceId, status } = req.body;
