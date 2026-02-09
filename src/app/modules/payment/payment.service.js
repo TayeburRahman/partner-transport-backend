@@ -129,7 +129,7 @@ const createCheckoutSessionStripe = async (req) => {
             unit_amount: Number(parseFloat(unitAmount).toFixed(2)),
             product_data: {
               name: service.service,
-              description:  `Service ID: ${serviceId} | ${service.description}`,
+              description: `Service ID: ${serviceId} | ${service.description}`,
             },
           },
           quantity: 1,
@@ -244,7 +244,6 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
         currency: "USD",
       }
     };
-
     const newTransaction = await Transaction.create(transactionData);
 
     await NotificationService.sendNotification({
@@ -255,6 +254,21 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
       message: {
         eng: "Congratulations! Your bid for service has been accepted.",
         span: "¡Felicidades! Tu oferta por el servicio ha sido aceptada."
+      },
+      user: service?.user,
+      userType: 'User',
+      types: 'service',
+      getId: serviceId,
+    });
+
+    await NotificationService.sendNotification({
+      title: {
+        eng: "Auction Won.",
+        span: "Subasta Ganada.",
+      },
+      message: {
+        eng: "Congratulations! You have won the auction. Please review the service details.",
+        span: "¡Felicidades! Has ganado la subasta. Por favor revisa los detalles del servicio.",
       },
       user: partnerId,
       userType: 'Partner',
@@ -345,7 +359,7 @@ const stripeRefundPayment = async (req, res) => {
     const newTask = {
       admin: userId,
       email: emailAuth,
-      description: `Refund successful: Service ID ${serviceId} refunded an amount of $${amount} via Stripe.`,
+      description: `Refund successful: Service ID ${serviceId} refunded via Stripe.`,
       types: "Refund",
       activity: "task",
       status: "Success",
@@ -393,36 +407,36 @@ const createAndUpdateConnectedAccount = async (req, res) => {
     }
 
     let accountLink;
- 
+
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: "express",
         country: "MX",
         // dob: { day: 1, month: 1, year: 1990 },
-        email: existingUser?.email,  
+        email: existingUser?.email,
         capabilities: {
           transfers: { requested: true },
           card_payments: { requested: true },
         },
-      }); 
+      });
 
       accountLink = await stripe.accountLinks.create({
         account: account.id,
         refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}`,
         return_url: `${DOMAIN_URL}/payment/stripe_bank/success?userId=${userId}&role=${role}&accountId=${account.id}`,
         type: "account_onboarding",
-        
+
       });
-    } else { 
+    } else {
       accountLink = await stripe.accountLinks.create({
         account: accountId,
         refresh_url: `${DOMAIN_URL}/payment/stripe_bank/create?userId=${userId}&role=${role}&accountId=${accountId}`,
         return_url: `${DOMAIN_URL}/payment/stripe_bank/success/update?userId=${userId}&role=${role}&accountId=${accountId}`,
-        type: "account_onboarding", 
+        type: "account_onboarding",
       });
-    } 
+    }
 
-    return  { url: accountLink.url };
+    return { url: accountLink.url };
 
   } catch (error) {
     console.error("Stripe Error:", error);
@@ -432,12 +446,12 @@ const createAndUpdateConnectedAccount = async (req, res) => {
 
 const saveStripeAccount = async (req, res) => {
   try {
-    const { userId, role, accountId } = req.query; 
+    const { userId, role, accountId } = req.query;
 
     if (!userId || !role || !accountId) {
       return res.status(400).json({ message: "Missing query parameters" });
     }
- 
+
     let user;
     let userType;
     if (role === "USER") {
@@ -455,11 +469,11 @@ const saveStripeAccount = async (req, res) => {
     if (!account.details_submitted) {
       return res.status(400).json({ message: "Onboarding not completed" });
     }
-  
+
     const individual = account?.individual;
-    const bank_info = account.external_accounts?.data[0] || {}; 
+    const bank_info = account.external_accounts?.data[0] || {};
     const business_name = `${individual?.first_name} ${individual?.last_name}`
- 
+
     console.log("=======", bank_info)
     console.log("account", account.individual)
 
@@ -469,27 +483,27 @@ const saveStripeAccount = async (req, res) => {
       user: userId,
       userType: userType,
       stripeAccountId: accountId,
-      externalAccountId: account.external_accounts?.data[0]?.id, 
+      externalAccountId: account.external_accounts?.data[0]?.id,
       bank_info: {
         bank_name: bank_info?.bank_name,
-        account_holder_name: bank_info?.account_holder_name || user?.name, 
+        account_holder_name: bank_info?.account_holder_name || user?.name,
         account_number: "****" + bank_info?.last4,
         routing_number: bank_info?.routing_number || null,
         country: bank_info?.country || "MX",
         currency: bank_info?.currency || "mxn",
       },
       business_profile: {
-        business_name: business_name  || user.name,
-        website: bank_info?.url || "www.example.com", 
-      }, 
+        business_name: business_name || user.name,
+        website: bank_info?.url || "www.example.com",
+      },
     });
 
     newStripeAccount.save()
 
     if (role === "USER") {
       await User.findByIdAndUpdate(
-        userId, 
-        {  
+        userId,
+        {
           bank_name: bank_info?.bank_name || null,
           bank_holder_name: bank_info?.account_holder_name || user?.name,
           bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
@@ -499,8 +513,8 @@ const saveStripeAccount = async (req, res) => {
       );
     } else if (role === "PARTNER") {
       await Partner.findByIdAndUpdate(
-        userId,  
-        {  
+        userId,
+        {
           bank_name: bank_info?.bank_name || null,
           bank_holder_name: bank_info?.account_holder_name || user?.name,
           bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
@@ -510,7 +524,7 @@ const saveStripeAccount = async (req, res) => {
       );
     }
 
-     return newStripeAccount;
+    return newStripeAccount;
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
@@ -519,31 +533,31 @@ const saveStripeAccount = async (req, res) => {
 
 const updateStripeAccount = async (req, res) => {
   try {
-    const { userId, role, accountId } = req.query; 
+    const { userId, role, accountId } = req.query;
 
     if (!userId || !role || !accountId) {
-      throw new ApiError(400, "Missing query parameters") 
+      throw new ApiError(400, "Missing query parameters")
     }
- 
-    let user; 
-    if (role === "USER") { 
+
+    let user;
+    if (role === "USER") {
       user = await User.findById(userId);
-    } else if (role === "PARTNER") { 
+    } else if (role === "PARTNER") {
       user = await Partner.findById(userId);
     }
 
-    if (!user) throw new ApiError(400, `${role} not found.`)  
+    if (!user) throw new ApiError(400, `${role} not found.`)
 
     const account = await stripe.accounts.retrieve(accountId);
 
-    console.log("========",account)
-   
-    if(!account?.individual) throw new ApiError(400, 'Stripe account not found.')  
+    console.log("========", account)
+
+    if (!account?.individual) throw new ApiError(400, 'Stripe account not found.')
 
     const individual = account?.individual;
-    const bank_info = account.external_accounts?.data[0] || {}; 
+    const bank_info = account.external_accounts?.data[0] || {};
     const business_name = `${individual?.first_name} ${individual?.last_name}`
-  
+
 
     const newStripeAccount = await StripeAccount.findOneAndUpdate(
       { user: userId, stripeAccountId: accountId },
@@ -567,8 +581,8 @@ const updateStripeAccount = async (req, res) => {
 
     if (role === "USER") {
       await User.findByIdAndUpdate(
-        userId, 
-        {  
+        userId,
+        {
           bank_name: bank_info?.bank_name || null,
           bank_holder_name: bank_info?.account_holder_name || user?.name,
           bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
@@ -578,8 +592,8 @@ const updateStripeAccount = async (req, res) => {
       );
     } else if (role === "PARTNER") {
       await Partner.findByIdAndUpdate(
-        userId,  
-        {  
+        userId,
+        {
           bank_name: bank_info?.bank_name || null,
           bank_holder_name: bank_info?.account_holder_name || user?.name,
           bank_account_number: bank_info?.last4 ? "****" + bank_info.last4 : null,
@@ -588,15 +602,15 @@ const updateStripeAccount = async (req, res) => {
         { new: true }
       );
     }
-    
 
-   
-     return newStripeAccount;
+
+
+    return newStripeAccount;
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
-}; 
+};
 
 // =================== 
 const TransferBalance = async ({ bankAccount, amount }) => {
@@ -656,8 +670,8 @@ const PaymentService = {
   paymentStatusCancel,
   stripeCheckAndUpdateStatusSuccess,
   stripeRefundPayment,
-  TransferBalance, 
-  saveStripeAccount, 
+  TransferBalance,
+  saveStripeAccount,
   updateStripeAccount
 }
 

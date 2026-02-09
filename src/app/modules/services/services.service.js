@@ -440,6 +440,25 @@ const rescheduledPostUser = async (req) => {
     { new: true }
   );
 
+  /* =========================
+     🔔 Notify Partner
+     ========================= */
+  await NotificationService.sendNotification({
+    title: {
+      eng: "Service Reschedule Request",
+      span: "Solicitud de Reprogramación del Servicio",
+    },
+    message: {
+      eng: "The customer requested a new date and time. Please review and respond.",
+      span: "El cliente solicitó una nueva fecha y hora. Por favor revise y responda.",
+    },
+    user: service?.user,
+    userType: "Partner",
+    types: "service",
+    getId: serviceId 
+  });
+
+
   return result;
 };
 
@@ -462,8 +481,6 @@ const searchNearby = async (req) => {
   }
   console.log("===", longitude, latitude)
   const { coverageRadius } = await Variable.findOne({});
-
-  console.log("coverageRadius===", coverageRadius)
 
   const nearbyServices = await Services.aggregate([
     {
@@ -505,7 +522,6 @@ const searchNearby = async (req) => {
     populatedServices,
   };
 };
-
 
 const rescheduledAction = async (req) => {
   const { serviceId, rescheduledStatus } = req.query;
@@ -843,7 +859,6 @@ const updateServicesStatusUser = async (req) => {
       );
     }
 
-
     if (status === "delivery-confirmed") {
       const amount = Number(transaction.partnerAmount);
       console.log("status===========amount", amount)
@@ -910,8 +925,8 @@ const updateServicesStatusUser = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-          eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
-          span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
+          eng: `You’ve received a payment. Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
+          span: `Has recibido un pago. Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,
@@ -1144,8 +1159,8 @@ const updateSellServicesStatusPartner = async (req) => {
           span: "Pago Recibido"
         },
         message: {
-          eng: `You’ve received a payment of ${amount} (USD). Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
-          span: `Has recibido un pago de ${amount} (USD). Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
+          eng: `You’ve received a payment. Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
+          span: `Has recibido un pago. Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
         },
         user: receivedUser._id,
         userType: transaction.receiveUserType,

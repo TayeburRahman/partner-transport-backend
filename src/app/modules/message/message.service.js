@@ -187,7 +187,7 @@ const conversationUser = async (payload) => {
     [...users, ...partners, ...admins].forEach((participant) => {
       participantMap[participant._id.toString()] = {
         ...participant.toObject(),
-        type: participant.constructor.modelName, // Dynamic type identification
+        type: participant.constructor.modelName, 
       };
     });
 
@@ -198,8 +198,6 @@ const conversationUser = async (payload) => {
         (participantId) => participantMap[participantId.toString()]
       ),
     }));
-
-    
 
     // Filter by search term if provided
     const filteredConversations = searchTerm
