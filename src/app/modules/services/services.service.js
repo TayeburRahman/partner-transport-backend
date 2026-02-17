@@ -453,11 +453,29 @@ const rescheduledPostUser = async (req) => {
       span: "El cliente solicitó una nueva fecha y hora. Por favor revise y responda.",
     },
     user: service?.user,
-    userType: "Partner",
+    userType: "User",
     types: "service",
     getId: serviceId 
   });
 
+
+    /* =========================
+     🔔 Notify Partner
+     ========================= */
+  await NotificationService.sendNotification({
+    title: {
+      eng: "Service Reschedule Request",
+      span: "Solicitud de Reprogramación del Servicio",
+    },
+    message: {
+      eng: "The customer requested a new date and time. Please review and respond.",
+      span: "El cliente solicitó una nueva fecha y hora. Por favor revise y responda.",
+    },
+    user: service?.confirmedPartner,
+    userType: "Partner",
+    types: "service",
+    getId: serviceId 
+  });
 
   return result;
 };

@@ -135,8 +135,8 @@ const partnerBidPost = async (req) => {
       span: "Nueva Oferta Recibida"
     },
     message: {
-      eng: `You have placed a new bid of $${price} for your service.`,
-      span: `Has colocado una nueva oferta de $${price} para tu servicio.`
+      eng: `You have placed a new bid for your service.`,
+      span: `Has colocado una nueva oferta para tu servicio.`
     },
     user: foundService.user,
     userType: 'User',
