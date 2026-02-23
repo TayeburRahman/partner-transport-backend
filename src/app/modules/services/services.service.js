@@ -26,29 +26,59 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 
-// cron.schedule("* * * * *", async () => {
-//   try {
-//     const now = new Date();
+cron.schedule("* * * * *", async () => {
+  try {
+    const now = new Date();
 
-//     // const nowMexico = DateTime.now().setZone("America/Mexico_City");
-//     // const nowUtc = nowMexico.toUTC().toJSDate();
+    // today at 00:00
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-//     console.log("mexicoTime", now)
+    const currentTime24 = `${now
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${now
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
 
-//     const result = await Services.deleteMany({ 
-//       paymentStatus: "pending",
-//       startDate: { $lte:  now },
-//     });
+    const services = await Services.find({
+      confirmedPartner: null,
+      status: { $in: ["pending", "accepted"] },
+      deadlineDate: { $lte: today },
+    });
 
-//     if (result.deletedCount > 0) {
-//       logger.info(
-//         `Deleted ${result.deletedCount} expired auctions with no offers or confirmation`
-//       );
-//     }
-//   } catch (error) {
-//     logger.error("Error deleting expired auctions:", error);
-//   }
-// });
+    let cancelledCount = 0;
+
+    for (const service of services) {
+      const deadlineTime24 = to24Hour(service.deadlineTime);
+
+      // If date is before today → cancel
+      if (service.deadlineDate < today) {
+        service.status = "cancel";
+        await service.save();
+        cancelledCount++;
+        continue;
+      }
+
+      // If today AND time passed → cancel
+      if (
+        service.deadlineDate.getTime() === today.getTime() &&
+        deadlineTime24 <= currentTime24
+      ) {
+        service.status = "cancel";
+        await service.save();
+        cancelledCount++;
+      }
+    }
+
+    if (cancelledCount > 0) {
+      logger.info(`Cancelled ${cancelledCount} expired services`);
+    }
+  } catch (error) {
+    logger.error("Auction auto-cancel cron failed:", error);
+  }
+});
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -115,10 +145,6 @@ const createPostDB = async (req) => {
           throw new ApiError(httpStatus.BAD_REQUEST, "Unable to find or validate your bank account.");
         }
 
-        // if (!stripeAccount.charges_enabled) {
-        //   throw new ApiError(httpStatus.BAD_REQUEST, "Sorry, Your Account is not enabled for receiving payments.");
-        // }
-
         const externalAccount = stripeAccount.external_accounts?.data?.find(
           (account) => account.id === bankAccount.externalAccountId
         );
@@ -136,9 +162,7 @@ const createPostDB = async (req) => {
     const images = validateInputs(data, image);
 
     const distance = Number(data.distance);
-    const formattedDistance = parseFloat(distance?.toFixed(3));
-
-    console.log("===", data.unloadFloorNo)
+    const formattedDistance = parseFloat(distance?.toFixed(3)); 
 
     const serviceData = {
       user: userId,
