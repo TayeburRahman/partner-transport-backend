@@ -20,52 +20,78 @@ const { NotificationService } = require("../notification/notification.service");
 const VariableCount = require("../variable/variable.count");
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
-const timezone = require('dayjs/plugin/timezone');
-const cron = require("node-cron");
+const timezone = require('dayjs/plugin/timezone'); 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+const cron = require("node-cron"); 
+const logger = console; 
+
+function to24Hour(timeStr) {
+  if (!timeStr) return 0;
+  const [time, modifier] = timeStr.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+  if (modifier === 'PM' && hours < 12) hours += 12;
+  if (modifier === 'AM' && hours === 12) hours = 0;
+  return hours * 100 + minutes;
+}
 
 cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
 
-    // today at 00:00
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Format Mexico City time as string
+    const mexicoTimeStr = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Mexico_City',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      hourCycle: 'h23'
+    }).format(now);
 
-    const currentTime24 = `${now
-      .getHours()
-      .toString()
-      .padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
+    // Convert formatted string back to a Date object
+    const [month, day, year, hour, minute, second] = mexicoTimeStr.match(/\d+/g);
+    const mexicoTime = new Date(`${year}-${month}-${day}T${hour.padStart(2,'0')}:${minute.padStart(2,'0')}:${second.padStart(2,'0')}`);
 
+    console.log("=|= Current Mexico City Time: =|=", mexicoTime);
+
+    // Current time in 24-hour format for time comparison
+    const currentTime24 = mexicoTime.getHours() * 100 + mexicoTime.getMinutes();
+
+    // Find all pending/accepted services without confirmed partner
     const services = await Services.find({
       confirmedPartner: null,
       status: { $in: ["pending", "accepted"] },
-      deadlineDate: { $lte: today },
     });
 
     let cancelledCount = 0;
 
+    console.log(`=||== Found ${services.length} services to check for expiration ==||=.`);
+
     for (const service of services) {
+      // Deadline date at 00:00 for comparison
+      const serviceDate = new Date(service.deadlineDate);
+      serviceDate.setHours(0,0,0,0);
+
+      const today = new Date(mexicoTime);
+      today.setHours(0,0,0,0);
+
       const deadlineTime24 = to24Hour(service.deadlineTime);
 
-      // If date is before today → cancel
-      if (service.deadlineDate < today) {
+      // Case 1: Past date → cancel
+      if (serviceDate.getTime() < today.getTime()) {
         service.status = "cancel";
         await service.save();
         cancelledCount++;
         continue;
       }
 
-      // If today AND time passed → cancel
-      if (
-        service.deadlineDate.getTime() === today.getTime() &&
-        deadlineTime24 <= currentTime24
-      ) {
+      // Case 2: Today but time has passed → cancel
+      if (serviceDate.getTime() === today.getTime() && deadlineTime24 <= currentTime24) {
         service.status = "cancel";
         await service.save();
         cancelledCount++;
@@ -73,8 +99,9 @@ cron.schedule("* * * * *", async () => {
     }
 
     if (cancelledCount > 0) {
-      logger.info(`Cancelled ${cancelledCount} expired services`);
+      logger.info(`|=| Cancelled ${cancelledCount} expired services |=|`);
     }
+
   } catch (error) {
     logger.error("Auction auto-cancel cron failed:", error);
   }

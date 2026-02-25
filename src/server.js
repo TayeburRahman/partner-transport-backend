@@ -15,21 +15,8 @@ async function main() {
 
     // start server
     const server = app.listen(port, config.base_url, () => {
-      const now = new Date();
-      const mexicoTime = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'America/Mexico_City',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
- hour12: true,      
-  hourCycle: 'h23'
-}).format(now);
-
-console.log('Mexico City Time:', mexicoTime);
-      logger.info(`App listening on http://${config.base_url}:${config.port}, started at ${now}`);
+ 
+      logger.info(`App listening on http://${config.base_url}:${config.port}`);
     });
     //
     // Set up Socket.IO-----------------
