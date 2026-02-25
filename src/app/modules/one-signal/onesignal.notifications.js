@@ -5,6 +5,8 @@ const config = require("../../../config");
 const sendNotificationOnesignal = async (playerIds, title, message, types, getId, notice) => {   
   let router = "";
 
+  console.log("===||= sendNotificationOnesignal =||===",  types)
+
   switch (types) {
     case "service":
       router = "serviceDetails";
