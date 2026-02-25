@@ -24,7 +24,8 @@ async function main() {
   hour: '2-digit',
   minute: '2-digit',
   second: '2-digit',
-  hour12: false
+ hour12: true,      
+  hourCycle: 'h23'
 }).format(now);
 
 console.log('Mexico City Time:', mexicoTime);
