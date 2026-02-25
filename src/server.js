@@ -15,7 +15,8 @@ async function main() {
 
     // start server
     const server = app.listen(port, config.base_url, () => {
-      logger.info(`App listening on http://${config.base_url}:${config.port}`);
+      const now = new Date();
+      logger.info(`App listening on http://${config.base_url}:${config.port}, started at ${now}`);
     });
     //
     // Set up Socket.IO-----------------
