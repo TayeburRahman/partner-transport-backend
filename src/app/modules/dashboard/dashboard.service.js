@@ -25,7 +25,8 @@ const getYearRange = (year) => {
   const endDate = new Date(`${year}-12-31`);
   return { startDate, endDate };
 };
-// =User Partner Admin Management ========================
+
+// =User Partner Admin Management ==========================
 const getAllUsers = async (query) => {
   const userQuery = new QueryBuilder(User.find().populate("authId"), query)
     .search(["name", "email"])
@@ -38,7 +39,6 @@ const getAllUsers = async (query) => {
   const meta = await userQuery.countTotal();
 
   // console.log("=======", result)
-
   return {
     meta,
     data: result,
@@ -102,6 +102,7 @@ const blockUnblockUserPartnerAdmin = async (req) => {
     if (!updatedAuth) {
       throw new ApiError(httpStatus.NOT_FOUND, "User not found");
     }
+    
     // log=====
     const newTask = {
       admin: userId,

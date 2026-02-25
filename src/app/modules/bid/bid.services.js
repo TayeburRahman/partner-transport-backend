@@ -373,7 +373,7 @@ const postReviewMove = async (req) => {
     : 0;
 
   const averageRating = reviews.length
-    ? Math.round(totalRating / reviews.length)
+    ? parseFloat((totalRating / reviews.length).toFixed(1))
     : 0;
 
   await Partner.findByIdAndUpdate(partnerId, {

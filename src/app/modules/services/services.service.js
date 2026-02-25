@@ -478,7 +478,7 @@ const rescheduledPostUser = async (req) => {
     },
     user: service?.user,
     userType: "User",
-    types: "service",
+    types: "reschedule",
     getId: serviceId 
   });
 
@@ -497,7 +497,7 @@ const rescheduledPostUser = async (req) => {
     },
     user: service?.confirmedPartner,
     userType: "Partner",
-    types: "service",
+    types: "reschedule",
     getId: serviceId 
   });
 
@@ -615,7 +615,7 @@ const rescheduledAction = async (req) => {
     },
     user: service.user,
     userType: 'User',
-    types: "service",
+    types: "reschedule",
     getId: serviceId,
   });
 

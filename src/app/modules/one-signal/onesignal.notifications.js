@@ -9,6 +9,9 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
     case "service":
       router = "serviceDetails";
       break;
+      case "reschedule":
+      router = "reschedule";
+      break;
     case "none":
       router = "getNotification";
       break;

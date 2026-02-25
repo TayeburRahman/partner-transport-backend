@@ -6,10 +6,8 @@ const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.servic
 
 const createCategory = async (req) => {
   const { userId, emailAuth } = req.user;
-
   try { 
     const result = await Category.create(req.body);
-
     // Log success
     const newTask = {
       admin: userId,
