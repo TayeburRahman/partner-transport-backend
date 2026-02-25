@@ -96,6 +96,7 @@ const ENUM_NOTIFICATION_TYPE = {
   TICKET: 'ticket',
   NONE: 'none',
   ONGOING: 'ongoing',
+  RESCHEDULE: 'reschedule',
   COMPLETE_STATUS:"complete-status"
 };
 const ENUM_PAYMENT_STATUS = {};

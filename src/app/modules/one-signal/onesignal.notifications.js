@@ -1,17 +1,17 @@
 const { default: axios } = require("axios");
-const config = require("../../../config"); 
- 
+const config = require("../../../config");
 
-const sendNotificationOnesignal = async (playerIds, title, message, types, getId, notice) => {   
+
+const sendNotificationOnesignal = async (playerIds, title, message, types, getId, notice) => {
   let router = "";
 
-  console.log("===||= sendNotificationOnesignal =||===",  types)
+  console.log("===||= sendNotificationOnesignal =||===", types)
 
   switch (types) {
     case "service":
       router = "serviceDetails";
       break;
-      case "reschedule":
+    case "reschedule":
       router = "reschedule";
       break;
     case "none":
@@ -35,7 +35,7 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
     default:
       console.warn("Unknown notification type:", types);
   }
-  
+
   const data = {
     app_id: config.onesignal.app_id,
     contents: { en: message.eng },
@@ -59,7 +59,7 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
       `${config.onesignal.onesignal_url}/api/v1/notifications`,
       data,
       { headers }
-    ); 
+    );
   } catch (error) {
     console.error('Error sending notification:', error);
   }
