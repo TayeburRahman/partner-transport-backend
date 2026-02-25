@@ -25,7 +25,7 @@ async function main() {
   minute: '2-digit',
   second: '2-digit',
   hour12: false
-}).format(utcDate);
+}).format(now);
 
 console.log('Mexico City Time:', mexicoTime);
       logger.info(`App listening on http://${config.base_url}:${config.port}, started at ${now}`);
