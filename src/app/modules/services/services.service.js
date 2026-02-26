@@ -796,6 +796,8 @@ const updateServicesStatusPartner = async (req) => {
   }
 
   const service = await Services.findById(serviceId);
+
+  console.log("service======", service.user_status, status )
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
   }
@@ -884,6 +886,9 @@ const updateServicesStatusUser = async (req) => {
   }
 
   const service = await Services.findById(serviceId);
+
+    console.log("service======", service.partner_status, status )
+
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");
   }
