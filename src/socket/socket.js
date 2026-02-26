@@ -54,6 +54,7 @@ const socket = async (io) => {
       console.error('Invalid user ID provided:', currentUserId);
       return;
     }
+    
     socket.join(currentUserId);
     // Add the user to the online users set
     onlineUsers.add(currentUserId);

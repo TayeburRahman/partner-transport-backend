@@ -20,12 +20,12 @@ const { NotificationService } = require("../notification/notification.service");
 const VariableCount = require("../variable/variable.count");
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
-const timezone = require('dayjs/plugin/timezone'); 
+const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const cron = require("node-cron"); 
-const logger = console; 
+const cron = require("node-cron");
+const logger = console;
 
 function to24Hour(timeStr) {
   if (!timeStr) return 0;
@@ -55,7 +55,7 @@ cron.schedule("* * * * *", async () => {
 
     // Convert formatted string back to a Date object
     const [month, day, year, hour, minute, second] = mexicoTimeStr.match(/\d+/g);
-    const mexicoTime = new Date(`${year}-${month}-${day}T${hour.padStart(2,'0')}:${minute.padStart(2,'0')}:${second.padStart(2,'0')}`);
+    const mexicoTime = new Date(`${year}-${month}-${day}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}`);
 
     console.log("=|= Current Mexico City Time: =|=", mexicoTime);
 
@@ -75,10 +75,10 @@ cron.schedule("* * * * *", async () => {
     for (const service of services) {
       // Deadline date at 00:00 for comparison
       const serviceDate = new Date(service.deadlineDate);
-      serviceDate.setHours(0,0,0,0);
+      serviceDate.setHours(0, 0, 0, 0);
 
       const today = new Date(mexicoTime);
-      today.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
 
       const deadlineTime24 = to24Hour(service.deadlineTime);
 
@@ -189,7 +189,7 @@ const createPostDB = async (req) => {
     const images = validateInputs(data, image);
 
     const distance = Number(data.distance);
-    const formattedDistance = parseFloat(distance?.toFixed(3)); 
+    const formattedDistance = parseFloat(distance?.toFixed(3));
 
     const serviceData = {
       user: userId,
@@ -506,13 +506,13 @@ const rescheduledPostUser = async (req) => {
     user: service?.user,
     userType: "User",
     types: "reschedule",
-    getId: serviceId 
+    getId: serviceId
   });
 
 
-    /* =========================
-     🔔 Notify Partner
-     ========================= */
+  /* =========================
+   🔔 Notify Partner
+   ========================= */
   await NotificationService.sendNotification({
     title: {
       eng: "Service Reschedule Request",
@@ -525,7 +525,7 @@ const rescheduledPostUser = async (req) => {
     user: service?.confirmedPartner,
     userType: "Partner",
     types: "reschedule",
-    getId: serviceId 
+    getId: serviceId
   });
 
   return result;
@@ -755,6 +755,11 @@ const filterUserByHistory = async (req) => {
     .sort()
     .paginate();
 
+  if (serviceStatus === "completed") {
+    filtered
+  }
+  // filtered.modelQuery = filtered.modelQuery.populate({    
+
   let result = await filtered.modelQuery;
   const meta = await filtered.countTotal();
 
@@ -813,10 +818,17 @@ const updateServicesStatusPartner = async (req) => {
     );
   }
 
-  if (status === "downloaded" && service.user_status !== "confirm_goods_loaded") {
+  if (status === "arrived_destination" && service.user_status !== "confirm_goods_loaded") {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "Goods must be loaded and the trip must be started before arriving at the destination."
+    );
+  }
+
+  if (status === "downloaded" && service.user_status !== "confirm_arrived_destination") {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "You must arrive at the destination before downloading the goods."
     );
   }
 
@@ -899,7 +911,6 @@ const updateServicesStatusUser = async (req) => {
       throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
     }
 
-
     if (status === "confirm_arrived" && service.partner_status !== "arrived") {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -911,6 +922,13 @@ const updateServicesStatusUser = async (req) => {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
         "Partner must mark goods as loaded before the user can confirm it."
+      );
+    }
+
+    if (status === "confirm_arrived_destination" && service.partner_status !== "arrived_destination") {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Partner must mark status as 'arrived destination' before the user can confirm arrival at the destination."
       );
     }
 
@@ -930,7 +948,6 @@ const updateServicesStatusUser = async (req) => {
 
     if (status === "delivery-confirmed") {
       const amount = Number(transaction.partnerAmount);
-      console.log("status===========amount", amount)
       receivedUser.wallet = (receivedUser.wallet || 0) + amount;
       await receivedUser.save();
 
@@ -1278,7 +1295,7 @@ const uploadStatusImage = async (req) => {
 
   console.log("===serviceId,status", serviceId, status)
 
-  if(status !== "goods_loaded" && status !== "delivered") {
+  if (status !== "goods_loaded" && status !== "delivered") {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "Invalid status. Only 'goods_loaded' and 'delivered' are allowed."
@@ -1312,7 +1329,7 @@ const uploadStatusImage = async (req) => {
     service.goodsLoadedImages = req.files.goodsLoadedImages.map(
       (file) => file.path
     );
-    service.partner_status = "goods_loaded"; 
+    service.partner_status = "goods_loaded";
   }
 
   // =============================
@@ -1330,15 +1347,15 @@ const uploadStatusImage = async (req) => {
       (file) => file.path
     );
 
-    service.partner_status = "delivered";  
+    service.partner_status = "delivered";
   }
 
   await service.save();
 
-   await sendUpdateStatus(serviceId, status, "partner");
+  await sendUpdateStatus(serviceId, status, "partner");
 
   return service;
-}; 
+};
 
 // Status===========================
 const sendUpdateStatus = (serviceId, status, userType) => {
