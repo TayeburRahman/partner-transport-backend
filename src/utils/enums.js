@@ -47,8 +47,8 @@ const ENUM_SERVICE_STATUS = {
   DELIVERED: "delivered",
   DELIVERY_CONFIRMED: "delivery-confirmed",
 
-  // PARTNER_AT_DESTINATION: "partner-at-destination",
-  // ARRIVE_AT_DESTINATION: "arrive-at-destination",
+  PARTNER_AT_DESTINATION: "arrived_destination",
+  ARRIVE_AT_DESTINATION_CONFIRM: "confirm_arrived_destination",
 };
 
 

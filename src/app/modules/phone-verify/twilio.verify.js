@@ -31,8 +31,8 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
             if (!update) {
                 throw new ApiError(404, "Error updating verify code in the database. Please try again!")
             }
-            console.log('update', update);
-            console.log('verifyOtp', verifyOtp);
+            // console.log('update', update);
+            // console.log('verifyOtp', verifyOtp);
             let result
             if (user.role === ENUM_USER_ROLE.USER) {
                 result = await User.findByIdAndUpdate(user.userId, { phone_number: phone, phone_c_code: countryCode })

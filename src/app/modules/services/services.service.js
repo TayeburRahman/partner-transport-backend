@@ -57,7 +57,7 @@ cron.schedule("* * * * *", async () => {
     const [month, day, year, hour, minute, second] = mexicoTimeStr.match(/\d+/g);
     const mexicoTime = new Date(`${year}-${month}-${day}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}`);
 
-    console.log("=|= Current Mexico City Time: =|=", mexicoTime);
+    // console.log("=|= Current Mexico City Time: =|=", mexicoTime);
 
     // Current time in 24-hour format for time comparison
     const currentTime24 = mexicoTime.getHours() * 100 + mexicoTime.getMinutes();
@@ -70,7 +70,7 @@ cron.schedule("* * * * *", async () => {
 
     let cancelledCount = 0;
 
-    console.log(`=||== Found ${services.length} services to check for expiration ==||=.`);
+    // console.log(`=||== Found ${services.length} services to check for expiration ==||=.`);
 
     for (const service of services) {
       // Deadline date at 00:00 for comparison
@@ -348,7 +348,7 @@ const getUserPostHistory = async (req) => {
 
 const deletePostDB = async (req) => {
   const { serviceId } = req.params;
-  console.log('=====', serviceId)
+  // console.log('=====', serviceId)
   const service = await Services.findById(serviceId);
   if (!service) {
     throw new ApiError(404, "Service not found");
@@ -471,7 +471,7 @@ const rescheduledPostUser = async (req) => {
     );
   }
 
-  console.log("rescheduledDateTime", rescheduledDateTime)
+  // console.log("rescheduledDateTime", rescheduledDateTime)
 
   const service = await Services.findById(serviceId);
   if (!service) {
@@ -540,7 +540,7 @@ const searchNearby = async (req) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Missing longitude or latitude");
   }
 
-  console.log("search nearby with longitude and latitude", longitude, latitude)
+  // console.log("search nearby with longitude and latitude", longitude, latitude)
 
   const lng = Number(longitude);
   const lat = Number(latitude);
@@ -548,7 +548,7 @@ const searchNearby = async (req) => {
   if (isNaN(lng) || isNaN(lat)) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid longitude or latitude");
   }
-  console.log("===", longitude, latitude)
+  // console.log("===", longitude, latitude)
   const { coverageRadius } = await Variable.findOne({});
 
   const nearbyServices = await Services.aggregate([
@@ -629,7 +629,7 @@ const rescheduledAction = async (req) => {
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
   }
 
-  console.log(" updateFields.startDate", updateFields.startDate, serviceId)
+  // console.log(" updateFields.startDate", updateFields.startDate, serviceId)
 
   await NotificationService.sendNotification({
     title: {
@@ -661,10 +661,10 @@ const getUserServicesWithinOneHour = async (req) => {
   const now = new Date();
   const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
 
-  console.log("dateNow====", dateNow)
+  // console.log("dateNow====", dateNow)
 
 
-  console.log("==================now", now)
+  // console.log("==================now", now)
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
@@ -763,7 +763,7 @@ const filterUserByHistory = async (req) => {
   let result = await filtered.modelQuery;
   const meta = await filtered.countTotal();
 
-  console.log('result', result)
+  // console.log('result', result)
 
   if (role === ENUM_USER_ROLE.USER && serviceType === "move" && serviceStatus === "accepted") {
     result = result.map((data) => ({
@@ -797,7 +797,8 @@ const updateServicesStatusPartner = async (req) => {
 
   const service = await Services.findById(serviceId);
 
-  console.log("service======", service.user_status, status )
+  console.log("service======", service.user_status, status)
+  
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
   }
@@ -1005,7 +1006,7 @@ const updateServicesStatusUser = async (req) => {
         }
       );
 
-      console.log("Payout successful:", payout);
+      // console.log("Payout successful:", payout);
 
       transaction.isFinish = true;
       await transaction.save();
@@ -1189,7 +1190,7 @@ const updateSellServicesStatusPartner = async (req) => {
   try {
     if (status === "delivery-confirmed") {
       const amount = Number(transaction.partnerAmount);
-      console.log("===========amount", amount)
+      // console.log("===========amount", amount)
       receivedUser.wallet = (receivedUser.wallet || 0) + amount;
       await receivedUser.save();
 
@@ -1298,7 +1299,7 @@ const updateSellServicesStatusPartner = async (req) => {
 const uploadStatusImage = async (req) => {
   const { serviceId, status } = req.body;
 
-  console.log("===serviceId,status", serviceId, status)
+  // console.log("===serviceId,status", serviceId, status)
 
   if (status !== "goods_loaded" && status !== "delivered") {
     throw new ApiError(
@@ -1365,7 +1366,7 @@ const uploadStatusImage = async (req) => {
 // Status===========================
 const sendUpdateStatus = (serviceId, status, userType) => {
   if (global.io) {
-    console.log("Emitting socket event for service status update");
+    // console.log("Emitting socket event for service status update");
     const socketIo = global.io;
     socketIo.emit(`${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`, {
       serviceId,
