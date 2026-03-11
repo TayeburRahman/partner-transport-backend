@@ -97,7 +97,8 @@ const ENUM_NOTIFICATION_TYPE = {
   NONE: 'none',
   ONGOING: 'ongoing',
   RESCHEDULE: 'reschedule',
-  COMPLETE_STATUS:"complete-status"
+  COMPLETE_STATUS:"complete-status",
+  SERVICE_PAYMENT:"service_payment"
 };
 const ENUM_PAYMENT_STATUS = {};
 
