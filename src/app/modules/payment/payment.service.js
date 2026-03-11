@@ -60,11 +60,7 @@ const createCheckoutSessionStripe = async (req) => {
       user = await Admin.findById(userId);
       payUserRole = 'Admin';
     }
-
-    // if (!service?.winBid) {
-    //   throw new ApiError(404, "No Partner accepted yat!");
-    // } 
-
+    
     let receiveUser;
     let receiveUserRole;
     if (service.mainService === "sell") {
