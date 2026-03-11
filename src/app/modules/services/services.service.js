@@ -364,6 +364,7 @@ const conformPartner = async (req) => {
   if (!service) {
     throw new ApiError(404, "Service not found");
   }
+  
   const partner = await Partner.findOne({ _id: partnerId });
 
   if (!partner) {
@@ -409,6 +410,8 @@ const conformPartner = async (req) => {
 
   await Bids.bulkWrite(bulkOps);
 
+  const mainServiceTypes = result.mainService === "sell" ? "service_payment" : "service";
+
   await NotificationService.sendNotification({
     title: {
       eng: "You’ve Won the Bid!",
@@ -420,7 +423,7 @@ const conformPartner = async (req) => {
     },
     user: partnerId,
     userType: 'Partner',
-    types: 'service',
+    types: mainServiceTypes,
     getId: serviceId,
   });
 
