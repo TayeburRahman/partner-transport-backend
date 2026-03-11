@@ -185,7 +185,7 @@ const ServicesSchema = new Schema(
         "pending",
         "arrived",
         "goods_loaded",
-         "arrived_destination",
+        "arrived_destination",
         "downloaded",
         "delivered",
       ],

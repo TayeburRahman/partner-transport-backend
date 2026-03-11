@@ -58,7 +58,7 @@ router
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_EDIT),
     DashboardController.deleteUser
   )
-  
+
   // .get(
   //   "/get_all_user",
   //   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
@@ -81,13 +81,13 @@ router
   )
   .get(
     "/get_partner_details",
-    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.getPartnerDetails
   )
   .delete(
     "/delete_partner",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess( ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_EDIT),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_EDIT),
     DashboardController.deletePartner
   )
   .get(
@@ -121,7 +121,7 @@ router
   )
   .patch(
     "/edit-profile",
-    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN), 
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.updateProfile
   )
 
@@ -129,10 +129,10 @@ router
   .patch(
     "/block-unblock-user-partner-admin",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess( 
+    checkAdminAccess(
       ENUM_ADMIN_ACCESS.ACC_TO_USER_EDIT,
       ENUM_ADMIN_ACCESS.ACC_TO_ADMIN_MANAGE_EDIT,
-      ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_EDIT 
+      ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_EDIT
     ),
     DashboardController.blockUnblockUserPartnerAdmin
   )
@@ -191,29 +191,34 @@ router
     // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.filterAndSortServicesCustom
   )
+  .get(
+    "/search_custom",
+    // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    DashboardController.filterAndSortServicesCustom
+  )
 
   .post(
     "/notice/user",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_EDIT), 
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_USER_EDIT),
     DashboardController.sendNoticeUsers
   )
   .post(
     "/notice/partner",
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_EDIT), 
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_PARTNER_EDIT),
     DashboardController.sendNoticePartner
   )
   .get(
     '/transactions',
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION), 
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION),
     DashboardController.getTransactionsHistory
   )
   .get(
     '/transaction/:id',
     auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
-    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION), 
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_TRANSACTION),
     DashboardController.getTransactionsDetails
   )
   // =File Claim================================
@@ -236,7 +241,7 @@ router
     BidController.getAllFileClaims
   )
 
-   
+
 // variable ========================
 
 
