@@ -14,47 +14,37 @@ const registrationEmailTemplate = (data, role = "user") => `
           padding: 40px 20px;
           background-color: #ffffff;
           border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .header {
           background-color: #007bff;
           padding: 20px;
-          border-top-left-radius: 8px;
-          border-top-right-radius: 8px;
-          color: #ffffff;
+          border-radius: 8px 8px 0 0;
+          color: #fff;
           text-align: center;
-        }
-        .header h1 {
-          margin: 0;
-          font-size: 24px;
-          font-weight: 600;
         }
         .content {
           padding: 30px;
-          color: #333333;
         }
-        .content h2 {
-          font-size: 22px;
-          color: #333333;
-          margin-bottom: 20px;
-          font-weight: 600;
+        h2 {
+          font-size: 20px;
+          margin-top: 30px;
         }
-        .content p {
+        p {
           font-size: 16px;
-          color: #666666;
+          color: #666;
           line-height: 1.6;
-          margin-bottom: 20px;
         }
         .activation-code {
           font-size: 28px;
           color: #007bff;
-          font-weight: 700;
+          font-weight: bold;
           text-align: center;
-          margin-bottom: 20px;
+          margin: 20px 0;
         }
         .button-container {
           text-align: center;
-          margin: 40px 0;
+          margin: 30px 0;
         }
         .button {
           padding: 12px 30px;
@@ -63,70 +53,94 @@ const registrationEmailTemplate = (data, role = "user") => `
           border-radius: 6px;
           font-size: 16px;
           font-weight: 600;
+          color: white;
         }
-        .activate-btn {
-          color: #fff;
-        }
-        .button:hover {
-          background-color: #0056b3;
+        hr{
+          margin:40px 0;
         }
         .footer {
           padding: 20px;
           font-size: 14px;
-          color: #999999;
+          color: #999;
           text-align: center;
           background-color: #f7f9fc;
-          border-bottom-left-radius: 8px;
-          border-bottom-right-radius: 8px;
-        }
-        .footer p {
-          margin: 5px 0;
-        }
-        .footer a {
-          color: #007bff;
-          text-decoration: none;
-        }
-        .footer a:hover {
-          text-decoration: underline;
+          border-radius: 0 0 8px 8px;
         }
       </style>
     </head>
+
     <body>
       <div class="container">
         <div class="header">
-          <h1>Welcome to Xmoveit</h1>
+          <h1>Xmoveit</h1>
         </div>
+
         <div class="content">
-          <h2>Hello, ${data?.name || "User"}</h2>
+
+          <!-- Spanish Section -->
+          <h2>Hola, ${data?.name || "Usuario"}</h2>
+
           ${
             role === "admin"
               ? `
-            <p>Thank you for registering as an admin with Xmoveit. We are excited to have you on board. As an admin, you have full access to manage the platform.</p>
-            <p>If you need assistance, reach out to us at <a href="mailto:thakursaad613@gmail.com">thakursaad613@gmail.com</a>.</p>
-            `
+            <p>Gracias por registrarte como administrador en Xmoveit. Estamos encantados de tenerte en la plataforma.</p>
+            <p>Si necesitas ayuda, contáctanos en <a href="mailto:thakursaad613@gmail.com">thakursaad613@gmail.com</a>.</p>
+          `
               : `
-            <p>Thank you for registering with Xmoveit. To activate your account, please use the following activation code:</p>
-            <div class="activation-code">${
-              data?.activationCode || "XXXXXX"
-            }</div>
-            <p>Enter this code on the activation page within the next ${
-              data.expirationTime
-            } minutes. If you don't your account will be deleted from the database and you will need to register again.</p>
+            <p>Gracias por registrarte en Xmoveit. Para activar tu cuenta utiliza el siguiente código de activación:</p>
+
+            <div class="activation-code">${data?.activationCode || "XXXXXX"}</div>
+
+            <p>Ingresa este código en la página de activación dentro de los próximos ${data?.expirationTime} minutos. Si no lo haces, tu cuenta será eliminada y tendrás que registrarte nuevamente.</p>
+
             <div class="button-container">
               <a href="https://yourwebsite.com/activate" class="button">
-                <span class="activate-btn">Activate Now</span>
+                Activar cuenta
               </a>
             </div>
-            <p>If you didn't register, ignore this email.</p>
+
+            <p>Si no te registraste, puedes ignorar este correo.</p>
           `
           }
+
+          <hr/>
+
+          <!-- English Section -->
+          <h2>Hello, ${data?.name || "User"}</h2>
+
+          ${
+            role === "admin"
+              ? `
+            <p>Thank you for registering as an admin with Xmoveit. We are excited to have you on board.</p>
+            <p>If you need assistance, contact us at <a href="mailto:thakursaad613@gmail.com">thakursaad613@gmail.com</a>.</p>
+          `
+              : `
+            <p>Thank you for registering with Xmoveit. To activate your account, use the following activation code:</p>
+
+            <div class="activation-code">${data?.activationCode || "XXXXXX"}</div>
+
+            <p>Enter this code on the activation page within the next ${data?.expirationTime} minutes. If you don't, your account will be deleted and you will need to register again.</p>
+
+            <div class="button-container">
+              <a href="https://yourwebsite.com/activate" class="button">
+                Activate Account
+              </a>
+            </div>
+
+            <p>If you didn't register, please ignore this email.</p>
+          `
+          }
+
         </div>
+
         <div class="footer">
+          <p>&copy; ${new Date().getFullYear()} Xmoveit. All rights reserved.</p>
           <p>
-            &copy; ${new Date().getFullYear()}Xmoveit. All rights reserved.
+            <a href="https://yourwebsite.com/privacy">Privacy Policy</a> |
+            <a href="https://yourwebsite.com/contact">Contact Us</a>
           </p>
-          <p><a href="https://yourwebsite.com/privacy">Privacy Policy</a> | <a href="https://yourwebsite.com/contact">Contact Us</a></p>
         </div>
+
       </div>
     </body>
   </html>
