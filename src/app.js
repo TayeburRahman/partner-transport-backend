@@ -36,7 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(express.static("uploads")); // Serve static files from 'uploads'
+app.use(express.static("uploads"));  
 
 // All Routes
 app.use("/", routes); 

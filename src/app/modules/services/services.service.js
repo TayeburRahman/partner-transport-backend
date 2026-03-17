@@ -671,6 +671,7 @@ const getUserServicesWithinOneHour = async (req) => {
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
+    paymentStatus: "paid",
     startDate: {
       // $gte: now,
       $lte: oneHourLater,
