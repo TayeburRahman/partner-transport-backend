@@ -643,8 +643,8 @@ const rescheduledAction = async (req) => {
       eng: `The reschedule request for service has been ${rescheduledStatus}.`,
       span: `La solicitud de reprogramación para el servicio ha sido ${rescheduledStatus}.`,
     },
-    user: service.user,
-    userType: 'User',
+    user: service?.confirmedPartner,
+    userType: "Partner",
     types: "reschedule",
     getId: serviceId,
   });
