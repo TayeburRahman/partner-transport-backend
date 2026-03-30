@@ -44,7 +44,7 @@ const socket = async (io) => {
   io.on(ENUM_SOCKET_EVENT.CONNECT, async (socket) => {
     const currentUserId = socket.handshake.query.id;
     const role = socket.handshake.query.role;
-    console.log("=====", currentUserId, role)
+    console.log("=====", query, currentUserId, role)
 
     if (!ENUM_USER_ROLE[role]) {
       console.error('Invalid role provided:', role);
