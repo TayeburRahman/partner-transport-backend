@@ -41,8 +41,10 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
         });
       }
 
-      const { location } = updatedPartner;
+      console.log(" latitude, longitude, address",  latitude, longitude, address)
 
+      const { location } = updatedPartner;
+      console.log("location",  location)
       // find active services linked to this partner
       const services = await Services.find({
         confirmedPartner: receiverId,
