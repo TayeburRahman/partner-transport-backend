@@ -27,6 +27,8 @@ const calculateBedCosts = async (data) => {
     maximumDistanceOfFee: MXDF
   } = variableData; 
 
+  console.log("Variable Data:", variableData);
+
   const minimumBit = await MNSF + (W * loadFloorNo * MNWL) + (W * unloadFloorNo * MNWL) + (distance * MNDF);
   const maximumBit = await MXSF + (W * loadFloorNo * MXWL) + (W * unloadFloorNo * MXWL) + (distance * MXDF);
 
