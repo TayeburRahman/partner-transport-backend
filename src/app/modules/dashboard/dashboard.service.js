@@ -1394,7 +1394,7 @@ const getTransactionsHistory = async (req) => {
     const result = await servicesQuery.modelQuery;
     const meta = await servicesQuery.countTotal();
 
-    console.log(result)
+    // console.log(result)
 
     return { result, meta };
   } catch (error) {

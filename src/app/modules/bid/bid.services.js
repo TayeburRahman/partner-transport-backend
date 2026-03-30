@@ -237,7 +237,7 @@ const filterBidsByHistory = async (req) => {
       status: bitStatus || { $in: ["Win", "Outbid", "Pending"] },
     };
 
-    console.log("bidQuery", bidQuery)
+    // console.log("bidQuery", bidQuery)
 
     const totalBids = await Bids.countDocuments(bidQuery);
 
@@ -274,7 +274,7 @@ const filterBidsByHistory = async (req) => {
 
     const result = filteredBids.filter((bid) => bid.service);
     const pisoVariable = await VariableCount.getPisoVariable();
-    console.log("filteredBids", filteredBids)
+    // console.log("filteredBids", filteredBids)
     return {
       piso: pisoVariable,
       page: parseInt(page),
