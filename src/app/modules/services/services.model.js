@@ -242,6 +242,12 @@ const ServicesSchema = new Schema(
 // status === "completed" ||  paymentStatus !== 'paid'
 
 ServicesSchema.index({ loadingLocation: "2dsphere" });
+ServicesSchema.index({ user: 1 });
+ServicesSchema.index({ confirmedPartner: 1 });
+ServicesSchema.index({ status: 1 });
+ServicesSchema.index({ paymentStatus: 1 });
+ServicesSchema.index({ startDate: 1 });
+ServicesSchema.index({ createdAt: -1 });
 
 const Services = model("Services", ServicesSchema);
 
