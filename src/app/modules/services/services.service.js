@@ -1370,14 +1370,16 @@ const uploadStatusImage = async (req) => {
 
 // Status===========================
 const sendUpdateStatus = (serviceId, status, userType) => {
+  console.log("1")
   if (global.io) {
-    // console.log("Emitting socket event for service status update");
+    console.log("2 Emitting socket event for service status update");
     const socketIo = global.io;
     socketIo.emit(`${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`, {
       serviceId,
       status,
       userType
     });
+    console.log("3", `${ENUM_SOCKET_EVENT.UPDATE_LOCATIONS_STATUS}/${serviceId}`);
   } else {
     console.error('Socket.IO is not initialized');
   }
