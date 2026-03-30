@@ -8,7 +8,7 @@ const Admin = require("../admin/admin.model");
 const { TermsConditions, PrivacyPolicy } = require("../manage/manage.model");
 const { ENUM_PARTNER_AC_STATUS } = require("../../../utils/enums");
 const { sendEmail } = require("../../../utils/sendEmail");
-const approvedBody = require("../../../mails/approvedBody"); 
+const approvedBody = require("../../../mails/approvedBody");
 const disapprovedBody = require("../../../mails/disapprovedBody");
 const Services = require("../services/services.model");
 const Variable = require("../variable/variable.model");
@@ -19,12 +19,6 @@ const { NotificationService } = require("../notification/notification.service");
 const VariableCount = require("../variable/variable.count");
 const { LogsDashboardService } = require("../logs-dashboard/logsdashboard.service");
 const { default: mongoose } = require("mongoose");
-
-const getYearRange = (year) => {
-  const startDate = new Date(`${year}-01-01`);
-  const endDate = new Date(`${year}-12-31`);
-  return { startDate, endDate };
-};
 
 // =User Partner Admin Management ==========================
 const getAllUsers = async (query) => {
@@ -67,7 +61,7 @@ const deleteUser = async (query) => {
   if (!userId) {
     throw new ApiError(404, "User ID is missing.");
   }
- 
+
   const activeService = await Services.findOne({
     user: userId,
     status: { $in: ['accepted', 'rescheduled', 'pick-up', 'in-progress'] },
@@ -76,12 +70,12 @@ const deleteUser = async (query) => {
   if (activeService) {
     throw new ApiError(400, "The user has active services associated with a partner.");
   }
- 
+
   const user = await User.findById(userId);
   if (!user) {
     throw new ApiError(404, "User does not exist.");
   }
- 
+
   await User.deleteOne({ _id: userId });
   return await Auth.deleteOne({ _id: user.authId });
 };
@@ -102,7 +96,7 @@ const blockUnblockUserPartnerAdmin = async (req) => {
     if (!updatedAuth) {
       throw new ApiError(httpStatus.NOT_FOUND, "User not found");
     }
-    
+
     // log=====
     const newTask = {
       admin: userId,
@@ -184,7 +178,7 @@ const getPaddingPartner = async (query) => {
 
 const getAllPartner = async (query) => {
   const partnerQuery = new QueryBuilder(
-    Partner.find({status: "approved"}).populate("authId"),
+    Partner.find({ status: "approved" }).populate("authId"),
     query
   )
     .search(["name", "email"])
@@ -228,7 +222,7 @@ const deletePartner = async (query) => {
   if (!userId) {
     throw new ApiError(404, "Missing userId");
   }
- 
+
   const activeService = await Services.findOne({
     confirmedPartner: userId,
     status: { $in: ['accepted', 'rescheduled', 'pick-up', 'in-progress'] },
@@ -237,12 +231,12 @@ const deletePartner = async (query) => {
   if (activeService) {
     throw new ApiError(400, "The partner has active services associated with users.");
   }
- 
+
   const partner = await Partner.findById(userId);
   if (!partner) {
     throw new ApiError(404, "Partner does not exist.");
   }
- 
+
   await Partner.deleteOne({ _id: userId });
   return await Auth.deleteOne({ _id: partner.authId });
 };
@@ -314,7 +308,7 @@ const updateProfile = async (req) => {
   const { userId, authId } = req.query;
   const data = req.body;
 
-  if(!userId || !authId) {
+  if (!userId || !authId) {
     throw new ApiError(400, "Missing userId and authId in the request!");
   }
 
@@ -331,7 +325,7 @@ const updateProfile = async (req) => {
   if (!checkAuth) {
     throw new ApiError(403, "You are not authorized");
   }
- 
+
   if (data.name) {
     await Auth.findOneAndUpdate(
       { _id: authId },
@@ -339,7 +333,7 @@ const updateProfile = async (req) => {
       { new: true }
     );
   }
- 
+
   const updateUser = await Admin.findOneAndUpdate({ authId }, data, {
     new: true,
   }).populate("authId");
@@ -608,11 +602,11 @@ const deletePrivacyPolicy = async (query) => {
 //=Auction Management========================
 const getAllAuctions = async (query) => {
   const page = Number.isInteger(parseInt(query.page)) ? parseInt(query.page) : 1;
-  const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10; 
+  const limit = Number.isInteger(parseInt(query.limit)) ? parseInt(query.limit) : 10;
 
   // Default sort
-  const sortField = query.sortBy || "createdAt";  
-  const sortOrder = query.order === "asc" ? 1 : -1; 
+  const sortField = query.sortBy || "createdAt";
+  const sortOrder = query.order === "asc" ? 1 : -1;
 
   const matchQuery = {
     ...query.searchTerm
@@ -660,7 +654,7 @@ const getAllAuctions = async (query) => {
     {
       $facet: {
         data: [
-          { $sort: { [sortField]: sortOrder } }, 
+          { $sort: { [sortField]: sortOrder } },
           { $skip: (page - 1) * limit },
           { $limit: limit },
         ],
@@ -681,7 +675,6 @@ const getAllAuctions = async (query) => {
     data: result.data,
   };
 };
-
 
 const editMinMaxBidAmount = async (payload) => {
   const { serviceId, minPrice: min, maxPrice: max } = payload;
@@ -934,16 +927,16 @@ const filterAndSortServicesCustom = async (req, res) => {
     // Geo query if longitude & latitude provided
     const geoQuery = (longitude && latitude)
       ? [{
-          $geoNear: {
-            near: {
-              type: "Point",
-              coordinates: [parseFloat(longitude), parseFloat(latitude)],
-            },
-            distanceField: "distance",
-            spherical: true,
-            maxDistance,
-          }
-        }]
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [parseFloat(longitude), parseFloat(latitude)],
+          },
+          distanceField: "distance",
+          spherical: true,
+          maxDistance,
+        }
+      }]
       : [];
 
     // Aggregation pipeline
@@ -970,7 +963,7 @@ const filterAndSortServicesCustom = async (req, res) => {
     const meta = { total, page: pageNumber, limit: limitNumber };
 
     console.log("services", services)
-    
+
     // Defensive date parser
     const parseDateTime = (dateStr, timeStr) => {
       if (!dateStr || !timeStr) return null;
@@ -1016,7 +1009,7 @@ const filterAndSortServicesCustom = async (req, res) => {
 
     const pisoVariable = await VariableCount.getPisoVariable();
 
-    return  {
+    return {
       sortedServices,
       meta,
       piso: pisoVariable,
@@ -1024,7 +1017,7 @@ const filterAndSortServicesCustom = async (req, res) => {
 
   } catch (err) {
     console.error("filterAndSortServicesCustom error", err);
-    throw new ApiError( 404,"Internal Server Error" );
+    throw new ApiError(404, "Internal Server Error");
   }
 };
 
@@ -1046,7 +1039,7 @@ const getTotalIncomeUserAuction = async (req, res) => {
   ]);
 
   const usersResult = await User.find({})
-  const partnerResult = await Partner.find({status: "approved"})
+  const partnerResult = await Partner.find({ status: "approved" })
   const servicesResult = await Services.find({})
 
   // Check if resultIncome is empty
@@ -1062,7 +1055,7 @@ const getTotalIncomeUserAuction = async (req, res) => {
 };
 
 //=Overview ==========================  
-const incomeOverview = async ({year}) => {
+const incomeOverview = async ({ year }) => {
   try {
     const currentYear = new Date().getFullYear();
     const selectedYear = parseInt(year, 10) || currentYear;
@@ -1071,8 +1064,8 @@ const incomeOverview = async ({year}) => {
       throw new ApiError(400, "Invalid year provided.");
     }
 
-    const startDate = new Date(selectedYear, 0, 1);  
-    const endDate = new Date(selectedYear + 1, 0, 1);  
+    const startDate = new Date(selectedYear, 0, 1);
+    const endDate = new Date(selectedYear + 1, 0, 1);
 
     const incomeOverview = await Transaction.aggregate([
       {
@@ -1123,7 +1116,7 @@ const incomeOverview = async ({year}) => {
         month: months[i],
         totalIncome: monthData.totalIncome,
       };
-    }); 
+    });
 
     return {
       year: selectedYear,
@@ -1136,7 +1129,7 @@ const incomeOverview = async ({year}) => {
   }
 };
 
-const getUserGrowth = async ({year}) => {
+const getUserGrowth = async ({ year }) => {
   try {
     const currentYear = new Date().getFullYear();
     const selectedYear = parseInt(year, 10) || currentYear;
@@ -1145,8 +1138,8 @@ const getUserGrowth = async ({year}) => {
       throw new ApiError(400, "Invalid year provided.");
     }
 
-    const startDate = new Date(selectedYear, 0, 1);  
-    const endDate = new Date(selectedYear + 1, 0, 1);     
+    const startDate = new Date(selectedYear, 0, 1);
+    const endDate = new Date(selectedYear + 1, 0, 1);
     const monthlyUserGrowth = await Auth.aggregate([
       {
         $match: {
@@ -1193,7 +1186,7 @@ const getUserGrowth = async ({year}) => {
         monthlyUserGrowth.find((data) => data.month === i) || {
           month: i,
           count: 0,
-        }; 
+        };
       result.push({
         month: months[i - 1],
         count: monthData.count,
@@ -1374,7 +1367,7 @@ const sendNoticePartner = async (req, res) => {
 };
 
 const getTransactionsHistory = async (req) => {
-  const query = req.query; 
+  const query = req.query;
   try {
     const servicesQuery = new QueryBuilder(Transaction.find()
       .populate("receiveUser", "name email profile_image")

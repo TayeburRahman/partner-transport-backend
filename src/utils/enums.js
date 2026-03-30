@@ -51,7 +51,6 @@ const ENUM_SERVICE_STATUS = {
   ARRIVE_AT_DESTINATION_CONFIRM: "confirm_arrived_destination",
 };
 
-
 const ENUM_SERVICE_TYPE = {
   GOODS: "Goods",
   WASTE: "Waste",

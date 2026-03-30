@@ -36,6 +36,7 @@ const partnerBidPost = async (req) => {
 
   if (foundService.mainService === "move") {
     const { minimumBed, maximumBed } = await VariableCount.calculateBedCosts(foundService)
+    console.log(minimumBed, maximumBed)
     if (price < minimumBed) {
       throw new ApiError(400, 'offer_to_low');
     } else if (price > maximumBed) {
@@ -48,7 +49,7 @@ const partnerBidPost = async (req) => {
       throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations in your profile.");
     }
 
-    try { 
+    try {
       const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
 
       if (!stripeAccount) {
@@ -65,7 +66,7 @@ const partnerBidPost = async (req) => {
 
       if (!externalAccount) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Please add your bank informations.");
-      } 
+      }
 
     } catch (error) {
       throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
@@ -269,7 +270,7 @@ const filterBidsByHistory = async (req) => {
       .limit(parseInt(limit))
       .exec();
 
- 
+
 
     const result = filteredBids.filter((bid) => bid.service);
     const pisoVariable = await VariableCount.getPisoVariable();
@@ -381,10 +382,10 @@ const postReviewMove = async (req) => {
   });
 
 
- await Services.findByIdAndUpdate(serviceId, { 
-    isReviewed: true  
+  await Services.findByIdAndUpdate(serviceId, {
+    isReviewed: true
   }
-  ) 
+  )
 
   return result;
 };

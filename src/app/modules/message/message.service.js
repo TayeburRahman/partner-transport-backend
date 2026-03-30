@@ -9,6 +9,9 @@ const Services = require("../services/services.model");
 
 const getMessages = async (req) => {
   const { senderId, receiverId, page = 1, limit = 20 } = req.query;
+
+  console.log("Sender ID:", senderId);
+  console.log("Receiver ID:", receiverId);
   const {userId} = req.user;
 
   try {
