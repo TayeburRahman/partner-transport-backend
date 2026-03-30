@@ -364,7 +364,7 @@ const conformPartner = async (req) => {
   if (!service) {
     throw new ApiError(404, "Service not found");
   }
-  
+
   const partner = await Partner.findOne({ _id: partnerId });
 
   if (!partner) {
@@ -664,10 +664,9 @@ const getUserServicesWithinOneHour = async (req) => {
   const now = new Date();
   const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
 
-  // console.log("dateNow====", dateNow)
+  console.log("dateNow====", dateNow)
 
 
-  // console.log("==================now", now)
 
   const query = {
     status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
@@ -714,7 +713,7 @@ const getUserServicesWithinOneHour = async (req) => {
     }));
   }
 
-  // console.log("Fetched services:", services);
+  console.log("Fetched services:");
   return services;
 };
 
@@ -802,7 +801,7 @@ const updateServicesStatusPartner = async (req) => {
   const service = await Services.findById(serviceId);
 
   console.log("service======", service.user_status, status)
-  
+
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service with the given ID not found.");
   }
@@ -892,7 +891,7 @@ const updateServicesStatusUser = async (req) => {
 
   const service = await Services.findById(serviceId);
 
-    console.log("service======", service.partner_status, status )
+  console.log("service======", service.partner_status, status)
 
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");

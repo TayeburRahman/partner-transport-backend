@@ -88,6 +88,7 @@ const getServicePostUser = catchAsync(async (req, res) => {
 
 const getUserServicesWithinOneHour = catchAsync(async (req, res) => {
   const result = await ServicesService.getUserServicesWithinOneHour(req);
+  console.log("result====001")
   sendResponse(res, {
     statusCode: 200,
     success: true,
