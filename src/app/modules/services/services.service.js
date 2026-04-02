@@ -495,25 +495,6 @@ const rescheduledPostUser = async (req) => {
   );
 
   /* =========================
-     🔔 Notify Partner
-     ========================= */
-  await NotificationService.sendNotification({
-    title: {
-      eng: "Service Reschedule Request",
-      span: "Solicitud de Reprogramación del Servicio",
-    },
-    message: {
-      eng: "The customer requested a new date and time. Please review and respond.",
-      span: "El cliente solicitó una nueva fecha y hora. Por favor revise y responda.",
-    },
-    user: service?.user,
-    userType: "User",
-    types: "reschedule",
-    getId: serviceId
-  });
-
-
-  /* =========================
    🔔 Notify Partner
    ========================= */
   await NotificationService.sendNotification({
@@ -879,7 +860,7 @@ const updateServicesStatusPartner = async (req) => {
 
   console.log("serviceId, status, userType", serviceId, status, "partner")
 
-  await sendUpdateStatus(serviceId, status, "partner");
+  await sendUpdateStatus(serviceId, status, "user");
 
   return result;
 };
@@ -1064,7 +1045,7 @@ const updateServicesStatusUser = async (req) => {
       getId: serviceId,
     });
 
-    await sendUpdateStatus(serviceId, status, "user");
+    await sendUpdateStatus(serviceId, status, "partner");
 
     return updatedService;
   } catch (error) {
