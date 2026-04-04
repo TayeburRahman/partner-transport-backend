@@ -1119,7 +1119,7 @@ const updateSellServicesStatusUser = async (req) => {
       getId: serviceId,
     });
 
-    await sendUpdateStatus(serviceId, status, "user");
+    await sendUpdateStatus(serviceId, status, "partner");
 
     return updatedService;
   } catch (error) {
@@ -1273,7 +1273,7 @@ const updateSellServicesStatusPartner = async (req) => {
       getId: serviceId,
     });
 
-    await sendUpdateStatus(serviceId, status, "partner");
+    await sendUpdateStatus(serviceId, status, "user");
 
     return result;
   } catch (error) {

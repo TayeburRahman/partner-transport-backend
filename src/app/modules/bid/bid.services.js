@@ -21,12 +21,11 @@ const stripe = require("stripe")(config.stripe.stripe_secret_key);
 const partnerBidPost = async (req) => {
   const { serviceId } = req.params;
   const { userId } = req.user;
-  const { price } = req.body;
+  const { price, } = req.body;
 
   if (!price || isNaN(price)) {
     throw new ApiError(400, "Price must be a valid number");
   }
-
 
   const foundService = await Services.findById(serviceId);
 
