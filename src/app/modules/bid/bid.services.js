@@ -30,6 +30,9 @@ const partnerBidPost = async (req) => {
 
   const foundService = await Services.findById(serviceId);
 
+  console.log('foundService.mainService', foundService.mainService)
+  console.log('foundService.minPrice', foundService.minPrice)
+  console.log('price', price)
   if (!foundService) {
     throw new ApiError(404, "Service not found");
   }
