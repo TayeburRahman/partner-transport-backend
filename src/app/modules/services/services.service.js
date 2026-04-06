@@ -53,6 +53,8 @@ cron.schedule("* * * * *", async () => {
       hourCycle: 'h23'
     }).format(now);
 
+    console.log('mexicoTimeStr', mexicoTimeStr)
+
     // Convert formatted string back to a Date object
     const [month, day, year, hour, minute, second] = mexicoTimeStr.match(/\d+/g);
     const mexicoTime = new Date(`${year}-${month}-${day}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}`);

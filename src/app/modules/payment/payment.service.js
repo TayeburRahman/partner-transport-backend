@@ -60,7 +60,7 @@ const createCheckoutSessionStripe = async (req) => {
       user = await Admin.findById(userId);
       payUserRole = 'Admin';
     }
-    
+
     let receiveUser;
     let receiveUserRole;
     if (service.mainService === "sell") {
@@ -242,20 +242,20 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     };
     const newTransaction = await Transaction.create(transactionData);
 
-    await NotificationService.sendNotification({
-      title: {
-        eng: "You’ve Won the Bid!",
-        span: "¡Has Ganado la Oferta!"
-      },
-      message: {
-        eng: "Congratulations! Your bid for service has been accepted.",
-        span: "¡Felicidades! Tu oferta por el servicio ha sido aceptada."
-      },
-      user: service?.user,
-      userType: 'User',
-      types: 'service',
-      getId: serviceId,
-    });
+    // await NotificationService.sendNotification({
+    //   title: {
+    //     eng: "You’ve Won the Bid!",
+    //     span: "¡Has Ganado la Oferta!"
+    //   },
+    //   message: {
+    //     eng: "Congratulations! Your bid for service has been accepted.",
+    //     span: "¡Felicidades! Tu oferta por el servicio ha sido aceptada."
+    //   },
+    //   user: service?.user,
+    //   userType: 'User',
+    //   types: 'service',
+    //   getId: serviceId,
+    // });
 
     await NotificationService.sendNotification({
       title: {
