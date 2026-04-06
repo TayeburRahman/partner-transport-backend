@@ -84,19 +84,20 @@ cron.schedule("* * * * *", async () => {
 
       const deadlineTime24 = to24Hour(service.deadlineTime);
 
-      // Case 1: Past date → cancel
-      if (serviceDate.getTime() < today.getTime()) {
-        service.status = "cancel";
-        await service.save();
-        cancelledCount++;
-        continue;
-      }
+      const isPastDate = serviceDate.getTime() < today.getTime();
+      const isTodayPastTime = serviceDate.getTime() === today.getTime() && deadlineTime24 <= currentTime24;
 
-      // Case 2: Today but time has passed → cancel
-      if (serviceDate.getTime() === today.getTime() && deadlineTime24 <= currentTime24) {
-        service.status = "cancel";
-        await service.save();
-        cancelledCount++;
+      if (isPastDate || isTodayPastTime) {
+        if (service.bids && service.bids.length > 0) {
+          if (!service.bidTimeExtended) {
+            service.bidTimeExtended = true;
+            await service.save();
+          }
+        } else {
+          service.status = "cancel";
+          await service.save();
+          cancelledCount++;
+        }
       }
     }
 
