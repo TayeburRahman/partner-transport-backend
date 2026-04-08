@@ -194,6 +194,24 @@ const createPostDB = async (req) => {
     const distance = Number(data.distance);
     const formattedDistance = parseFloat(distance?.toFixed(3));
 
+    // Validate price
+    if (data.mainService === "move") {
+      const tempService = {
+        weightKG: Number(data.weightKG),
+        loadFloorNo: data.loadFloorNo,
+        unloadFloorNo: data.unloadFloorNo,
+        distance: Number(data.distance)
+      };
+      const { minimumBed } = await VariableCount.calculateBedCosts(tempService);
+      if (data.price < minimumBed) {
+        throw new ApiError(400, 'Price too low for move service');
+      }
+    } else if (data.mainService === "sell") {
+      if (data.price < data.minPrice) {
+        throw new ApiError(400, 'Price cannot be less than minimum price');
+      }
+    }
+
     const serviceData = {
       user: userId,
       mainService: data.mainService,
