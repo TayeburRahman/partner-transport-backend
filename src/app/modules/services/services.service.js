@@ -664,14 +664,10 @@ const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const dateNow = new Date(req.query?.current_date)
   const now = new Date();
-  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
-
-  console.log("dateNow====", dateNow)
-
-
+  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000); 
 
   const query = {
-    status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
+    status: { $in: ["accepted", "pick-up", "in-progress"] },
     paymentStatus: "paid",
     startDate: {
       // $gte: now,
