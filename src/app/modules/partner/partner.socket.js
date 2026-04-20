@@ -24,7 +24,7 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
         {
           $set: {
             "location.coordinates": [Number(longitude), Number(latitude)],
-            ...(address && { "location.address": address }),  
+            ...(address && { "location.address": address }),
           },
         },
         {
@@ -41,36 +41,30 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
         });
       }
 
-      console.log(" latitude, longitude, address",  latitude, longitude, address)
+      console.log(" latitude, longitude, address", latitude, longitude, address)
 
       const { location } = updatedPartner;
-      console.log("location",  location)
-      // find active services linked to this partner
-      const services = await Services.find({
-        confirmedPartner: receiverId,
-        status: { $in: ["accepted", "rescheduled", "pick-up", "in-progress"] },
-      });
-
+      console.log("location", location)
       // console.log("Emitting partner location to partner himself:", receiverId.toString());
 
-      io.emit(`${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`, location );
+      io.emit(`${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`, location);
 
       //  console.log(`Received location update from Partner`, location);
- 
+
       io.to(receiverId.toString()).emit(
         ENUM_SOCKET_EVENT.PARTNER_LOCATION,
         location
       );
 
     } catch (error) {
-      console.error("Socket error (PARTNER_LOCATION):", error); 
+      console.error("Socket error (PARTNER_LOCATION):", error);
       socket.emit("error", {
         status: error.statusCode || httpStatus.INTERNAL_SERVER_ERROR,
         message: error.message || "Something went wrong while updating partner location",
       });
     }
   });
- 
+
 };
 
 module.exports = {
