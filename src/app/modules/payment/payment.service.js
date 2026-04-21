@@ -242,35 +242,67 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     };
     const newTransaction = await Transaction.create(transactionData);
 
-    // await NotificationService.sendNotification({
-    //   title: {
-    //     eng: "You’ve Won the Bid!",
-    //     span: "¡Has Ganado la Oferta!"
-    //   },
-    //   message: {
-    //     eng: "Congratulations! Your bid for service has been accepted.",
-    //     span: "¡Felicidades! Tu oferta por el servicio ha sido aceptada."
-    //   },
-    //   user: service?.user,
-    //   userType: 'User',
-    //   types: 'service',
-    //   getId: serviceId,
-    // });
+    if (service.mainService === 'sell') {
+      await NotificationService.sendNotification({
+        title: {
+          eng: "Payment Received.",
+          span: "Pago recibido."
+        },
+        message: {
+          eng: `Your payment has been successfully received.`,
+          span: `Tu pago ha sido recibido exitosamente.`
+        },
+        user: service?.user,
+        userType: 'Partner',
+        types: 'service',
+        getId: serviceId,
+      });
 
-    await NotificationService.sendNotification({
-      title: {
-        eng: "Auction Won.",
-        span: "Subasta Ganada.",
-      },
-      message: {
-        eng: "Congratulations! You have won the auction. Please review the service details.",
-        span: "¡Felicidades! Has ganado la subasta. Por favor revisa los detalles del servicio.",
-      },
-      user: partnerId,
-      userType: 'Partner',
-      types: 'service',
-      getId: serviceId,
-    });
+      await NotificationService.sendNotification({
+        title: {
+          eng: "Auction Won.",
+          span: "Subasta Ganada.",
+        },
+        message: {
+          eng: `Your auction has been accepted, partner payment received.`,
+          span: `Tu subasta ha sido aceptada, pago del socio recibido.`,
+        },
+        user: partnerId,
+        userType: 'User',
+        types: 'service',
+        getId: serviceId,
+      });
+    } else if (service.mainService === 'move') {
+      await NotificationService.sendNotification({
+        title: {
+          eng: "Payment Received.",
+          span: "Pago recibido."
+        },
+        message: {
+          eng: `Your payment has been successfully received.`,
+          span: `Tu pago ha sido recibido exitosamente.`
+        },
+        user: service?.user,
+        userType: 'Partner',
+        types: 'service',
+        getId: serviceId,
+      });
+
+      await NotificationService.sendNotification({
+        title: {
+          eng: "Auction Won.",
+          span: "Subasta Ganada.",
+        },
+        message: {
+          eng: "Congratulations! You have won the auction. Please review the service details.",
+          span: "¡Felicidades! Has ganado la subasta. Por favor revisa los detalles del servicio.",
+        },
+        user: partnerId,
+        userType: 'User',
+        types: 'service',
+        getId: serviceId,
+      });
+    }
 
     return { status: "success", result: newTransaction };
 
