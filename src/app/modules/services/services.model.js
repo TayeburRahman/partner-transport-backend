@@ -206,6 +206,10 @@ const ServicesSchema = new Schema(
       ref: "Partner",
       default: null
     },
+    confirmedAt: {
+      type: Date,
+      default: null
+    },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],

@@ -110,6 +110,40 @@ cron.schedule("* * * * *", async () => {
   }
 });
 
+// Revert confirmed partner if payment not made within 1 hour
+cron.schedule("* * * * *", async () => {
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    const expiredPayments = await Services.find({
+      status: ENUM_SERVICE_STATUS.ACCEPTED,
+      paymentStatus: "pending",
+      confirmedAt: { $lte: oneHourAgo },
+      confirmedPartner: { $ne: null }
+    });
+
+    for (const service of expiredPayments) {
+      await Services.findByIdAndUpdate(service._id, {
+        $set: {
+          confirmedPartner: null,
+          status: ENUM_SERVICE_STATUS.PENDING,
+          winBid: null,
+          confirmedAt: null
+        }
+      });
+
+      await Bids.updateMany(
+        { service: service._id },
+        { $set: { status: "Pending" } }
+      );
+
+      logger.info(`|=| Reverted service ${service._id} due to payment timeout |=|`);
+    }
+  } catch (error) {
+    logger.error("Payment timeout cron failed:", error);
+  }
+});
+
 // =USER============================= 
 const validateInputs = (data, image) => {
   const requiredFields = [
@@ -410,6 +444,7 @@ const conformPartner = async (req) => {
       confirmedPartner: partnerId,
       status: ENUM_SERVICE_STATUS.ACCEPTED,
       winBid: bidDetails.price,
+      confirmedAt: new Date(),
     },
     { new: true }
   );
