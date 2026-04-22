@@ -188,12 +188,12 @@ router
 
   .patch(
     "/search_custom",
-    // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.filterAndSortServicesCustom
   )
   .get(
     "/search_custom",
-    // auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
     DashboardController.filterAndSortServicesCustom
   )
 

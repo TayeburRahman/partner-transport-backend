@@ -6,7 +6,12 @@ const ApiError = require("../../../errors/ApiError");
 const Partner = require("../partner/partner.model");
 const Admin = require("../admin/admin.model");
 const { TermsConditions, PrivacyPolicy } = require("../manage/manage.model");
-const { ENUM_PARTNER_AC_STATUS } = require("../../../utils/enums");
+const { ENUM_PARTNER_AC_STATUS, ENUM_USER_ROLE } = require("../../../utils/enums");
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
 const { sendEmail } = require("../../../utils/sendEmail");
 const approvedBody = require("../../../mails/approvedBody");
 const disapprovedBody = require("../../../mails/disapprovedBody");
@@ -914,11 +919,8 @@ const filterAndSortServicesCustom = async (req, res) => {
       filterQuery.category = { $in: catArray };
     }
 
-    // Status filter
-    if (serviceStatus) {
-      const statusArray = Array.isArray(serviceStatus) ? serviceStatus : [serviceStatus];
-      filterQuery.status = { $in: statusArray };
-    }
+    // Status filter - Enforce "pending" as requested
+    filterQuery.status = "pending";
 
     // Radius distance
     const { coverageRadius = 10 } = await Variable.findOne({}) || {};
@@ -967,15 +969,26 @@ const filterAndSortServicesCustom = async (req, res) => {
     // Defensive date parser
     const parseDateTime = (dateStr, timeStr) => {
       if (!dateStr || !timeStr) return null;
-      const [hourStr, minuteStr] = timeStr.split(":");
-      const hour = parseInt(hourStr, 10) || 0;
+      
+      // Handle "hh:mm AM/PM" format
+      const parts = timeStr.split(" ");
+      if (parts.length !== 2) return null;
+      
+      const [time, modifier] = parts;
+      const [hourStr, minuteStr] = time.split(":");
+      let hour = parseInt(hourStr, 10) || 0;
       const minute = parseInt(minuteStr, 10) || 0;
+
+      if (modifier === 'PM' && hour < 12) hour += 12;
+      if (modifier === 'AM' && hour === 12) hour = 0;
 
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return null;
 
       date.setHours(hour);
       date.setMinutes(minute);
+      date.setSeconds(0);
+      date.setMilliseconds(0);
       return date;
     };
 
@@ -990,7 +1003,7 @@ const filterAndSortServicesCustom = async (req, res) => {
       return null;
     };
 
-    const sortedServices = services.sort((a, b) => {
+    let sortedServices = services.sort((a, b) => {
       const dateA = getRelevantDate(a);
       const dateB = getRelevantDate(b);
 
@@ -1006,6 +1019,15 @@ const filterAndSortServicesCustom = async (req, res) => {
 
       return 0;
     });
+
+    // Filter out expired services for Partners
+    if (req.user.role === ENUM_USER_ROLE.PARTNER) {
+      const now = dayjs().tz('America/Mexico_City').toDate();
+      sortedServices = sortedServices.filter(service => {
+        const deadline = parseDateTime(service.deadlineDate, service.deadlineTime);
+        return deadline ? deadline > now : true;
+      });
+    }
 
     const pisoVariable = await VariableCount.getPisoVariable();
 
