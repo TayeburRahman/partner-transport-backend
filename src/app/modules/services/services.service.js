@@ -36,6 +36,31 @@ function to24Hour(timeStr) {
   return hours * 100 + minutes;
 }
 
+const parseDateTime = (dateStr, timeStr) => {
+  if (!dateStr || !timeStr) return null;
+
+  // Handle "hh:mm AM/PM" format
+  const parts = timeStr.split(" ");
+  if (parts.length !== 2) return null;
+
+  const [time, modifier] = parts;
+  const [hourStr, minuteStr] = time.split(":");
+  let hour = parseInt(hourStr, 10) || 0;
+  const minute = parseInt(minuteStr, 10) || 0;
+
+  if (modifier === 'PM' && hour < 12) hour += 12;
+  if (modifier === 'AM' && hour === 12) hour = 0;
+
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+
+  date.setHours(hour);
+  date.setMinutes(minute);
+  date.setSeconds(0);
+  date.setMilliseconds(0);
+  return date;
+};
+
 cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
@@ -626,9 +651,16 @@ const searchNearby = async (req) => {
 
   const populatedServices = await Services.populate(nearbyServices, { path: 'category' });
 
+  // Filter out expired services
+  const now = dayjs().tz('America/Mexico_City').toDate();
+  const filteredServices = populatedServices.filter(service => {
+    const deadline = parseDateTime(service.deadlineDate, service.deadlineTime);
+    return deadline ? deadline > now : true;
+  });
+
   return {
-    count: populatedServices.length,
-    populatedServices,
+    count: filteredServices.length,
+    populatedServices: filteredServices,
   };
 };
 
