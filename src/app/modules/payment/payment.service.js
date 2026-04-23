@@ -276,7 +276,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     } else if (service.mainService === 'move') {
       await NotificationService.sendNotification({
         title: {
-          eng: "Payment Received.",
+          eng: "Payment Successful.",
           span: "Pago recibido."
         },
         message: {
