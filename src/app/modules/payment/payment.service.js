@@ -219,6 +219,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
         },
       },
     ];
+
     await Bids.bulkWrite(bulkOps);
 
     const transactionData = {
@@ -283,7 +284,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
           span: `Tu pago ha sido recibido exitosamente.`
         },
         user: service?.user,
-        userType: 'Partner',
+        userType: 'User',
         types: 'service',
         getId: serviceId,
       });
@@ -298,7 +299,7 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
           span: "¡Felicidades! Has ganado la subasta. Por favor revisa los detalles del servicio.",
         },
         user: partnerId,
-        userType: 'User',
+        userType:'Partner',
         types: 'service',
         getId: serviceId,
       });
