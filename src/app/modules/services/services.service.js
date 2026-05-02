@@ -1,4 +1,3 @@
-
 const QueryBuilder = require("../../../builder/queryBuilder");
 const ApiError = require("../../../errors/ApiError");
 const Services = require("./services.model");
@@ -21,24 +20,16 @@ const VariableCount = require("../variable/variable.count");
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
+const { DateTime } = require("luxon");
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const cron = require("node-cron");
 const logger = console;
 
-function to24Hour(timeStr) {
-  if (!timeStr) return 0;
-  const [time, modifier] = timeStr.split(' ');
-  let [hours, minutes] = time.split(':').map(Number);
-  if (modifier === 'PM' && hours < 12) hours += 12;
-  if (modifier === 'AM' && hours === 12) hours = 0;
-  return hours * 100 + minutes;
-}
-
 const parseDateTime = (dateStr, timeStr) => {
   if (!dateStr || !timeStr) return null;
-
   // Handle "hh:mm AM/PM" format
   const parts = timeStr.split(" ");
   if (parts.length !== 2) return null;
@@ -61,79 +52,6 @@ const parseDateTime = (dateStr, timeStr) => {
   return date;
 };
 
-cron.schedule("* * * * *", async () => {
-  try {
-    const now = new Date();
-
-    // Format Mexico City time as string
-    const mexicoTimeStr = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Mexico_City',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-      hourCycle: 'h23'
-    }).format(now);
-
-    console.log('mexicoTimeStr', mexicoTimeStr)
-
-    // Convert formatted string back to a Date object
-    const [month, day, year, hour, minute, second] = mexicoTimeStr.match(/\d+/g);
-    const mexicoTime = new Date(`${year}-${month}-${day}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}`);
-
-    // console.log("=|= Current Mexico City Time: =|=", mexicoTime);
-
-    // Current time in 24-hour format for time comparison
-    const currentTime24 = mexicoTime.getHours() * 100 + mexicoTime.getMinutes();
-
-    // Find all pending/accepted services without confirmed partner
-    const services = await Services.find({
-      confirmedPartner: null,
-      status: { $in: ["pending", "accepted"] },
-    });
-
-    let cancelledCount = 0;
-
-    // console.log(`=||== Found ${services.length} services to check for expiration ==||=.`);
-
-    for (const service of services) {
-      // Deadline date at 00:00 for comparison
-      const serviceDate = new Date(service.deadlineDate);
-      serviceDate.setHours(0, 0, 0, 0);
-
-      const today = new Date(mexicoTime);
-      today.setHours(0, 0, 0, 0);
-
-      const deadlineTime24 = to24Hour(service.deadlineTime);
-
-      const isPastDate = serviceDate.getTime() < today.getTime();
-      const isTodayPastTime = serviceDate.getTime() === today.getTime() && deadlineTime24 <= currentTime24;
-
-      if (isPastDate || isTodayPastTime) {
-        if (service.bids && service.bids.length > 0) {
-          if (!service.bidTimeExtended) {
-            service.bidTimeExtended = true;
-            await service.save();
-          }
-        } else {
-          service.status = "cancel";
-          await service.save();
-          cancelledCount++;
-        }
-      }
-    }
-
-    if (cancelledCount > 0) {
-      logger.info(`|=| Cancelled ${cancelledCount} expired services |=|`);
-    }
-
-  } catch (error) {
-    logger.error("Auction auto-cancel cron failed:", error);
-  }
-});
 
 // Revert confirmed partner if payment not made within 1 hour
 cron.schedule("* * * * *", async () => {
@@ -168,6 +86,39 @@ cron.schedule("* * * * *", async () => {
     logger.error("Payment timeout cron failed:", error);
   }
 });
+
+// ===========================
+// Check for expired services every minute
+cron.schedule("* * * * *", async () => {
+  try {
+    const now = new Date();
+
+    const expiredServices = await Services.find({
+      deadline_utc: { $lte: now },
+      confirmedPartner: null,
+      bidTimeExtended: false
+    }).select("_id bids status bidTimeExtended");
+
+    for (const service of expiredServices) {
+      if (!service.bids || service.bids.length === 0) {
+
+        await Services.findByIdAndUpdate(service._id, {
+          $set: { status: ENUM_SERVICE_STATUS.CANCEL, bidTimeExtended: true }
+        });
+        logger.info(`Service ${service._id} cancelled (expired with no bids)`);
+      } else {
+
+        await Services.findByIdAndUpdate(service._id, {
+          $set: { bidTimeExtended: true }
+        });
+        logger.info(`Service ${service._id} marked as bidTimeExtended (expired with bids)`);
+      }
+    }
+  } catch (error) {
+    logger.error("Expired services cron failed:", error);
+  }
+});
+
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -214,6 +165,41 @@ const validateInputs = (data, image) => {
   return images;
 };
 
+// ==============================================
+function convertToDeadlineUTC(deadlineDate, deadlineTime, timezone) {
+  try {
+    // Date কে "yyyy-MM-dd" format এ আনো
+    const dateStr =
+      deadlineDate instanceof Date
+        ? deadlineDate.toISOString().split("T")[0]
+        : String(deadlineDate).split("T")[0]; // "2025-08-15"
+
+    const combined = `${dateStr} ${deadlineTime}`; // "2025-08-15 11:30 PM"
+
+    // 12-hour format try করো ("11:30 PM")
+    let parsed = DateTime.fromFormat(combined, "yyyy-MM-dd hh:mm a", {
+      zone: timezone,
+    });
+
+    // 24-hour format fallback ("23:30")
+    if (!parsed.isValid) {
+      parsed = DateTime.fromFormat(combined, "yyyy-MM-dd HH:mm", {
+        zone: timezone,
+      });
+    }
+
+    if (!parsed.isValid) {
+      console.warn(`⚠️  deadline_utc parse failed: "${combined}" (${timezone})`);
+      return null;
+    }
+
+    return parsed.toUTC().toJSDate(); // ← MongoDB Date object (UTC)
+  } catch (err) {
+    console.error("convertToDeadlineUTC error:", err.message);
+    return null;
+  }
+}
+// ============================================
 const createPostDB = async (req) => {
   try {
     const { userId } = req.user;
@@ -247,11 +233,23 @@ const createPostDB = async (req) => {
       }
     }
 
-
     const images = validateInputs(data, image);
 
     const distance = Number(data.distance);
     const formattedDistance = parseFloat(distance?.toFixed(3));
+
+    console.log("=|= data from App|=|", data.deadlineDate, data.deadlineTime, "timezone", data.timezone);
+    const deadline_utc = convertToDeadlineUTC(
+      data.deadlineDate,
+      data.deadlineTime,
+      data.timezone || "UTC"
+    );
+
+    console.log("=|= deadline_utc", deadline_utc);
+
+    if (!deadline_utc) {
+      throw new ApiError(400, "Invalid deadlineDate or deadlineTime format.");
+    }
 
     // Validate price
     if (data.mainService === "move") {
@@ -286,6 +284,7 @@ const createPostDB = async (req) => {
       deadlineTime: data.deadlineTime,
       isLoaderNeeded: data.isLoaderNeeded,
       loadFloorNo: data.loadFloorNo,
+      deadline_utc,
       isUnloaderNeeded: data.isUnloaderNeeded,
       unloadFloorNo: data.unloadFloorNo,
       loadingAddress: data.loadingAddress,
@@ -644,6 +643,7 @@ const searchNearby = async (req) => {
         scheduleTime: 1,
         deadlineDate: 1,
         deadlineTime: 1,
+        deadline_utc: 1,
         loadingLocation: 1,
       },
     },
@@ -652,9 +652,10 @@ const searchNearby = async (req) => {
   const populatedServices = await Services.populate(nearbyServices, { path: 'category' });
 
   // Filter out expired services
-  const now = dayjs().tz('America/Mexico_City').toDate();
+  const now = new Date();
   const filteredServices = populatedServices.filter(service => {
-    const deadline = parseDateTime(service.deadlineDate, service.deadlineTime);
+    const deadline = service.deadline_utc ? new Date(service.deadline_utc) : parseDateTime(service.deadlineDate, service.deadlineTime);
+    service.deadline = deadline;
     return deadline ? deadline > now : true;
   });
 
@@ -731,7 +732,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
   const dateNow = new Date(req.query?.current_date)
   const now = new Date();
-  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000); 
+  const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
 
   const query = {
     status: { $in: ["accepted", "pick-up", "in-progress"] },

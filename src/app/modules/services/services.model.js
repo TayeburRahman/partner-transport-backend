@@ -92,6 +92,10 @@ const ServicesSchema = new Schema(
       type: String,
       required: [true, "Deadline Time is required"],
     },
+    deadline_utc: {
+      type: Date,
+      default: null,
+    },
     price: {
       type: Number,
       default: 1,
@@ -232,7 +236,6 @@ const ServicesSchema = new Schema(
       type: [String],
       default: [],
     },
-
     deliveredImages: {
       type: [String],
       default: [],
