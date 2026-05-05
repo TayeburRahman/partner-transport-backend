@@ -45,12 +45,12 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
 
       const { location } = updatedPartner;
       console.log("location", location)
-      // console.log("Emitting partner location to partner himself:", receiverId.toString());
-
+      // console.log("Emitting partner location to listeners:", receiverId.toString());
+      
+      // ✅ Primary event for the USER side (listenForPartnerLocation)
       io.emit(`${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`, location);
 
-      //  console.log(`Received location update from Partner`, location);
-
+      // ✅ Targeted event for the PARTNER side room
       io.to(receiverId.toString()).emit(
         ENUM_SOCKET_EVENT.PARTNER_LOCATION,
         location
