@@ -246,12 +246,12 @@ const stripeCheckAndUpdateStatusSuccess = async (req, res) => {
     if (service.mainService === 'sell') {
       await NotificationService.sendNotification({
         title: {
-          eng: "Payment Received",
-          span: "Pago recibido"
+          eng: "Auction sold successfully.",
+          span: "Subasta con éxito"
         },
         message: {
-          eng: "Your auction has been sold successfully. Payment has been received.",
-          span: "Tu subasta se ha vendido con éxito. El pago ha sido recibido."
+          eng: "Your auction has been sold successfully.",
+          span: "Tu subasta se ha vendido con éxito."
         },
         user: service?.user,
         userType: 'User',
