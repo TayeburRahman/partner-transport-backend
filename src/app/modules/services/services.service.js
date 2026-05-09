@@ -733,58 +733,58 @@ const rescheduledAction = async (req) => {
 
 const getUserServicesWithinOneHour = async (req) => {
   const { userId, role } = req.user;
-  const dateNow = new Date(req.query?.current_date)
-  const now = new Date();
+  const dateNow = new Date(req.query?.current_date);
   const oneHourLater = new Date(dateNow.getTime() + 60 * 60 * 1000);
 
   const query = {
     status: { $in: ["accepted", "pick-up", "in-progress"] },
     paymentStatus: "paid",
     startDate: {
-      // $gte: now,
       $lte: oneHourLater,
     },
-    // scheduleTime: {
-    //   // $gte: formattedStartRange, 
-    //   $lte: formattedEndTime
-    // }
   };
 
-  if (role === 'USER') {
+  if (role === ENUM_USER_ROLE.USER) {
     query.user = userId;
-  } else if (role === 'PARTNER') {
+  } else if (role === ENUM_USER_ROLE.PARTNER) {
     query.confirmedPartner = userId;
   }
 
-  let services = await Services.find(query)
-    .sort({ createdAt: -1 })
-    .populate({
-      path: "confirmedPartner",
-      select: "name email profile_image phone_number rating",
-    })
-    .populate({
-      path: "user",
-      select: "name email profile_image phone_number rating",
-    })
-    .populate({
-      path: "category",
-      select: "_id category category_spain",
-    });
+  // Fetch services and variable in parallel using Promise.all
+  // Use .lean() to get plain JavaScript objects instead of Mongoose documents for better performance
+  const [servicesResult, variable] = await Promise.all([
+    Services.find(query)
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "confirmedPartner",
+        select: "name email profile_image phone_number rating",
+      })
+      .populate({
+        path: "user",
+        select: "name email profile_image phone_number rating",
+      })
+      .populate({
+        path: "category",
+        select: "_id category category_spain",
+      })
+      .lean(),
+    Variable.findOne().lean(),
+  ]);
 
-  const variable = await Variable.findOne();
   const surcharge = Number(variable?.surcharge || 0);
 
   if (role === ENUM_USER_ROLE.USER) {
-    services = services.map((data) => ({
-      ...data._doc,
+    return servicesResult.map((data) => ({
+      ...data,
       winBid: data.mainService === 'move'
-        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 : Number(data.winBid) - (Number(data.winBid) * surcharge) / 100,
+        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100
+        : Number(data.winBid) - (Number(data.winBid) * surcharge) / 100,
     }));
   }
 
-  console.log("Fetched services:");
-  return services;
+  return servicesResult;
 };
+
 
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;
