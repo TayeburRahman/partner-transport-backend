@@ -27,6 +27,26 @@ dayjs.extend(timezone);
 
 const cron = require("node-cron");
 const logger = console;
+ 
+// Cache for surcharge variable to reduce database hits
+let surchargeCache = {
+  value: null,
+  expiry: 0
+};
+
+const getSurcharge = async () => {
+  const now = Date.now();
+  if (surchargeCache.value !== null && surchargeCache.expiry > now) {
+    return surchargeCache.value;
+  }
+  const variable = await Variable.findOne().select("surcharge").lean();
+  const surcharge = Number(variable?.surcharge || 0);
+  surchargeCache = {
+    value: surcharge,
+    expiry: now + 5 * 60 * 1000 // Cache for 5 minutes
+  };
+  return surcharge;
+};
 
 const parseDateTime = (dateStr, timeStr) => {
   if (!dateStr || !timeStr) return null;
@@ -750,11 +770,13 @@ const getUserServicesWithinOneHour = async (req) => {
     query.confirmedPartner = userId;
   }
 
-  // Fetch services and variable in parallel using Promise.all
-  // Use .lean() to get plain JavaScript objects instead of Mongoose documents for better performance
-  const [servicesResult, variable] = await Promise.all([
+  // Fetch services and surcharge in parallel (if needed)
+  // .select() excludes heavy fields to improve transfer speed and reduce memory usage
+  // .lean() returns plain JS objects which are faster to process
+  const [servicesResult, surcharge] = await Promise.all([
     Services.find(query)
       .sort({ createdAt: -1 })
+      .select("-image -description -goodsLoadedImages -deliveredImages -unloadingAddress -transactionId -rescheduledReason")
       .populate({
         path: "confirmedPartner",
         select: "name email profile_image phone_number rating",
@@ -768,16 +790,14 @@ const getUserServicesWithinOneHour = async (req) => {
         select: "_id category category_spain",
       })
       .lean(),
-    Variable.findOne().lean(),
+    role === ENUM_USER_ROLE.USER ? getSurcharge() : Promise.resolve(0),
   ]);
-
-  const surcharge = Number(variable?.surcharge || 0);
 
   if (role === ENUM_USER_ROLE.USER) {
     return servicesResult.map((data) => ({
       ...data,
       winBid: data.mainService === 'move'
-        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100
+        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 
         : Number(data.winBid) - (Number(data.winBid) * surcharge) / 100,
     }));
   }
