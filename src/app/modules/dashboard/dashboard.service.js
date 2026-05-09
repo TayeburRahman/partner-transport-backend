@@ -1022,9 +1022,10 @@ const filterAndSortServicesCustom = async (req, res) => {
 
     // Filter out expired services for Partners
     if (req.user.role === ENUM_USER_ROLE.PARTNER) {
-      const now = dayjs().tz('America/Mexico_City').toDate();
+      const now = new Date();
       sortedServices = sortedServices.filter(service => {
-        const deadline = parseDateTime(service.deadlineDate, service.deadlineTime);
+        const deadline = service.deadline_utc ? new Date(service.deadline_utc) : parseDateTime(service.deadlineDate, service.deadlineTime);
+        service.deadline = deadline;
         return deadline ? deadline > now : true;
       });
     }

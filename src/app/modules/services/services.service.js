@@ -651,13 +651,16 @@ const searchNearby = async (req) => {
 
   const populatedServices = await Services.populate(nearbyServices, { path: 'category' });
 
-  // Filter out expired services
-  const now = new Date();
-  const filteredServices = populatedServices.filter(service => {
-    const deadline = service.deadline_utc ? new Date(service.deadline_utc) : parseDateTime(service.deadlineDate, service.deadlineTime);
-    service.deadline = deadline;
-    return deadline ? deadline > now : true;
-  });
+  // Filter out expired services for Partners
+  let filteredServices = populatedServices;
+  if (req.user.role === ENUM_USER_ROLE.PARTNER) {
+    const now = new Date();
+    filteredServices = populatedServices.filter(service => {
+      const deadline = service.deadline_utc ? new Date(service.deadline_utc) : parseDateTime(service.deadlineDate, service.deadlineTime);
+      service.deadline = deadline;
+      return deadline ? deadline > now : true;
+    });
+  }
 
   return {
     count: filteredServices.length,
