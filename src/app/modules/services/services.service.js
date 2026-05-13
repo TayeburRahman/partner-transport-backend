@@ -27,7 +27,7 @@ dayjs.extend(timezone);
 
 const cron = require("node-cron");
 const logger = console;
- 
+
 // Cache for surcharge variable to reduce database hits
 let surchargeCache = {
   value: null,
@@ -71,7 +71,6 @@ const parseDateTime = (dateStr, timeStr) => {
   date.setMilliseconds(0);
   return date;
 };
-
 
 // Revert confirmed partner if payment not made within 1 hour
 cron.schedule("* * * * *", async () => {
@@ -138,7 +137,6 @@ cron.schedule("* * * * *", async () => {
     logger.error("Expired services cron failed:", error);
   }
 });
-
 
 // =USER============================= 
 const validateInputs = (data, image) => {
@@ -762,6 +760,9 @@ const getUserServicesWithinOneHour = async (req) => {
     startDate: {
       $lte: oneHourLater,
     },
+    endDate: {
+      $gt: dateNow,
+    },
   };
 
   if (role === ENUM_USER_ROLE.USER) {
@@ -770,9 +771,6 @@ const getUserServicesWithinOneHour = async (req) => {
     query.confirmedPartner = userId;
   }
 
-  // Fetch services and surcharge in parallel (if needed)
-  // .select() excludes heavy fields to improve transfer speed and reduce memory usage
-  // .lean() returns plain JS objects which are faster to process
   const [servicesResult, surcharge] = await Promise.all([
     Services.find(query)
       .sort({ createdAt: -1 })
@@ -797,7 +795,7 @@ const getUserServicesWithinOneHour = async (req) => {
     return servicesResult.map((data) => ({
       ...data,
       winBid: data.mainService === 'move'
-        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100 
+        ? Number(data.winBid) + (Number(data.winBid) * surcharge) / 100
         : Number(data.winBid) - (Number(data.winBid) * surcharge) / 100,
     }));
   }
