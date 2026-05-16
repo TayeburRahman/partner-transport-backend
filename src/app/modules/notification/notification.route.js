@@ -1,7 +1,7 @@
 const express = require("express");
 const auth = require("../../middlewares/auth");
 const { ENUM_USER_ROLE, ENUM_ADMIN_ACCESS } = require("../../../utils/enums");
-const { notificationController } = require("./notificaiton.controller");
+const { notificationController } = require("./notification.controller");
 const checkAdminAccess = require("../../middlewares/checkAdminAccess");
 
 const router = express.Router();
@@ -36,6 +36,12 @@ router.patch(
   "/seen-notification",
   auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
   notificationController.seenNotifications
+);
+
+router.delete(
+  "/delete-notification",
+  auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.PARTNER),
+  notificationController.deleteUserNotification
 );
 
  

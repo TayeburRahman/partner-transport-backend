@@ -217,6 +217,7 @@ function convertToDeadlineUTC(deadlineDate, deadlineTime, timezone) {
     return null;
   }
 }
+
 // ============================================
 const createPostDB = async (req) => {
   try {
@@ -802,7 +803,6 @@ const getUserServicesWithinOneHour = async (req) => {
 
   return servicesResult;
 };
-
 
 const filterUserByHistory = async (req) => {
   const { categories, serviceType, serviceStatus } = req.query;

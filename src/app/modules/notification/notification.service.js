@@ -224,6 +224,27 @@ const seenNotifications = async (req) => {
   }
 };
 
+const deleteUserNotification = async (req) => {
+  const { userId } = req.user;
+  const { id, days } = req.query;
+
+  if (id) {
+    const notification = await Notification.findOneAndDelete({ _id: id, user: userId });
+    if (!notification) {
+      throw new ApiError(404, "Notification not found or you are not authorized to delete it.");
+    }
+    return { success: true, message: "Notification deleted successfully.", notification };
+  } else if (days) {
+    const date = new Date();
+    date.setDate(date.getDate() - parseInt(days));
+    const deleteResult = await Notification.deleteMany({ user: userId, createdAt: { $lt: date } });
+    return { success: true, message: `Notifications older than ${days} days deleted successfully.`, deletedCount: deleteResult.deletedCount };
+  } else {
+    const deleteResult = await Notification.deleteMany({ user: userId });
+    return { success: true, message: "All notifications deleted successfully.", deletedCount: deleteResult.deletedCount };
+  }
+};
+
 const NotificationService = {
   handleNotification,
   sendNotification,
@@ -232,7 +253,8 @@ const NotificationService = {
   getNoticeNotification,
   getAdminNotification,
   deleteAdminNotification,
-  seenNotifications
+  seenNotifications,
+  deleteUserNotification
 };
 
 module.exports = { NotificationService }
