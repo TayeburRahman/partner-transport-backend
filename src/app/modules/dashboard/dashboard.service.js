@@ -1078,17 +1078,17 @@ const filterAndSortServicesCustom = async (req, res) => {
         $options: "i",
       };
     }
-     console.log("categories", categories)
-    // Category filter
+    console.log("categories", categories)
+    // Category filter - use $elemMatch for array fields
     if (categories && categories.length > 0) {
       const catArray = Array.isArray(categories)
         ? categories.map(id => new mongoose.Types.ObjectId(id))
         : [new mongoose.Types.ObjectId(categories)];
 
-        console.log("catArray", catArray)
+      console.log("catArray", catArray)
 
       filterQuery.category = {
-        $in: catArray,
+        $elemMatch: { $in: catArray },
       };
     }
 
