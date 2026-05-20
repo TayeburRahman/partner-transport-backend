@@ -1082,8 +1082,8 @@ const filterAndSortServicesCustom = async (req, res) => {
     // Category filter
     if (categories && categories.length > 0) {
       const catArray = Array.isArray(categories)
-        ? categories
-        : [categories];
+        ? categories.map(id => new mongoose.Types.ObjectId(id))
+        : [new mongoose.Types.ObjectId(categories)];
 
       filterQuery.category = {
         $in: catArray,
