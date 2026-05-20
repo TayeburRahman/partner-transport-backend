@@ -888,6 +888,165 @@ const filterAndSortServices = async (req, res) => {
   return { sortedServices, meta, piso: pisoVariable };
 };
 
+// const filterAndSortServicesCustom = async (req, res) => {
+//   try {
+//     const {
+//       service,
+//       sortBy,
+//       sortOrder,
+//       page = 1,
+//       limit = 10,
+//       serviceStatus,
+//       longitude,
+//       latitude,
+//     } = req.query;
+
+//     const categories = req.body.categories || [];
+
+//     const pageNumber = parseInt(page, 10);
+//     const limitNumber = parseInt(limit, 10);
+
+//     const filterQuery = {};
+
+//     // Service name search
+//     if (service) {
+//       filterQuery.service = { $regex: service, $options: "i" };
+//     }
+
+//     // Category filter
+//     if (categories && categories.length > 0) {
+//       const catArray = Array.isArray(categories) ? categories : [categories];
+//       filterQuery.category = { $in: catArray };
+//     }
+
+//     // Status filter - Enforce "pending" as requested
+//     filterQuery.status = "pending";
+
+//     // Radius distance
+//     const { coverageRadius = 10 } = await Variable.findOne({}) || {};
+//     const maxDistance = Number(coverageRadius) * 1000;
+
+//     // Geo query if longitude & latitude provided
+//     const geoQuery = (longitude && latitude)
+//       ? [{
+//         $geoNear: {
+//           near: {
+//             type: "Point",
+//             coordinates: [parseFloat(longitude), parseFloat(latitude)],
+//           },
+//           distanceField: "distance",
+//           spherical: true,
+//           maxDistance,
+//         }
+//       }]
+//       : [];
+
+//     // Aggregation pipeline
+//     const pipeline = [
+//       ...geoQuery,
+//       { $match: filterQuery },
+//       {
+//         $lookup: {
+//           from: "categories",
+//           localField: "category",
+//           foreignField: "_id",
+//           as: "category"
+//         }
+//       },
+//       // { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+//       { $sort: { createdAt: -1 } },
+//       { $skip: (pageNumber - 1) * limitNumber },
+//       { $limit: limitNumber }
+//     ];
+
+//     const services = await Services.aggregate(pipeline);
+
+//     const total = await Services.countDocuments(filterQuery);
+//     const meta = { total, page: pageNumber, limit: limitNumber };
+
+//     console.log("services", services)
+
+//     // Defensive date parser
+//     const parseDateTime = (dateStr, timeStr) => {
+//       if (!dateStr || !timeStr) return null;
+      
+//       // Handle "hh:mm AM/PM" format
+//       const parts = timeStr.split(" ");
+//       if (parts.length !== 2) return null;
+      
+//       const [time, modifier] = parts;
+//       const [hourStr, minuteStr] = time.split(":");
+//       let hour = parseInt(hourStr, 10) || 0;
+//       const minute = parseInt(minuteStr, 10) || 0;
+
+//       if (modifier === 'PM' && hour < 12) hour += 12;
+//       if (modifier === 'AM' && hour === 12) hour = 0;
+
+//       const date = new Date(dateStr);
+//       if (isNaN(date.getTime())) return null;
+
+//       date.setHours(hour);
+//       date.setMinutes(minute);
+//       date.setSeconds(0);
+//       date.setMilliseconds(0);
+//       return date;
+//     };
+
+//     const getRelevantDate = (service) => {
+//       if (!service || typeof service !== 'object') return null;
+
+//       if (sortBy === 'deadline' && service.deadlineDate && service.deadlineTime) {
+//         return parseDateTime(service.deadlineDate, service.deadlineTime);
+//       } else if (sortBy === 'schedule' && service.scheduleDate && service.scheduleTime) {
+//         return parseDateTime(service.scheduleDate, service.scheduleTime);
+//       }
+//       return null;
+//     };
+
+//     let sortedServices = services.sort((a, b) => {
+//       const dateA = getRelevantDate(a);
+//       const dateB = getRelevantDate(b);
+
+//       if (!dateA || !dateB) return 0;
+
+//       if (sortOrder === "endSoon") {
+//         return dateA - dateB;
+//       }
+
+//       if (sortOrder === "laterFast") {
+//         return dateB - dateA;
+//       }
+
+//       return 0;
+//     });
+
+//     // Filter out expired services for Partners
+//     if (req.user.role === ENUM_USER_ROLE.PARTNER) {
+//       const now = new Date();
+//       sortedServices = sortedServices.filter(service => {
+//         const deadline = service.deadline_utc ? new Date(service.deadline_utc) : parseDateTime(service.deadlineDate, service.deadlineTime);
+//         service.deadline = deadline;
+//         return deadline ? deadline > now : true;
+//       });
+//     }
+
+//     const pisoVariable = await VariableCount.getPisoVariable();
+
+//     return {
+//       sortedServices,
+//       meta,
+//       piso: pisoVariable,
+//     };
+
+//   } catch (err) {
+//     console.error("filterAndSortServicesCustom error", err);
+//     throw new ApiError(404, "Internal Server Error");
+//   }
+// };
+
+//=Total Income/User/Auction ==============
+
+
 const filterAndSortServicesCustom = async (req, res) => {
   try {
     const {
@@ -896,7 +1055,6 @@ const filterAndSortServicesCustom = async (req, res) => {
       sortOrder,
       page = 1,
       limit = 10,
-      serviceStatus,
       longitude,
       latitude,
     } = req.query;
@@ -906,108 +1064,220 @@ const filterAndSortServicesCustom = async (req, res) => {
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
 
-    const filterQuery = {};
+    // -----------------------------
+    // FILTER QUERY
+    // -----------------------------
+    const filterQuery = {
+      status: "pending",
+    };
 
-    // Service name search
+    // Service search
     if (service) {
-      filterQuery.service = { $regex: service, $options: "i" };
+      filterQuery.service = {
+        $regex: service,
+        $options: "i",
+      };
     }
 
     // Category filter
     if (categories && categories.length > 0) {
-      const catArray = Array.isArray(categories) ? categories : [categories];
-      filterQuery.category = { $in: catArray };
+      const catArray = Array.isArray(categories)
+        ? categories
+        : [categories];
+
+      filterQuery.category = {
+        $in: catArray,
+      };
     }
 
-    // Status filter - Enforce "pending" as requested
-    filterQuery.status = "pending";
+    // -----------------------------
+    // COVERAGE RADIUS
+    // -----------------------------
+    const variableData = await Variable.findOne({});
 
-    // Radius distance
-    const { coverageRadius = 10 } = await Variable.findOne({}) || {};
-    const maxDistance = Number(coverageRadius) * 1000;
+    const coverageRadius =
+      Number(variableData?.coverageRadius || 10);
 
-    // Geo query if longitude & latitude provided
-    const geoQuery = (longitude && latitude)
-      ? [{
-        $geoNear: {
-          near: {
-            type: "Point",
-            coordinates: [parseFloat(longitude), parseFloat(latitude)],
+    // meters
+    const maxDistance = coverageRadius * 1000;
+
+    // -----------------------------
+    // GEO QUERY
+    // -----------------------------
+    const hasCoordinates =
+      longitude !== undefined &&
+      latitude !== undefined;
+
+    const geoQuery = hasCoordinates
+      ? [
+          {
+            $geoNear: {
+              near: {
+                type: "Point",
+                coordinates: [
+                  parseFloat(longitude),
+                  parseFloat(latitude),
+                ],
+              },
+
+              // IMPORTANT
+              key: "loadingLocation",
+
+              distanceField: "distance",
+
+              spherical: true,
+
+              maxDistance,
+
+              query: filterQuery,
+            },
           },
-          distanceField: "distance",
-          spherical: true,
-          maxDistance,
-        }
-      }]
+        ]
       : [];
 
-    // Aggregation pipeline
+    // -----------------------------
+    // AGGREGATION PIPELINE
+    // -----------------------------
     const pipeline = [
       ...geoQuery,
-      { $match: filterQuery },
+
+      // If no geo query, then use match
+      ...(hasCoordinates
+        ? []
+        : [
+            {
+              $match: filterQuery,
+            },
+          ]),
+
       {
         $lookup: {
           from: "categories",
           localField: "category",
           foreignField: "_id",
-          as: "category"
-        }
+          as: "category",
+        },
       },
-      // { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
-      { $sort: { createdAt: -1 } },
-      { $skip: (pageNumber - 1) * limitNumber },
-      { $limit: limitNumber }
+
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+
+      {
+        $skip: (pageNumber - 1) * limitNumber,
+      },
+
+      {
+        $limit: limitNumber,
+      },
     ];
 
+    // -----------------------------
+    // EXECUTE QUERY
+    // -----------------------------
     const services = await Services.aggregate(pipeline);
 
+    // -----------------------------
+    // TOTAL COUNT
+    // -----------------------------
     const total = await Services.countDocuments(filterQuery);
-    const meta = { total, page: pageNumber, limit: limitNumber };
 
-    console.log("services", services)
-
-    // Defensive date parser
-    const parseDateTime = (dateStr, timeStr) => {
-      if (!dateStr || !timeStr) return null;
-      
-      // Handle "hh:mm AM/PM" format
-      const parts = timeStr.split(" ");
-      if (parts.length !== 2) return null;
-      
-      const [time, modifier] = parts;
-      const [hourStr, minuteStr] = time.split(":");
-      let hour = parseInt(hourStr, 10) || 0;
-      const minute = parseInt(minuteStr, 10) || 0;
-
-      if (modifier === 'PM' && hour < 12) hour += 12;
-      if (modifier === 'AM' && hour === 12) hour = 0;
-
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return null;
-
-      date.setHours(hour);
-      date.setMinutes(minute);
-      date.setSeconds(0);
-      date.setMilliseconds(0);
-      return date;
+    const meta = {
+      total,
+      page: pageNumber,
+      limit: limitNumber,
     };
 
-    const getRelevantDate = (service) => {
-      if (!service || typeof service !== 'object') return null;
+    // -----------------------------
+    // DATE PARSER
+    // -----------------------------
+    const parseDateTime = (dateStr, timeStr) => {
+      if (!dateStr || !timeStr) return null;
 
-      if (sortBy === 'deadline' && service.deadlineDate && service.deadlineTime) {
-        return parseDateTime(service.deadlineDate, service.deadlineTime);
-      } else if (sortBy === 'schedule' && service.scheduleDate && service.scheduleTime) {
-        return parseDateTime(service.scheduleDate, service.scheduleTime);
+      try {
+        const parts = timeStr.split(" ");
+
+        if (parts.length !== 2) return null;
+
+        const [time, modifier] = parts;
+
+        const [hourStr, minuteStr] = time.split(":");
+
+        let hour = parseInt(hourStr, 10) || 0;
+
+        const minute = parseInt(minuteStr, 10) || 0;
+
+        if (modifier === "PM" && hour < 12) {
+          hour += 12;
+        }
+
+        if (modifier === "AM" && hour === 12) {
+          hour = 0;
+        }
+
+        const date = new Date(dateStr);
+
+        if (isNaN(date.getTime())) {
+          return null;
+        }
+
+        date.setHours(hour);
+        date.setMinutes(minute);
+        date.setSeconds(0);
+        date.setMilliseconds(0);
+
+        return date;
+      } catch (err) {
+        return null;
       }
+    };
+
+    // -----------------------------
+    // SORT DATE
+    // -----------------------------
+    const getRelevantDate = (serviceItem) => {
+      if (!serviceItem || typeof serviceItem !== "object") {
+        return null;
+      }
+
+      if (
+        sortBy === "deadline" &&
+        serviceItem.deadlineDate &&
+        serviceItem.deadlineTime
+      ) {
+        return parseDateTime(
+          serviceItem.deadlineDate,
+          serviceItem.deadlineTime
+        );
+      }
+
+      if (
+        sortBy === "schedule" &&
+        serviceItem.scheduleDate &&
+        serviceItem.scheduleTime
+      ) {
+        return parseDateTime(
+          serviceItem.scheduleDate,
+          serviceItem.scheduleTime
+        );
+      }
+
       return null;
     };
 
+    // -----------------------------
+    // CUSTOM SORT
+    // -----------------------------
     let sortedServices = services.sort((a, b) => {
       const dateA = getRelevantDate(a);
+
       const dateB = getRelevantDate(b);
 
-      if (!dateA || !dateB) return 0;
+      if (!dateA || !dateB) {
+        return 0;
+      }
 
       if (sortOrder === "endSoon") {
         return dateA - dateB;
@@ -1020,31 +1290,53 @@ const filterAndSortServicesCustom = async (req, res) => {
       return 0;
     });
 
-    // Filter out expired services for Partners
+    // -----------------------------
+    // FILTER EXPIRED SERVICES
+    // -----------------------------
     if (req.user.role === ENUM_USER_ROLE.PARTNER) {
       const now = new Date();
-      sortedServices = sortedServices.filter(service => {
-        const deadline = service.deadline_utc ? new Date(service.deadline_utc) : parseDateTime(service.deadlineDate, service.deadlineTime);
-        service.deadline = deadline;
+
+      sortedServices = sortedServices.filter((serviceItem) => {
+        const deadline = serviceItem.deadline_utc
+          ? new Date(serviceItem.deadline_utc)
+          : parseDateTime(
+              serviceItem.deadlineDate,
+              serviceItem.deadlineTime
+            );
+
+        serviceItem.deadline = deadline;
+
         return deadline ? deadline > now : true;
       });
     }
 
-    const pisoVariable = await VariableCount.getPisoVariable();
+    // -----------------------------
+    // EXTRA VARIABLE
+    // -----------------------------
+    const pisoVariable =
+      await VariableCount.getPisoVariable();
 
+    // -----------------------------
+    // RESPONSE
+    // -----------------------------
     return {
       sortedServices,
       meta,
       piso: pisoVariable,
     };
-
   } catch (err) {
-    console.error("filterAndSortServicesCustom error", err);
-    throw new ApiError(404, "Internal Server Error");
+    console.error(
+      "filterAndSortServicesCustom error",
+      err
+    );
+
+    throw new ApiError(
+      500,
+      err?.message || "Internal Server Error"
+    );
   }
 };
 
-//=Total Income/User/Auction ==============
 const getTotalIncomeUserAuction = async (req, res) => {
 
   const resultIncome = await Transaction.aggregate([
