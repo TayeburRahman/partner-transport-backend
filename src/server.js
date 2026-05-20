@@ -4,6 +4,7 @@ const config = require("./config");
 const app = require("./app");
 const socket = require("./socket/socket");
 const { Server } = require("socket.io"); 
+const { startPaymentTimeoutChecker } = require("./app/modules/services/payment-timeout.service");
 
 async function main() {
   try {
@@ -30,6 +31,9 @@ async function main() {
 
     socket(socketIO); 
     global.io = socketIO;
+
+    // Start payment timeout checker
+    startPaymentTimeoutChecker();
  
     // handle unhandled promise rejections
     process.on("unhandledRejection", (error) => {
