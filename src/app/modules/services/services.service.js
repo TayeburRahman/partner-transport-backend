@@ -724,8 +724,6 @@ const rescheduledAction = async (req) => {
     updateFields.status = ENUM_SERVICE_STATUS.ACCEPTED;
   }
 
-  // console.log(" updateFields.startDate", updateFields.startDate, serviceId)
-
   await NotificationService.sendNotification({
     title: {
       eng: rescheduledStatus === "accepted" ? "Reschedule Request Accepted" : "Reschedule Request Declined",
@@ -735,7 +733,8 @@ const rescheduledAction = async (req) => {
       eng: `The reschedule request for service has been ${rescheduledStatus}.`,
       span: `La solicitud de reprogramación para el servicio ha sido ${rescheduledStatus === "accepted" ? "aceptada" : "rechazada"}.`,
     },
-    user: service?.user,
+    user: service?.use
+    ,
     userType: "User",
     types: "reschedule",
     getId: serviceId,
