@@ -1,5 +1,4 @@
 node_modules
-.env
 .vercel
 uploads/
 logs/
@@ -8,3 +7,7 @@ entrypoint.sh
 yarn.lock
 package-lock.jsonsrc/app/modules/phone-verify/firebase-admin.json
 src/app/modules/phone-verify/firebase-admin.json
+config.bat
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
