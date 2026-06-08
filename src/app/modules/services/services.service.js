@@ -930,7 +930,7 @@ const updateServicesStatusPartner = async (req) => {
     );
   }
 
-  console.log("service.unloadingAddress", service.unloadingAddress)
+  console.log("service.unloadingAddress==", service.unloadingAddress)
 
     if (status === "delivered" && !service.unloadingAddress) {
      await updateServicesStatus("delivery-confirmed", status)
