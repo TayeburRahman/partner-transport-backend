@@ -230,29 +230,39 @@ const filterBidsByHistory = async (req) => {
   const { serviceType } = req.body;
   const { userId } = req.user;
 
-  const skip = (page - 1) * limit;
+  const pageNumber = parseInt(page) || 1;
+  const limitNumber = parseInt(limit) || 10;
+  const skip = (pageNumber - 1) * limitNumber;
 
   try {
-    console.log("bitStatus", bitStatus)
     const bidQuery = {
       partner: userId,
       status: bitStatus || { $in: ["Win", "Outbid", "Pending"] },
     };
 
-    // console.log("bidQuery", bidQuery)
-
-    const totalBids = await Bids.countDocuments(bidQuery);
-
-    console.log("totalBids", totalBids)
-
     const serviceQuery = {
       ...(serviceType && { service: serviceType }),
-      ...(categories && { category: { $in: categories } }),
+      ...(categories && {
+        category: {
+          $in: Array.isArray(categories) ? categories : [categories],
+        },
+      }),
       ...(serviceStatus && { status: serviceStatus }),
     };
-    console.log("serviceStatus", serviceStatus)
-    console.log("serviceQuery", serviceQuery)
 
+    // Get all matching bids to calculate correct total count
+    const allFilteredBids = await Bids.find(bidQuery)
+      .populate({
+        path: "service",
+        match: serviceQuery,
+      })
+      .lean();
+
+    const totalBids = allFilteredBids.filter(
+      (bid) => bid.service
+    ).length;
+
+    // Get paginated data
     const filteredBids = await Bids.find(bidQuery)
       .populate({
         path: "partner",
@@ -261,32 +271,47 @@ const filterBidsByHistory = async (req) => {
       .populate({
         path: "service",
         match: serviceQuery,
-        // select: "_id name status",  
         populate: [
-          { path: "user", select: "_id name profile_image email" },
-          { path: "category", select: "_id category category_spain" },
+          {
+            path: "user",
+            select: "_id name profile_image email",
+          },
+          {
+            path: "category",
+            select: "_id category category_spain",
+          },
         ],
       })
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .exec();
+      .lean();
 
+    // Apply service filter
+    const validBids = filteredBids.filter(
+      (bid) => bid.service
+    );
 
+    // Apply pagination AFTER filtering
+    const result = validBids.slice(
+      skip,
+      skip + limitNumber
+    );
 
-    const result = filteredBids.filter((bid) => bid.service);
     const pisoVariable = await VariableCount.getPisoVariable();
-    // console.log("filteredBids", filteredBids)
+
     return {
       piso: pisoVariable,
-      page: parseInt(page),
-      totalPage: Math.ceil(totalBids / limit),
-      limit: parseInt(limit),
+      page: pageNumber,
+      totalBids,
+      totalPage: Math.ceil(totalBids / limitNumber),
+      limit: limitNumber,
       result,
     };
   } catch (error) {
     console.error("Error in filterBidsByHistory:", error);
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "An error occurred while filtering bids.");
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "An error occurred while filtering bids."
+    );
   }
 };
 
