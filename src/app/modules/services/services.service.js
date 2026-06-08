@@ -972,7 +972,7 @@ const updateServicesStatusPartner = async (req) => {
     getId: serviceId,
   });
 
-  console.log("serviceId, status, userType", serviceId, status, "partner")
+  console.log("serviceId, status, userType00", serviceId, status, "partner")
 
   await sendUpdateStatus(serviceId, status, "user");
 
