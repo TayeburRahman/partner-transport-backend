@@ -885,7 +885,6 @@ const updateServicesStatusPartner = async (req) => {
   }
 
   const service = await Services.findById(serviceId);
-
   console.log("service======", service.user_status, status)
 
   if (!service) {
@@ -931,6 +930,16 @@ const updateServicesStatusPartner = async (req) => {
     );
   }
 
+  console.log("service.unloadingAddress", service.unloadingAddress)
+
+    if (status === "delivered" && !service.unloadingAddress) {
+     await updateServicesStatus("delivery-confirmed", status)
+     console.log('==========DONE===========')
+     return;
+    }
+
+    console.log('=====Log4')
+
   // arrived
   // goods_loaded
   // downloaded
@@ -968,6 +977,140 @@ const updateServicesStatusPartner = async (req) => {
   await sendUpdateStatus(serviceId, status, "user");
 
   return result;
+};
+
+const updateServicesStatus = async (status, serviceId) => { 
+
+  console.log("=======Log2", serviceId, status)
+
+  if (!serviceId || !status) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
+  }
+
+  const service = await Services.findById(serviceId);
+
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");
+  }
+ 
+  try { 
+    const transaction = await Transaction.findOne({ serviceId, active: true });
+    if (!transaction || transaction.paymentStatus !== "Completed") {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
+    }
+
+    if (status === "delivery-confirmed") {
+      const amount = Number(transaction.partnerAmount);
+      receivedUser.wallet = (receivedUser.wallet || 0) + amount;
+      await receivedUser.save();
+
+      const bankAccount = await StripeAccount.findOne({ user: transaction.receiveUser });
+
+      if (!bankAccount || !bankAccount?.stripeAccountId || !bankAccount?.externalAccountId) {
+        throw new ApiError(400, "Invalid bank account data provided!");
+      }
+
+      try {
+        const stripeAccount = await stripe.accounts.retrieve(bankAccount?.stripeAccountId);
+
+        if (!stripeAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
+        }
+
+        if (!stripeAccount.capabilities?.transfers || stripeAccount.capabilities.transfers !== "active") {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Unverified");
+        }
+
+        const externalAccount = stripeAccount.external_accounts?.data?.find(
+          (account) => account.id === bankAccount.externalAccountId
+        );
+
+        if (!externalAccount) {
+          throw new ApiError(httpStatus.BAD_REQUEST, "Payment Receive Back Account Not Found.");
+        }
+
+      } catch (error) {
+
+        throw new ApiError(httpStatus.BAD_REQUEST, `Error validating bank account: ${error.message}`);
+      }
+
+      // Convert USD to MXN for the payout
+      const { pesoCost } = await VariableCount.convertDollarToPeso(amount);
+      const transfer = await stripe.transfers.create({
+        amount: Math.round(pesoCost * 100),
+        currency: 'mxn',
+        destination: bankAccount?.stripeAccountId,
+      });
+
+      // Perform the payout in MXN
+      const payout = await stripe.payouts.create(
+        {
+          amount: Math.round(pesoCost * 100),
+          currency: 'mxn',
+        },
+        {
+          stripeAccount: bankAccount?.stripeAccountId,
+        }
+      );
+
+      // console.log("Payout successful:", payout);
+
+      transaction.isFinish = true;
+      await transaction.save();
+
+      await NotificationService.sendNotification({
+        title: {
+          eng: "Payment Received",
+          span: "Pago Recibido"
+        },
+        message: {
+          eng: `You’ve received a payment. Funds have been transferred to your bank account ending in ${bankAccount?.stripeAccountId.slice(-4)}.`,
+          span: `Has recibido un pago. Los fondos han sido transferidos a tu cuenta bancaria que termina en ${bankAccount?.stripeAccountId.slice(-4)}.`
+        },
+        user: receivedUser._id,
+        userType: transaction.receiveUserType,
+        types: "complete-status",
+        getId: serviceId,
+      });
+    }
+
+    let serviceStatus = "completed"; 
+    // confirm_arrived
+    // confirm_goods_loaded
+    // confirm_downloaded
+    // delivery-confirmed
+
+    const updatedService = await Services.findByIdAndUpdate(
+      serviceId,
+      { user_status: status, status: serviceStatus, partner_status: "delivered"},
+      { new: true } 
+    );
+
+    console.log("=======Log3", updatedService)
+
+    await NotificationService.sendNotification({
+      title: {
+        eng: "Service Status Updated",
+        span: "Estado del Servicio Actualizado"
+      },
+      message: {
+        eng: `The service status has been updated to "${status}".`,
+        span: `El estado del servicio ha sido actualizado a "${status}".`
+      },
+      user: service.user,
+      userType: "User",
+      types: "complete-status",
+      getId: serviceId,
+    });
+
+    await sendUpdateStatus(serviceId, status, "partner");
+    await sendUpdateStatus(serviceId, status, "user");
+
+    return updatedService;
+  } catch (error) {
+    console.log(error)
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Error updating service status: ${error.message}`);
+  }
 };
 
 const updateServicesStatusUser = async (req) => {

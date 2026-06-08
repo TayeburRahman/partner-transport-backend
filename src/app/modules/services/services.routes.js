@@ -75,12 +75,12 @@ router
   )
   .patch(
     "/update-move-users",
-    auth(ENUM_USER_ROLE.USER),
+    auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.USER),
     ServicesController.updateSellServicesStatusUser
   )
   .patch(
     "/update-move-partner",
-    auth(ENUM_USER_ROLE.PARTNER),
+    auth(ENUM_USER_ROLE.PARTNER, ENUM_USER_ROLE.USER),
     ServicesController.updateSellServicesStatusPartner
   )
   .get(
