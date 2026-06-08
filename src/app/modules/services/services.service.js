@@ -1000,6 +1000,15 @@ const updateServicesStatus = async (status, serviceId) => {
       throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
     }
 
+   const receivedUser =
+      transaction.receiveUserType === "Partner"
+        ? await Partner.findById(transaction.receiveUser)
+        : await User.findById(transaction.receiveUser);
+
+    if (!receivedUser) {
+      throw new ApiError(httpStatus.NOT_FOUND, "Recipient user not found for the transaction.");
+    }
+
     if (status === "delivery-confirmed") {
       const amount = Number(transaction.partnerAmount);
       receivedUser.wallet = (receivedUser.wallet || 0) + amount;
