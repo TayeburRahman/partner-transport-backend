@@ -32,7 +32,7 @@ async function main() {
     socket(socketIO); 
     global.io = socketIO;
 
-    // Start payment timeout checker
+    // Start payment timeout checker ---
     startPaymentTimeoutChecker();
  
     // handle unhandled promise rejections
