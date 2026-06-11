@@ -282,6 +282,13 @@ const createPostDB = async (req) => {
       throw new ApiError(400, "Invalid deadlineDate or deadlineTime format.");
     }
 
+    const currentTime = new Date();
+    const fiftyMinutesFromNow = new Date(currentTime.getTime() + 50 * 60 * 1000);
+
+    if (deadline_utc < fiftyMinutesFromNow) {
+      throw new ApiError(400, "La fecha límite debe ser al menos 50 minutos posterior a la hora actual.");
+    }
+
     // Validate price
     if (data.mainService === "move") {
       const tempService = {
