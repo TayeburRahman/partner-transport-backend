@@ -186,11 +186,18 @@ const validateInputs = (data, image) => {
 // ==============================================
 function convertToDeadlineUTC(deadlineDate, deadlineTime, timezone) {
   try {
-    // Date কে "yyyy-MM-dd" format এ আনো
-    const dateStr =
-      deadlineDate instanceof Date
-        ? deadlineDate.toISOString().split("T")[0]
-        : String(deadlineDate).split("T")[0]; // "2025-08-15"
+    let dateStr = "";
+    if (typeof deadlineDate === "string") {
+      if (deadlineDate.includes("T")) {
+        dateStr = DateTime.fromISO(deadlineDate).setZone(timezone).toFormat("yyyy-MM-dd");
+      } else {
+        dateStr = deadlineDate.split(" ")[0]; // Just use the date part
+      }
+    } else if (deadlineDate instanceof Date) {
+      dateStr = DateTime.fromJSDate(deadlineDate).setZone(timezone).toFormat("yyyy-MM-dd");
+    } else {
+      dateStr = String(deadlineDate).split("T")[0];
+    }
 
     const combined = `${dateStr} ${deadlineTime}`; // "2025-08-15 11:30 PM"
 
@@ -211,7 +218,7 @@ function convertToDeadlineUTC(deadlineDate, deadlineTime, timezone) {
       return null;
     }
 
-    return parsed.toUTC().toJSDate(); // ← MongoDB Date object (UTC)
+    return parsed.toUTC().toJSDate();
   } catch (err) {
     console.error("convertToDeadlineUTC error:", err.message);
     return null;
@@ -258,6 +265,11 @@ const createPostDB = async (req) => {
     const formattedDistance = parseFloat(distance?.toFixed(3));
 
     console.log("=|= data from App|=|", data.deadlineDate, data.deadlineTime, "timezone", data.timezone);
+
+    if (!data.timezone) {
+      throw new ApiError(400, "Timezone is required");
+    }
+
     const deadline_utc = convertToDeadlineUTC(
       data.deadlineDate,
       data.deadlineTime,
@@ -877,7 +889,7 @@ const filterUserByHistory = async (req) => {
 
 // Status===========================
 const updateServicesStatusPartner = async (req) => {
-  const { serviceId, status } = req.query; 
+  const { serviceId, status } = req.query;
   if (!serviceId || !status) {
     throw new ApiError(
       httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
@@ -1444,10 +1456,10 @@ const uploadStatusImage = async (req) => {
 
     console.log("service.unloadingAddress=================================", status, service.unloadingAddress)
     if (!service.unloadingAddress) {
-     console.log('==========IN===========')
-     await updateServicesStatus("delivery-confirmed", serviceId)
-     console.log('==========DONE===========')
-     return;
+      console.log('==========IN===========')
+      await updateServicesStatus("delivery-confirmed", serviceId)
+      console.log('==========DONE===========')
+      return;
     }
     console.log('=====Log4 no')
 
@@ -1462,7 +1474,7 @@ const uploadStatusImage = async (req) => {
 };
 
 
-const updateServicesStatus = async (status, serviceId) => { 
+const updateServicesStatus = async (status, serviceId) => {
 
   console.log("=======Log2", serviceId, status)
 
@@ -1475,14 +1487,14 @@ const updateServicesStatus = async (status, serviceId) => {
   if (!service) {
     throw new ApiError(httpStatus.NOT_FOUND, "Service not found.");
   }
- 
-  try { 
+
+  try {
     const transaction = await Transaction.findOne({ serviceId, active: true });
     if (!transaction || transaction.paymentStatus !== "Completed") {
       throw new ApiError(httpStatus.BAD_REQUEST, "Payment is not completed.");
     }
 
-   const receivedUser =
+    const receivedUser =
       transaction.receiveUserType === "Partner"
         ? await Partner.findById(transaction.receiveUser)
         : await User.findById(transaction.receiveUser);
@@ -1566,7 +1578,7 @@ const updateServicesStatus = async (status, serviceId) => {
       });
     }
 
-    let serviceStatus = "completed"; 
+    let serviceStatus = "completed";
     // confirm_arrived
     // confirm_goods_loaded
     // confirm_downloaded
@@ -1574,8 +1586,8 @@ const updateServicesStatus = async (status, serviceId) => {
 
     const updatedService = await Services.findByIdAndUpdate(
       serviceId,
-      { user_status: status, status: serviceStatus, partner_status: "delivered"},
-      { new: true } 
+      { user_status: status, status: serviceStatus, partner_status: "delivered" },
+      { new: true }
     );
 
     console.log("=======Log3", updatedService)
