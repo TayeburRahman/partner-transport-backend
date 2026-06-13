@@ -149,23 +149,20 @@ const withdrawRequest = catchAsync(async (req, res) => {
 
 // ==========================
 const saveStripeAccount = catchAsync(async (req, res) => {
-  const result = await PaymentService.saveStripeAccount(req);
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Save successfully.",
-    data: result,
-  });
+  const result = await PaymentService.saveStripeAccount(req, res);
+  
+  // Redirect back to the Flutter app using a custom deep link scheme
+  // You need to replace 'xmoveit://' with your actual app scheme
+  const deepLink = `xmoveit://stripe/success?accountId=${result?.stripeAccountId || req.query.accountId}`;
+  res.redirect(deepLink);
 })
 
 const updateStripeAccount = catchAsync(async (req, res) => {
-  const result = await PaymentService.updateStripeAccount(req);
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Save successfully.",
-    data: result,
-  });
+  const result = await PaymentService.updateStripeAccount(req, res);
+  
+  // Redirect back to the Flutter app using a custom deep link scheme
+  const deepLink = `xmoveit://stripe/update-success?accountId=${result?.stripeAccountId || req.query.accountId}`;
+  res.redirect(deepLink);
 })
 
 
