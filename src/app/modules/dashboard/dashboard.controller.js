@@ -1,6 +1,7 @@
 const catchAsync = require("../../../shared/catchasync");
 const sendResponse = require("../../../shared/sendResponse");
 const { DashboardService } = require("../dashboard/dashboard.service");
+const httpStatus = require("http-status");
 
 const getAllUsers = catchAsync(async (req, res) => {
   const result = await DashboardService.getAllUsers(req.query);

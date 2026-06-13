@@ -31,6 +31,7 @@ const createCategory = async (req) => {
       status: "Error",
     };
     await LogsDashboardService.createTaskDB(newTask); 
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create category: " + error.message);
   }
 };
 
@@ -73,6 +74,7 @@ const updateCategory = async (req) => {
     return result;
   } catch (error) {
     // Log failure
+    // Log failure
     const newTask = {
       admin: userId,
       email: emailAuth,
@@ -82,6 +84,7 @@ const updateCategory = async (req) => {
       status: "Error",
     };
     await LogsDashboardService.createTaskDB(newTask); 
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update category: " + error.message);
   }
 };
 
@@ -124,7 +127,7 @@ const deleteCategory = async (req) => {
       status: "Error",
     };
     await LogsDashboardService.createTaskDB(newTask);
- 
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to delete category: " + error.message);
   }
 };
 
