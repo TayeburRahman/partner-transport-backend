@@ -199,9 +199,8 @@ function convertToDeadlineUTC(deadlineDate, deadlineTime, timezone) {
       dateStr = String(deadlineDate).split("T")[0];
     }
 
-    const combined = `${dateStr} ${deadlineTime}`; // "2025-08-15 11:30 PM"
+    const combined = `${dateStr} ${deadlineTime}`;
 
-    // 12-hour format try করো ("11:30 PM")
     let parsed = DateTime.fromFormat(combined, "yyyy-MM-dd hh:mm a", {
       zone: timezone,
     });
@@ -778,10 +777,11 @@ const getUserServicesWithinOneHour = async (req) => {
     paymentStatus: "paid",
     startDate: {
       $lte: oneHourLater,
-    },
-    endDate: {
-      $gt: dateNow,
-    },
+    }
+    // ,
+    // endDate: {
+    //   $gt: dateNow,
+    // },
   };
 
   if (role === ENUM_USER_ROLE.USER) {
@@ -1480,10 +1480,7 @@ const uploadStatusImage = async (req) => {
   return service;
 };
 
-
 const updateServicesStatus = async (status, serviceId) => {
-
-  console.log("=======Log2", serviceId, status)
 
   if (!serviceId || !status) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Service ID and status are required in the query parameters.");
