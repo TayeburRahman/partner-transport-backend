@@ -8,20 +8,17 @@ const Conversation = require("./conversation.model");
 const Message = require("./message.model");
 
 
-// ===== Sensitive info validation helper =====
-const containsSensitiveInfo = (text) => {
-    // Detect email addresses
-    const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
-    // Detect phone numbers (various formats: +8801XXXXXXXXX, 01XXXXXXXXX, (123) 456-7890, 123-456-7890, etc.)
-    const phoneRegex = /(\+?\d{1,3}[\s\-.]?)?(\(?\d{2,4}\)?[\s\-.]?)(\d{3,4}[\s\-.]?\d{3,6})/;
+// ===== Sensitive info sanitizer helper =====
+const sanitizeSensitiveInfo = (text) => {
+    // Remove email addresses
+    const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+    // Remove phone numbers (various formats: +8801XXXXXXXXX, 01XXXXXXXXX, (123) 456-7890, 123-456-7890, etc.)
+    const phoneRegex = /(\+?\d{1,3}[\s\-.]?)?(\(?\d{2,4}\)?[\s\-.]?)(\d{3,4}[\s\-.]?\d{3,6})/g;
 
-    if (emailRegex.test(text)) {
-        return { detected: true, type: 'email' };
-    }
-    if (phoneRegex.test(text)) {
-        return { detected: true, type: 'phone' };
-    }
-    return { detected: false };
+    let sanitized = text.replace(emailRegex, '').replace(phoneRegex, '');
+    // Clean up extra whitespace left after removal
+    sanitized = sanitized.replace(/\s{2,}/g, ' ').trim();
+    return sanitized;
 };
 // ============================================
 
@@ -68,16 +65,8 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
             return;
         }
 
-        // Validate: block phone numbers and emails in message text
-        const sensitiveCheck = containsSensitiveInfo(text);
-        if (sensitiveCheck.detected) {
-            socket.emit('error', {
-                message: sensitiveCheck.type === 'email'
-                    ? 'No está permitido compartir direcciones de correo electrónico en los mensajes.'
-                    : 'No está permitido compartir números de teléfono en los mensajes.',
-            });
-            return;
-        }
+        // Sanitize: remove phone numbers and emails from message text
+        const cleanText = sanitizeSensitiveInfo(text);
 
         if (!receiverId || !senderId) {
             throw new ApiError(404, 'Sender or Receiver user not found');
@@ -138,7 +127,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
         const newMessage = new Message({
             senderId,
             receiverId,
-            text,
+            text: cleanText,
             isAdmin: adminType,
             conversationId: conversation._id,
         });
@@ -182,16 +171,8 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
             return;
         }
 
-        // Validate: block phone numbers and emails in message text
-        const sensitiveCheck = containsSensitiveInfo(text);
-        if (sensitiveCheck.detected) {
-            socket.emit('error', {
-                message: sensitiveCheck.type === 'email'
-                    ? 'No está permitido compartir direcciones de correo electrónico en los mensajes.'
-                    : 'No está permitido compartir números de teléfono en los mensajes.',
-            });
-            return;
-        };
+        // Sanitize: remove phone numbers and emails from message text
+        const cleanText = sanitizeSensitiveInfo(text);
 
         if (!receiverId || !senderId) {
             throw new ApiError(404, 'Sender or Receiver user not found');
@@ -256,7 +237,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
         const newMessage = new Message({
             senderId,
             receiverId,
-            text,
+            text: cleanText,
             isAdmin: adminType,
             conversationId: conversation._id,
         });
