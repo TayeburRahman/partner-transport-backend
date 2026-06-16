@@ -8,7 +8,24 @@ const Conversation = require("./conversation.model");
 const Message = require("./message.model");
 
 
-const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => { 
+// ===== Sensitive info validation helper =====
+const containsSensitiveInfo = (text) => {
+    // Detect email addresses
+    const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+    // Detect phone numbers (various formats: +8801XXXXXXXXX, 01XXXXXXXXX, (123) 456-7890, 123-456-7890, etc.)
+    const phoneRegex = /(\+?\d{1,3}[\s\-.]?)?(\(?\d{2,4}\)?[\s\-.]?)(\d{3,4}[\s\-.]?\d{3,6})/;
+
+    if (emailRegex.test(text)) {
+        return { detected: true, type: 'email' };
+    }
+    if (phoneRegex.test(text)) {
+        return { detected: true, type: 'phone' };
+    }
+    return { detected: false };
+};
+// ============================================
+
+const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
     // Get one to one - all conversation messages
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_GETALL, async (data) => {
         const { senderId, page } = data;
@@ -47,6 +64,17 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
         if (!senderId || !text) {
             socket.emit('error', {
                 message: 'SenderId Or text not found!',
+            });
+            return;
+        }
+
+        // Validate: block phone numbers and emails in message text
+        const sensitiveCheck = containsSensitiveInfo(text);
+        if (sensitiveCheck.detected) {
+            socket.emit('error', {
+                message: sensitiveCheck.type === 'email'
+                    ? 'No está permitido compartir direcciones de correo electrónico en los mensajes.'
+                    : 'No está permitido compartir números de teléfono en los mensajes.',
             });
             return;
         }
@@ -92,12 +120,12 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
             previousNotification = await NotificationService.sendNotification({
                 title: {
-                    eng: `New Message from ${adminType? "Admin": 'User' || "Unknown"}`,
-                    span: `Nuevo Mensaje de ${adminType? "Admin": 'User' || "Desconocido"}`
+                    eng: `New Message from ${adminType ? "Admin" : 'User' || "Unknown"}`,
+                    span: `Nuevo Mensaje de ${adminType ? "Admin" : 'User' || "Desconocido"}`
                 },
                 message: {
-                    eng: `You have received a new message from a ${adminType? "Admin": 'User' || "user"}. Please check the conversation.`,
-                    span: `Has recibido un nuevo mensaje de un ${adminType? "Admin": 'User' || "usuario"}. Por favor, revisa la conversación.`
+                    eng: `You have received a new message from a ${adminType ? "Admin" : 'User' || "user"}. Please check the conversation.`,
+                    span: `Has recibido un nuevo mensaje de un ${adminType ? "Admin" : 'User' || "usuario"}. Por favor, revisa la conversación.`
                 },
                 user: senderId,
                 userType: userRoleType,
@@ -122,12 +150,12 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
         if (!previousNotification && adminType) {
             await NotificationService.sendNotification({
                 title: {
-                    eng: `New Message from ${adminType? "Admin": 'User' || "Unknown"}`,
-                    span: `Nuevo Mensaje de ${adminType? "Admin": 'User' || "Desconocido"}`
+                    eng: `New Message from ${adminType ? "Admin" : 'User' || "Unknown"}`,
+                    span: `Nuevo Mensaje de ${adminType ? "Admin" : 'User' || "Desconocido"}`
                 },
                 message: {
-                    eng: `You have received a new message from a ${adminType? "Admin": 'User' || "user"}. Please check the conversation.`,
-                    span: `Has recibido un nuevo mensaje de un ${adminType? "Admin": 'User' || "usuario"}. Por favor, revisa la conversación.`
+                    eng: `You have received a new message from a ${adminType ? "Admin" : 'User' || "user"}. Please check the conversation.`,
+                    span: `Has recibido un nuevo mensaje de un ${adminType ? "Admin" : 'User' || "usuario"}. Por favor, revisa la conversación.`
                 },
                 user: senderId,
                 userType: userRoleType,
@@ -145,11 +173,22 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
     // Create a new chat message and send it services.
     socket.on(ENUM_SOCKET_EVENT.MESSAGE_NEW_SERVICE, async (data) => {
-        const { serviceId, senderId, text, userType } = data; 
+        const { serviceId, senderId, text, userType } = data;
 
         if (!senderId || !text || !serviceId) {
             socket.emit('error', {
                 message: 'serviceId SenderId Or text not found!',
+            });
+            return;
+        }
+
+        // Validate: block phone numbers and emails in message text
+        const sensitiveCheck = containsSensitiveInfo(text);
+        if (sensitiveCheck.detected) {
+            socket.emit('error', {
+                message: sensitiveCheck.type === 'email'
+                    ? 'No está permitido compartir direcciones de correo electrónico en los mensajes.'
+                    : 'No está permitido compartir números de teléfono en los mensajes.',
             });
             return;
         }
@@ -227,7 +266,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
 
         // =====
         if (!previousNotification && adminType) {
-          const notification =  await NotificationService.sendNotification({
+            const notification = await NotificationService.sendNotification({
                 title: {
                     eng: `New Message from ${userRoleType || "Unknown"}`,
                     span: `Nuevo Mensaje de ${userRoleType || "Desconocido"}`
@@ -242,7 +281,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
                 types: 'new-message',
                 isAdmin: adminType,
             })
-            console.log("===",notification)
+            console.log("===", notification)
         }
         // =====
         await emitMassage(senderId, newMessage, `${ENUM_SOCKET_EVENT.MESSAGE_NEW_SERVICE}/${serviceId}`)
