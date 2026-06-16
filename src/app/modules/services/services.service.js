@@ -664,7 +664,7 @@ const searchNearby = async (req) => {
         maxDistance: coverageRadius ? Number(coverageRadius * 1000) : 10000 * 1000,
         query: {
           status: ENUM_SERVICE_STATUS.PENDING,
-          ...(service && { service }),
+          ...(service && { service: { $regex: service, $options: "i" } }),
         },
       },
     },
@@ -673,6 +673,7 @@ const searchNearby = async (req) => {
         distance: 1,
         numberOfItems: 1,
         mainService: 1,
+        service: 1,
         category: 1,
         image: 1,
         createdAt: 1,
@@ -682,6 +683,19 @@ const searchNearby = async (req) => {
         deadlineTime: 1,
         deadline_utc: 1,
         loadingLocation: 1,
+        unloadingLocation: 1,
+        loadingAddress: 1,
+        unloadingAddress: 1,
+        price: 1,
+        minPrice: 1,
+        weightKG: 1,
+        description: 1,
+        status: 1,
+        startDate: 1,
+        endDate: 1,
+        isLoaderNeeded: 1,
+        isUnloaderNeeded: 1,
+        user: 1,
       },
     },
   ]);
@@ -691,7 +705,7 @@ const searchNearby = async (req) => {
   // Filter out expired services for Partners
   let filteredServices = populatedServices;
   if (req.user.role === ENUM_USER_ROLE.PARTNER) {
-    const now = new Date();
+    const now = req.query.current_date ? new Date(req.query.current_date) : new Date();
     filteredServices = populatedServices.filter(service => {
       const deadline = service.deadline_utc ? new Date(service.deadline_utc) : parseDateTime(service.deadlineDate, service.deadlineTime);
       service.deadline = deadline;

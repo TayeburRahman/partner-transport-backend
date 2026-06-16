@@ -191,7 +191,7 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
                     : 'No está permitido compartir números de teléfono en los mensajes.',
             });
             return;
-        }
+        };
 
         if (!receiverId || !senderId) {
             throw new ApiError(404, 'Sender or Receiver user not found');
