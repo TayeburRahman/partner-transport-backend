@@ -806,7 +806,7 @@ const getUserServicesWithinOneHour = async (req) => {
   } else if (role === ENUM_USER_ROLE.PARTNER) {
     query.confirmedPartner = userId;
   }
-
+  console.log("servicesResult", dateNow, "|||", oneHourLater)
   const [servicesResult, surcharge] = await Promise.all([
     Services.find(query)
       .sort({ createdAt: -1 })
@@ -835,7 +835,7 @@ const getUserServicesWithinOneHour = async (req) => {
         : Number(data.winBid) - (Number(data.winBid) * surcharge) / 100,
     }));
   }
-
+  console.log("servicesResult", servicesResult.length)
   return servicesResult;
 };
 
