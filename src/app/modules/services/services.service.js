@@ -810,7 +810,7 @@ const getUserServicesWithinOneHour = async (req) => {
   const [servicesResult, surcharge] = await Promise.all([
     Services.find(query)
       .sort({ createdAt: -1 })
-      .select("-image -description -goodsLoadedImages -deliveredImages unloadingAddress -transactionId -rescheduledReason ")
+      .select("-image -description -goodsLoadedImages -deliveredImages -transactionId -rescheduledReason ")
       .populate({
         path: "confirmedPartner",
         select: "name email profile_image phone_number rating",
