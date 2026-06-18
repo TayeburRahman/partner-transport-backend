@@ -652,6 +652,9 @@ const searchNearby = async (req) => {
   // console.log("===", longitude, latitude)
   const { coverageRadius } = await Variable.findOne({});
 
+
+  console.log("=====", service, "|||", longitude, "|||", latitude)
+
   const nearbyServices = await Services.aggregate([
     {
       $geoNear: {

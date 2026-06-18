@@ -969,11 +969,11 @@ const filterAndSortServices = async (req, res) => {
 //     // Defensive date parser
 //     const parseDateTime = (dateStr, timeStr) => {
 //       if (!dateStr || !timeStr) return null;
-      
+
 //       // Handle "hh:mm AM/PM" format
 //       const parts = timeStr.split(" ");
 //       if (parts.length !== 2) return null;
-      
+
 //       const [time, modifier] = parts;
 //       const [hourStr, minuteStr] = time.split(":");
 //       let hour = parseInt(hourStr, 10) || 0;
@@ -1071,6 +1071,17 @@ const filterAndSortServicesCustom = async (req, res) => {
       status: "pending",
     };
 
+    console.log("longitude", longitude, "latitude", latitude, "categories", categories,
+
+      service,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+      longitude,
+      latitude,
+    )
+
     // Service search
     if (service) {
       filterQuery.service = {
@@ -1112,29 +1123,29 @@ const filterAndSortServicesCustom = async (req, res) => {
 
     const geoQuery = hasCoordinates
       ? [
-          {
-            $geoNear: {
-              near: {
-                type: "Point",
-                coordinates: [
-                  parseFloat(longitude),
-                  parseFloat(latitude),
-                ],
-              },
-
-              // IMPORTANT
-              key: "loadingLocation",
-
-              distanceField: "distance",
-
-              spherical: true,
-
-              maxDistance,
-
-              query: filterQuery,
+        {
+          $geoNear: {
+            near: {
+              type: "Point",
+              coordinates: [
+                parseFloat(longitude),
+                parseFloat(latitude),
+              ],
             },
+
+            // IMPORTANT
+            key: "loadingLocation",
+
+            distanceField: "distance",
+
+            spherical: true,
+
+            maxDistance,
+
+            query: filterQuery,
           },
-        ]
+        },
+      ]
       : [];
 
     // -----------------------------
@@ -1147,10 +1158,10 @@ const filterAndSortServicesCustom = async (req, res) => {
       ...(hasCoordinates
         ? []
         : [
-            {
-              $match: filterQuery,
-            },
-          ]),
+          {
+            $match: filterQuery,
+          },
+        ]),
 
       {
         $lookup: {
@@ -1302,9 +1313,9 @@ const filterAndSortServicesCustom = async (req, res) => {
         const deadline = serviceItem.deadline_utc
           ? new Date(serviceItem.deadline_utc)
           : parseDateTime(
-              serviceItem.deadlineDate,
-              serviceItem.deadlineTime
-            );
+            serviceItem.deadlineDate,
+            serviceItem.deadlineTime
+          );
 
         serviceItem.deadline = deadline;
 
