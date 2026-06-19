@@ -14,29 +14,24 @@ const updateProfile = async (req) => {
 
   const fileUploads = {};
 
-  // Helper function to validate file exists
+  // Helper function to format file path
   const validateFile = (file, folder) => {
     if (!file || !file[0]) return null;
-
-    const filePath = path.join(__dirname, "..", "public", folder, file[0].filename);
-    if (fs.existsSync(filePath)) {
-      return `/images/${folder}/${file[0].filename}`;
-    }
-    return null;
+    return `/images/${folder}/${file[0].filename}`;
   };
 
   if (files) {
-    fileUploads.profile_image =fileUploads?.profile_image? validateFile(files.profile_image, "profile"): null;
-    fileUploads.licensePlateImage = fileUploads?.licensePlateImage? validateFile(files.licensePlateImage, "vehicle-licenses"): null;
-    fileUploads.drivingLicenseImage =fileUploads?.drivingLicenseImage? validateFile(files.drivingLicenseImage, "driving-licenses"): null;
-    fileUploads.vehicleInsuranceImage =fileUploads?.vehicleInsuranceImage ? validateFile(files.vehicleInsuranceImage, "insurance"):null;
-    fileUploads.vehicleRegistrationCardImage =fileUploads?.vehicleRegistrationCardImage? validateFile(
+    fileUploads.profile_image = files.profile_image ? validateFile(files.profile_image, "profile") : null;
+    fileUploads.licensePlateImage = files.licensePlateImage ? validateFile(files.licensePlateImage, "vehicle-licenses") : null;
+    fileUploads.drivingLicenseImage = files.drivingLicenseImage ? validateFile(files.drivingLicenseImage, "driving-licenses") : null;
+    fileUploads.vehicleInsuranceImage = files.vehicleInsuranceImage ? validateFile(files.vehicleInsuranceImage, "insurance") : null;
+    fileUploads.vehicleRegistrationCardImage = files.vehicleRegistrationCardImage ? validateFile(
       files.vehicleRegistrationCardImage,
       "vehicle-registration"
-    ): null;
-    fileUploads.vehicleFrontImage =fileUploads?.vehicleFrontImage? validateFile(files.vehicleFrontImage, "vehicle-image"): null;
-    fileUploads.vehicleBackImage = fileUploads?.vehicleBackImage? validateFile(files.vehicleBackImage, "vehicle-image"): null;
-    fileUploads.vehicleSideImage = fileUploads?.vehicleSideImage? validateFile(files.vehicleSideImage, "vehicle-image"): null;
+    ) : null;
+    fileUploads.vehicleFrontImage = files.vehicleFrontImage ? validateFile(files.vehicleFrontImage, "vehicle-image") : null;
+    fileUploads.vehicleBackImage = files.vehicleBackImage ? validateFile(files.vehicleBackImage, "vehicle-image") : null;
+    fileUploads.vehicleSideImage = files.vehicleSideImage ? validateFile(files.vehicleSideImage, "vehicle-image") : null;
   }
 
   // Remove undefined/null fields

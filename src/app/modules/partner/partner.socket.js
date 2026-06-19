@@ -13,7 +13,7 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
       if (!receiverId || !longitude || !latitude) {
         return socket.emit("error", {
           status: httpStatus.BAD_REQUEST,
-          message: "longitude or latitude not found",
+          message: "longitude or latitude not found"
         });
       }
 
@@ -46,7 +46,7 @@ const handlePartnerData = async (receiverId, role, socket, io) => {
       const { location } = updatedPartner;
       console.log("location", location)
       // console.log("Emitting partner location to listeners:", receiverId.toString());
-      
+
       // ✅ Primary event for the USER side (listenForPartnerLocation)
       io.emit(`${ENUM_SOCKET_EVENT.PARTNER_LOCATION}/${receiverId}`, location);
 
