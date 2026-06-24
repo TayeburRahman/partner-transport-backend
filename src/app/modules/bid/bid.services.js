@@ -294,7 +294,10 @@ const filterBidsByHistory = async (req) => {
     const result = validBids.slice(
       skip,
       skip + limitNumber
-    );
+    ).map((bid) => ({
+      ...bid,
+      isServiceCompleted: bid.service && (bid.service.status === "completed" || bid.service.status === "cancel")
+    }));
 
     const pisoVariable = await VariableCount.getPisoVariable();
 
