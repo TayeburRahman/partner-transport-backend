@@ -613,15 +613,7 @@ const getAllAuctions = async (query) => {
   const sortField = query.sortBy || "createdAt";
   const sortOrder = query.order === "asc" ? 1 : -1;
 
-  const matchQuery = {
-    ...query.searchTerm
-      ? {
-        $or: [
-          { "user.name": { $regex: query.searchTerm, $options: "i" } },
-          { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
-        ],
-      }
-      : {},
+  const baseMatchQuery = {
     ...(query.mainService ? { mainService: query.mainService } : {}),
     ...(query.status ? { status: query.status } : {}),
     ...(query.service ? { service: query.service } : {}),
@@ -629,44 +621,79 @@ const getAllAuctions = async (query) => {
   };
 
   const pipeline = [
-    {
-      $lookup: {
-        from: "users",
-        localField: "user",
-        foreignField: "_id",
-        as: "user",
-      },
-    },
-    {
-      $lookup: {
-        from: "partners",
-        localField: "confirmedPartner",
-        foreignField: "_id",
-        as: "confirmedPartner",
-      },
-    },
-    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-    { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
-    { $match: matchQuery },
-    {
-      $lookup: {
-        from: "categories",
-        localField: "category",
-        foreignField: "_id",
-        as: "category",
-      },
-    },
-    {
-      $facet: {
-        data: [
-          { $sort: { [sortField]: sortOrder } },
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-        ],
-        meta: [{ $count: "total" }],
-      },
-    },
+    { $match: baseMatchQuery }
   ];
+
+  if (query.searchTerm) {
+    pipeline.push(
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $lookup: {
+          from: "partners",
+          localField: "confirmedPartner",
+          foreignField: "_id",
+          as: "confirmedPartner",
+        },
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          $or: [
+            { "user.name": { $regex: query.searchTerm, $options: "i" } },
+            { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
+          ],
+        }
+      }
+    );
+  }
+
+  pipeline.push({
+    $facet: {
+      data: [
+        { $sort: { [sortField]: sortOrder } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        // Perform lookups on the paginated result if we didn't do it before
+        ...(query.searchTerm ? [] : [
+          {
+            $lookup: {
+              from: "users",
+              localField: "user",
+              foreignField: "_id",
+              as: "user",
+            },
+          },
+          {
+            $lookup: {
+              from: "partners",
+              localField: "confirmedPartner",
+              foreignField: "_id",
+              as: "confirmedPartner",
+            },
+          },
+          { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+          { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
+        ]),
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "category",
+          },
+        },
+      ],
+      meta: [{ $count: "total" }],
+    },
+  });
 
   const [result] = await Services.aggregate(pipeline);
 
@@ -674,10 +701,10 @@ const getAllAuctions = async (query) => {
     meta: {
       page,
       limit,
-      total: result.meta[0]?.total || 0,
-      totalPage: Math.ceil((result.meta[0]?.total || 0) / limit)
+      total: result?.meta[0]?.total || 0,
+      totalPage: Math.ceil((result?.meta[0]?.total || 0) / limit)
     },
-    data: result.data,
+    data: result?.data || [],
   };
 };
 

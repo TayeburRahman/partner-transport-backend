@@ -33,6 +33,14 @@ const handleMessageData = async (receiverId, role, socket, io, onlineUsers) => {
             });
             return;
         }
+
+        if (senderId.toString() === receiverId.toString()) {
+            socket.emit('error', {
+                message: 'SenderId and ReceiverId are same person!',
+            });
+            return;
+        }
+
         const conversation = await Conversation.findOne({
             participants: { $all: [senderId, receiverId] },
         }).populate({
