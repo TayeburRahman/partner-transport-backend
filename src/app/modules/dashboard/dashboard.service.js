@@ -620,12 +620,12 @@ const getAllAuctions = async (query) => {
     ...(query.category ? { category: { $in: query.category.split(',').map(id => new mongoose.Types.ObjectId(id)) } } : {}),
   };
 
-  const pipeline = [
-    { $match: baseMatchQuery }
-  ];
+  let dataPipeline = [];
+  let totalCount = 0;
 
   if (query.searchTerm) {
-    pipeline.push(
+    const searchMatchPipeline = [
+      { $match: baseMatchQuery },
       {
         $lookup: {
           from: "users",
@@ -652,59 +652,76 @@ const getAllAuctions = async (query) => {
           ],
         }
       }
-    );
+    ];
+
+    dataPipeline = [
+      ...searchMatchPipeline,
+      { $sort: { [sortField]: sortOrder } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      }
+    ];
+
+    const countPipeline = [
+      ...searchMatchPipeline,
+      { $count: "total" }
+    ];
+    const countResult = await Services.aggregate(countPipeline);
+    totalCount = countResult[0]?.total || 0;
+  } else {
+    dataPipeline = [
+      { $match: baseMatchQuery },
+      { $sort: { [sortField]: sortOrder } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $lookup: {
+          from: "partners",
+          localField: "confirmedPartner",
+          foreignField: "_id",
+          as: "confirmedPartner",
+        },
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      }
+    ];
+    
+    totalCount = await Services.countDocuments(baseMatchQuery);
   }
 
-  pipeline.push({
-    $facet: {
-      data: [
-        { $sort: { [sortField]: sortOrder } },
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
-        // Perform lookups on the paginated result if we didn't do it before
-        ...(query.searchTerm ? [] : [
-          {
-            $lookup: {
-              from: "users",
-              localField: "user",
-              foreignField: "_id",
-              as: "user",
-            },
-          },
-          {
-            $lookup: {
-              from: "partners",
-              localField: "confirmedPartner",
-              foreignField: "_id",
-              as: "confirmedPartner",
-            },
-          },
-          { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-          { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
-        ]),
-        {
-          $lookup: {
-            from: "categories",
-            localField: "category",
-            foreignField: "_id",
-            as: "category",
-          },
-        },
-      ],
-      meta: [{ $count: "total" }],
-    },
-  });
-
-  const [result] = await Services.aggregate(pipeline);
+  const resultData = await Services.aggregate(dataPipeline);
 
   return {
     meta: {
       page,
       limit,
-      total: result?.meta[0]?.total || 0,
-      totalPage: Math.ceil((result?.meta[0]?.total || 0) / limit)
+      total: totalCount,
+      totalPage: Math.ceil(totalCount / limit)
     },
-    data: result?.data || [],
+    data: resultData,
   };
 };
 
