@@ -171,10 +171,6 @@ const getPaddingPartner = async (query) => {
 
   const partners = await Partner.aggregate(aggregationPipeline);
 
-  if (!partners.length) {
-    throw new ApiError(httpStatus.NOT_FOUND, "No inactive partners found");
-  }
-
   return {
     meta: { count: partners.length },
     data: partners,
@@ -194,10 +190,6 @@ const getAllPartner = async (query) => {
 
   const result = await partnerQuery.modelQuery;
   const meta = await partnerQuery.countTotal();
-
-  if (!result?.length) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Partner not found");
-  }
 
   return {
     meta,
@@ -254,10 +246,6 @@ const getAllAdmins = async (query) => {
     .paginate()
     .fields();
   const result = await adminQuery.modelQuery;
-
-  if (!result?.length) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Admin not found");
-  }
 
   const meta = await adminQuery.countTotal();
 
@@ -359,10 +347,6 @@ const getAllPendingPartners = async (query) => {
 
   const result = await userQuery.modelQuery;
   const meta = await userQuery.countTotal();
-
-  if (!result.length) {
-    throw new ApiError(httpStatus.NOT_FOUND, "No pending partner requests");
-  }
 
   return {
     meta,
