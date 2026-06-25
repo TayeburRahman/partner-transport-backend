@@ -631,7 +631,7 @@ const resendCodeForgotAccount = async (payload) => {
        <br><br> 
         <div class="container"> 
             <h1>Hola, ${user.name}</h1>
-            <p>Tu código de activación es: <strong>${activationCode}</strong> </p>
+            <p>Tu código de activación es: <strong>${verifyCode}</strong> </p>
             <p> Por favor, utiliza este código para activar tu cuenta. Si no solicitaste esto, ignora este correo electrónico. </p>
             <p>¡Gracias!</p>
             <div class="footer">
