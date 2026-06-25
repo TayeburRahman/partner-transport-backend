@@ -7,11 +7,11 @@ const bidsSchema = new Schema(
     service: {
       type: mongoose.Schema.ObjectId,
       ref: "Services",
-    }, 
+    },
     partner: {
       type: mongoose.Schema.ObjectId,
       ref: "Partner",
-    }, 
+    },
     serviceType: {
       type: String,
       enum: ["Goods", "Waste", "Second-hand items", "Recyclable materials"],
@@ -21,9 +21,9 @@ const bidsSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Win", "Outbid","Pending"],
+      enum: ["Win", "Outbid", "Pending"],
       default: "Pending",
-    }, 
+    },
   },
   {
     timestamps: true,
@@ -35,15 +35,15 @@ const reviewSchema = new Schema(
     serviceId: {
       type: mongoose.Schema.ObjectId,
       ref: "Services",
-    }, 
+    },
     partnerId: {
       type: mongoose.Schema.ObjectId,
       ref: "Partner",
-    }, 
+    },
     userId: {
       type: mongoose.Schema.ObjectId,
       ref: "User",
-    }, 
+    },
     rating: {
       type: Number,
       default: 0,
@@ -57,26 +57,26 @@ const reviewSchema = new Schema(
     timestamps: true,
   }
 );
- 
+
 
 const fileClaimSchema = new Schema(
   {
-    serviceId:{
+    serviceId: {
       type: mongoose.Schema.ObjectId,
       ref: "Services",
-      required: true,  
+      required: true,
     },
-    user:{
+    user: {
       type: mongoose.Schema.ObjectId,
       refPath: "userType",
-      required: true, 
+      required: true,
     },
-    userType:{
+    userType: {
       type: String,
       enum: ["User", "Partner"],
-      required: true, 
+      required: true,
     },
-    name:{
+    name: {
       type: String,
       required: true,
     },
@@ -84,14 +84,14 @@ const fileClaimSchema = new Schema(
       type: String,
       required: true,
     },
-    description:{
+    description: {
       type: String,
-      required: true, 
+      required: true,
     },
-    fileClaimImage:{
-      type: [String],   
+    fileClaimImage: {
+      type: [String],
     },
-    status:{
+    status: {
       type: String,
       enum: ["pending", "in-progress", "resolved"],
       default: "pending",
@@ -105,8 +105,8 @@ const fileClaimSchema = new Schema(
 module.exports = mongoose.model("FileClaim", fileClaimSchema);
 
 
-const FileClaim = model("FileClaim", fileClaimSchema); 
-const Review = model("Review", reviewSchema); 
-const Bids = model("Bids", bidsSchema); 
+const FileClaim = model("FileClaim", fileClaimSchema);
+const Review = model("Review", reviewSchema);
+const Bids = model("Bids", bidsSchema);
 
-module.exports = { Review, Bids, FileClaim};
+module.exports = { Review, Bids, FileClaim };

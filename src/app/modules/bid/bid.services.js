@@ -513,9 +513,10 @@ const updateStatusFileClaim = async (req, res) => {
           eng: "File Claim Resolved.",
           span: "Reclamación Resuelta."
         },
+
         message: {
-          eng: "Your claim against ${result?.userType === 'User' ? 'partner' : 'user'} has been resolved.",
-          span: "Tu reclamación contra ${result?.userType === 'User' ? 'el socio' : 'el usuario'} ha sido resuelta."
+          eng: `Your claim against ${result?.userType === 'User' ? 'partner' : 'user'} has been resolved.`,
+          span: `Tu reclamación contra ${result?.userType === 'User' ? 'el socio' : 'el usuario'} ha sido resuelta.`
         },
         user: result.user,
         userType: result.userType,
