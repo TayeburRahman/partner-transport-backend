@@ -36,7 +36,7 @@ const blockUnblockUserPartnerAdmin = catchAsync(async (req, res) => {
 });
 
 const getAllPartner = catchAsync(async (req, res) => {
-  const result = await DashboardService.getAllPartner();
+  const result = await DashboardService.getAllPartner(req.query);
   sendResponse(res, {
     statusCode: 200,
     success: true,
