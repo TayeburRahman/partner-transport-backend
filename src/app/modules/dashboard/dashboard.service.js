@@ -615,104 +615,70 @@ const getAllAuctions = async (query) => {
 
   const baseMatchQuery = {
     ...(query.mainService ? { mainService: query.mainService } : {}),
-    ...(query.status ? { status: query.status } : {}),
+    ...(query.status ? { status: query.status } : { status: { $ne: "pending" } }),
     ...(query.service ? { service: query.service } : {}),
     ...(query.category ? { category: { $in: query.category.split(',').map(id => new mongoose.Types.ObjectId(id)) } } : {}),
   };
 
-  let dataPipeline = [];
-  let totalCount = 0;
-
   if (query.searchTerm) {
-    const searchMatchPipeline = [
-      { $match: baseMatchQuery },
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      {
-        $lookup: {
-          from: "partners",
-          localField: "confirmedPartner",
-          foreignField: "_id",
-          as: "confirmedPartner",
-        },
-      },
-      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-      { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
-      {
-        $match: {
-          $or: [
-            { "user.name": { $regex: query.searchTerm, $options: "i" } },
-            { "confirmedPartner.name": { $regex: query.searchTerm, $options: "i" } },
-          ],
-        }
-      }
+    const regex = new RegExp(query.searchTerm, "i");
+    // Find matching users and partners
+    const [matchedUsers, matchedPartners] = await Promise.all([
+      User.find({ name: regex }).select("_id").lean(),
+      Partner.find({ name: regex }).select("_id").lean()
+    ]);
+    const userIds = matchedUsers.map(u => u._id);
+    const partnerIds = matchedPartners.map(p => p._id);
+
+    const orConditions = [
+      { user: { $in: userIds } },
+      { confirmedPartner: { $in: partnerIds } }
     ];
 
-    dataPipeline = [
-      ...searchMatchPipeline,
-      { $sort: { [sortField]: sortOrder } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      }
-    ];
+    if (mongoose.Types.ObjectId.isValid(query.searchTerm)) {
+      orConditions.push({ _id: new mongoose.Types.ObjectId(query.searchTerm) });
+    }
 
-    const countPipeline = [
-      ...searchMatchPipeline,
-      { $count: "total" }
-    ];
-    const countResult = await Services.aggregate(countPipeline);
-    totalCount = countResult[0]?.total || 0;
-  } else {
-    dataPipeline = [
-      { $match: baseMatchQuery },
-      { $sort: { [sortField]: sortOrder } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      {
-        $lookup: {
-          from: "partners",
-          localField: "confirmedPartner",
-          foreignField: "_id",
-          as: "confirmedPartner",
-        },
-      },
-      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-      { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      }
-    ];
-    
-    totalCount = await Services.countDocuments(baseMatchQuery);
+    baseMatchQuery.$or = orConditions;
   }
 
-  const resultData = await Services.aggregate(dataPipeline);
+  const dataPipeline = [
+    { $match: baseMatchQuery },
+    { $sort: { [sortField]: sortOrder } },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "partners",
+        localField: "confirmedPartner",
+        foreignField: "_id",
+        as: "confirmedPartner",
+      },
+    },
+    { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$confirmedPartner", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
+      },
+    }
+  ];
+
+  const [resultData, totalCount] = await Promise.all([
+    Services.aggregate(dataPipeline),
+    Services.countDocuments(baseMatchQuery)
+  ]);
 
   return {
     meta: {

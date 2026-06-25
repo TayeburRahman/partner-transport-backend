@@ -68,7 +68,7 @@ cron.schedule("* * * * *", async () => {
     logger.error("Error removing activation codes from expired users:", error);
   }
 });
- 
+
 
 const registrationAccount = async (req) => {
   const payload = req.body;
@@ -104,7 +104,7 @@ const registrationAccount = async (req) => {
       existingAuth.role === "USER" && User.deleteOne({ authId: existingAuth._id }),
       existingAuth.role === "PARTNER" && Partner.deleteOne({ authId: existingAuth._id }),
       (existingAuth.role === "ADMIN" || existingAuth.role === "SUPER_ADMIN") &&
-        Admin.deleteOne({ authId: existingAuth._id }),
+      Admin.deleteOne({ authId: existingAuth._id }),
       Auth.deleteOne({ email }),
     ]);
   }
@@ -205,7 +205,6 @@ const registrationAccount = async (req) => {
   return { result, role, message: "Account created successfully!" };
 };
 
-
 const activateAccount = async (payload) => {
   const { activation_code, userEmail, playerId } = payload;
 
@@ -224,14 +223,14 @@ const activateAccount = async (payload) => {
       { isActive: true },
       {
         new: true,
-      runValidators: true,
+        runValidators: true,
       });
   }
 
-  if (existAuth.role === ENUM_USER_ROLE.PARTNER){
-    return { message: "Code verify successfully!", status: "success"}
+  if (existAuth.role === ENUM_USER_ROLE.PARTNER) {
+    return { message: "Code verify successfully!", status: "success" }
   }
- 
+
   let result = {};
 
   if (existAuth.role === ENUM_USER_ROLE.USER) {
@@ -282,7 +281,7 @@ const activateAccount = async (payload) => {
 };
 
 const loginAccount = async (payload) => {
-  const { email, password, playerId } = payload; 
+  const { email, password, playerId } = payload;
 
   const isAuth = await Auth.isAuthExist(email);
 
@@ -326,7 +325,7 @@ const loginAccount = async (payload) => {
       throw new ApiError(400, "Invalid role provided!");
   }
 
-  if(!userDetails){
+  if (!userDetails) {
     throw new ApiError(500, "User not found");
   }
   // --------------
@@ -359,7 +358,7 @@ const loginAccount = async (payload) => {
 };
 
 const forgotPass = async (payload) => {
-  try { 
+  try {
     if (!payload?.email) {
       throw new ApiError(httpStatus.BAD_REQUEST, "Email is required!");
     }
@@ -540,6 +539,7 @@ const resendCodeActivationAccount = async (payload) => {
         </style>
     </head>
     <body>
+    <!-- English -->
         <div class="container">
             <h1>Hello, ${user.name}</h1>
             <p>Your activation code is: <strong>${activationCode}</strong></p>
@@ -547,6 +547,17 @@ const resendCodeActivationAccount = async (payload) => {
             <p>Thank you!</p>
             <div class="footer">
                 <p>&copy; ${new Date().getFullYear()}Xmoveit</p>
+            </div>
+        </div>
+        <br><br>
+        <!-- Spanish -->
+        <div class="container"> 
+            <h1>Hola, ${user.name}</h1>
+            <p>Tu código de activación es: <strong>${activationCode}</strong> </p>
+            <p> Por favor, utiliza este código para activar tu cuenta. Si no solicitaste esto, ignora este correo electrónico. </p>
+            <p>¡Gracias!</p>
+            <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} Xmoveit</p>
             </div>
         </div>
     </body>
@@ -616,6 +627,18 @@ const resendCodeForgotAccount = async (payload) => {
             <p>Thank you!</p>
             <div class="footer">
                 <p>&copy; ${new Date().getFullYear()}Xmoveit</p>
+            </div>
+        </div>
+         
+       <br><br>
+        <!-- Spanish -->
+        <div class="container"> 
+            <h1>Hola, ${user.name}</h1>
+            <p>Tu código de activación es: <strong>${activationCode}</strong> </p>
+            <p> Por favor, utiliza este código para activar tu cuenta. Si no solicitaste esto, ignora este correo electrónico. </p>
+            <p>¡Gracias!</p>
+            <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} Xmoveit</p>
             </div>
         </div>
     </body>
@@ -782,47 +805,47 @@ const generateTokens = (authUser, userDetails) => {
 
 const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-10);
-};  
+};
 
-const phoneOTPVerifications = async (payload,user) => {
-  const {authId, userId, role}= user;
+const phoneOTPVerifications = async (payload, user) => {
+  const { authId, userId, role } = user;
   const findUser = await Auth.findById(authId)
   // console.log("userId", userId)
   let userDb;
-  if(role === ENUM_USER_ROLE.PARTNER){
-   userDb = await Partner.findById(userId) 
-  }else if(role === ENUM_USER_ROLE.USER){
+  if (role === ENUM_USER_ROLE.PARTNER) {
+    userDb = await Partner.findById(userId)
+  } else if (role === ENUM_USER_ROLE.USER) {
     userDb = await User.findById(userId)
   }
 
-  if(!payload.phone_number || !payload.phone_c_code){
+  if (!payload.phone_number || !payload.phone_c_code) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Phone number and country code are require.");
   }
 
-  if(!userDb){
+  if (!userDb) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "User not found.");
   }
 
-  if(!findUser){
+  if (!findUser) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "User not found.");
   }
 
-  if(findUser?.verifyOtp !== payload?.otp){
+  if (findUser?.verifyOtp !== payload?.otp) {
     throw new ApiError(httpStatus.FORBIDDEN, "Invalid your OTP.");
   }
 
-  findUser.verifyOtp = null; 
-  findUser.otpVerify = true; 
-  await findUser.save() 
+  findUser.verifyOtp = null;
+  findUser.otpVerify = true;
+  await findUser.save()
   userDb.phone_number = payload.phone_number.toString()
   userDb.isPhoneNumberVerified = true;
-  userDb.phone_c_code= payload.phone_c_code
+  userDb.phone_c_code = payload.phone_c_code
   await userDb.save()
   return findUser;
-}; 
+};
 
- 
- 
+
+
 
 const AuthService = {
   registrationAccount,
