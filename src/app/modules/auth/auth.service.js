@@ -538,8 +538,7 @@ const resendCodeActivationAccount = async (payload) => {
             }
         </style>
     </head>
-    <body>
-    <!-- English -->
+    <body> 
         <div class="container">
             <h1>Hello, ${user.name}</h1>
             <p>Your activation code is: <strong>${activationCode}</strong></p>
@@ -549,8 +548,7 @@ const resendCodeActivationAccount = async (payload) => {
                 <p>&copy; ${new Date().getFullYear()}Xmoveit</p>
             </div>
         </div>
-        <br><br>
-        <!-- Spanish -->
+        <br><br> 
         <div class="container"> 
             <h1>Hola, ${user.name}</h1>
             <p>Tu código de activación es: <strong>${activationCode}</strong> </p>
@@ -630,8 +628,7 @@ const resendCodeForgotAccount = async (payload) => {
             </div>
         </div>
          
-       <br><br>
-        <!-- Spanish -->
+       <br><br> 
         <div class="container"> 
             <h1>Hola, ${user.name}</h1>
             <p>Tu código de activación es: <strong>${activationCode}</strong> </p>
