@@ -65,7 +65,7 @@ const ServicesSchema = new Schema(
     },
     rescheduledStatus: {
       type: String,
-      enum: ["pending", "accepted", "decline"],
+      enum: ["pending", "accepted", "decline", "declined"],
       default: null
     },
     numberOfItems: {
