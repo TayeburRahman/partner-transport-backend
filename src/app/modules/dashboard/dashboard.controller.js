@@ -1,3 +1,4 @@
+const fs = require("fs");
 const catchAsync = require("../../../shared/catchasync");
 const sendResponse = require("../../../shared/sendResponse");
 const { DashboardService } = require("../dashboard/dashboard.service");
@@ -206,6 +207,7 @@ const deletePrivacyPolicy = catchAsync(async (req, res) => {
 });
 
 const getAllAuctions = catchAsync(async (req, res) => {
+  fs.appendFileSync("req_log.txt", "\nIncoming get-all-auctions: " + JSON.stringify(req.query));
   const result = await DashboardService.getAllAuctions(req.query);
   sendResponse(res, {
     statusCode: 200,

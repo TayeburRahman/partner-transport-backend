@@ -65,8 +65,12 @@ const eventsCreationRate = async (query) => {
   };
 
   events.forEach((event) => {
-    if (serviceCounts[event.service] !== undefined) {
-      serviceCounts[event.service] += 1;
+    let key = event.service;
+    if (key === "Second-hand items") key = "Second_hand_items";
+    if (key === "Recyclable materials") key = "Recyclable_materials";
+
+    if (serviceCounts[key] !== undefined) {
+      serviceCounts[key] += 1;
     }
   });
 
@@ -75,9 +79,12 @@ const eventsCreationRate = async (query) => {
   const totalDays = (endDate - startDate) / (1000 * 3600 * 24);
   const eventsCreationRate = totalDays ? (totalEvents / totalDays).toFixed(2) : 0;
 
-  const mostCommonEventType = Object.keys(serviceCounts).reduce((a, b) =>
+  let mostCommonEventType = Object.keys(serviceCounts).reduce((a, b) =>
     serviceCounts[a] > serviceCounts[b] ? a : b
   );
+
+  if (mostCommonEventType === "Second_hand_items") mostCommonEventType = "Second-hand items";
+  if (mostCommonEventType === "Recyclable_materials") mostCommonEventType = "Recyclable materials";
 
   return {
     totalEvents,

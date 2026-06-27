@@ -599,7 +599,7 @@ const getAllAuctions = async (query) => {
 
   const baseMatchQuery = {
     ...(query.mainService ? { mainService: query.mainService } : {}),
-    ...(query.status ? { status: query.status } : { status: { $ne: "pending" } }),
+    ...(query.status && query.status !== 'all' ? { status: query.status } : { status: { $nin: ['pending', 'cancel'] } }),
     ...(query.service ? { service: query.service } : {}),
     ...(query.category ? { category: { $in: query.category.split(',').map(id => new mongoose.Types.ObjectId(id)) } } : {}),
   };
