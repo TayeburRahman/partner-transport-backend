@@ -44,7 +44,12 @@ router
     checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SUPERVISION_DASHBOARD),
     LogsDashboardController.getTaskSummary
   ) 
-   
+  .get(
+    "/get-task-in-progress",
+    auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+    checkAdminAccess(ENUM_ADMIN_ACCESS.ACC_TO_SUPERVISION_DASHBOARD),
+    LogsDashboardController.getTaskInProgress
+  )
    
 
 module.exports = router;

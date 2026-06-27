@@ -331,29 +331,9 @@ const stripeRefundPayment = async (req, res) => {
       throw new ApiError(httpStatus.BAD_REQUEST, "Service not found!");
     }
 
-    let user;
-    let payUserRole;
-    if (role === ENUM_USER_ROLE.USER) {
-      user = await User.findById(userId)
-      payUserRole = 'User'
-    } else if (role === ENUM_USER_ROLE.PARTNER) {
-      user = await Partner.findById(userId)
-      payUserRole = 'Partner'
-    } else if (role === ENUM_USER_ROLE.ADMIN) {
-      user = await Admin.findById(userId)
-      payUserRole = 'Admin'
-    }
-
-    let receiveUser;
-    let receiveUserRole;
-    if (service.mainService === "sell") {
-      receiveUser = service.confirmedPartner;
-      receiveUserRole = 'User';
-    } else if (service.mainService === "move") {
-      receiveUser = service.user;
-      receiveUserRole = 'Partner';
-    } else {
-      throw new ApiError(httpStatus.NOT_FOUND, 'invalid service type.');
+    const originalTx = await Transaction.findOne({ transactionId: saleId, serviceId });
+    if (!originalTx) {
+      throw new ApiError(httpStatus.NOT_FOUND, "Original transaction not found for this refund.");
     }
 
     const refund = await stripe.refunds.create({
@@ -367,10 +347,10 @@ const stripeRefundPayment = async (req, res) => {
 
     const transactionData = {
       serviceId,
-      payUser: user._id,
-      payUserType: payUserRole,
-      receiveUser,
-      receiveUserType: receiveUserRole,
+      payUser: originalTx.payUser,
+      payUserType: originalTx.payUserType,
+      receiveUser: originalTx.receiveUser,
+      receiveUserType: originalTx.receiveUserType,
       isFinish: true,
       paymentMethod: 'Stripe',
       amount: Number(refund.amount) / 100,
@@ -395,6 +375,37 @@ const stripeRefundPayment = async (req, res) => {
     };
     await LogsDashboardService.createTaskDB(newTask)
     //=====
+
+    // Send notifications to both parties
+    await NotificationService.sendNotification({
+      title: {
+        eng: "Payment Refunded",
+        span: "Pago Reembolsado"
+      },
+      message: {
+        eng: `Your payment for service has been successfully refunded.`,
+        span: `Su pago por el servicio ha sido reembolsado con éxito.`
+      },
+      user: originalTx.payUser,
+      userType: originalTx.payUserType,
+      types: 'service',
+      getId: serviceId,
+    });
+
+    await NotificationService.sendNotification({
+      title: {
+        eng: "Service Refunded",
+        span: "Servicio Reembolsado"
+      },
+      message: {
+        eng: `The payment for the service has been refunded.`,
+        span: `El pago del servicio ha sido reembolsado.`
+      },
+      user: originalTx.receiveUser,
+      userType: originalTx.receiveUserType,
+      types: 'service',
+      getId: serviceId,
+    });
 
     return { success: true, transaction: newTransaction };
 

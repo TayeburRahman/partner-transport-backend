@@ -424,6 +424,57 @@ const getTaskCompleted = async (req) => {
   };
 };
 
+const getTaskInProgress = async (req) => {
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const pendingTickets = await Tickets.find({ status: "Pending" }).lean();
+  const pendingWithdraws = await Withdraw.find({ status: "Pending" }).lean();
+  const pendingFileClaims = await FileClaim.find({ status: { $in: ["pending", "in-progress"] } }).lean();
+
+  const allPending = [
+    ...pendingTickets.map(t => ({
+      _id: t._id,
+      task: `Support Ticket: ${t.description || 'No description'}`,
+      assignedAdmin: "Unassigned",
+      image: null,
+      status: t.status,
+      date: t.createdAt
+    })),
+    ...pendingWithdraws.map(w => ({
+      _id: w._id,
+      task: `Withdrawal Request: $${w.request_amount} by ${w.name || w.userType}`,
+      assignedAdmin: "Unassigned",
+      image: null,
+      status: w.status,
+      date: w.createdAt
+    })),
+    ...pendingFileClaims.map(f => ({
+      _id: f._id,
+      task: `File Claim: ${f.description || 'No description'} by ${f.name || f.userType}`,
+      assignedAdmin: "Unassigned",
+      image: null,
+      status: f.status,
+      date: f.createdAt
+    }))
+  ];
+
+  allPending.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const total = allPending.length;
+  const paginatedData = allPending.slice(skip, skip + Number(limit));
+
+  return {
+    meta: {
+      total,
+      totalPages: Math.ceil(total / Number(limit)),
+      page: Number(page),
+      limit: Number(limit),
+    },
+    data: paginatedData,
+  };
+};
+
 const getTaskSummary = async () => {
   try {
     const [
@@ -454,7 +505,7 @@ const getTaskSummary = async () => {
 
     const totalTasks = totalFileClaims + totalWithdraws + totalTickets;
     const completedTasks = resolvedFileClaims + completedWithdraws + repliedTickets;
-    const tasksInProgress = inProgressFileClaims;
+    const tasksInProgress = totalTasks - completedTasks;
     const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0;
 
     return {
@@ -476,6 +527,7 @@ const LogsDashboardService = {
   createTaskDB,
   getActivityLog,
   getTaskCompleted,
+  getTaskInProgress,
   getTaskSummary
 
 };

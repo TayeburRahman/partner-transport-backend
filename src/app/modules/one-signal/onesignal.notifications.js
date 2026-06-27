@@ -60,6 +60,7 @@ const sendNotificationOnesignal = async (playerIds, title, message, types, getId
       data,
       { headers }
     );
+    console.log("========= Send Notification Successfully=========:", response.data)
   } catch (error) {
     console.error('Error sending notification:', error);
   }

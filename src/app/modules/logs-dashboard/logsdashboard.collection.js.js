@@ -52,6 +52,16 @@ const eventsCreationRate = catchAsync(async (req, res) => {
     });
   });
   
+  const getTaskInProgress = catchAsync(async (req, res) => {
+    const result = await LogsDashboardService.getTaskInProgress(req);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Success",
+      data: result,
+    });
+  });
+  
   const getTaskSummary = catchAsync(async (req, res) => {
     const result = await LogsDashboardService.getTaskSummary(req);
     sendResponse(res, {
@@ -78,6 +88,7 @@ const eventsCreationRate = catchAsync(async (req, res) => {
     getAdminTaskCompted,
     getActivityLog,
     getTaskCompleted,
+    getTaskInProgress,
     getTaskSummary
     
   };
