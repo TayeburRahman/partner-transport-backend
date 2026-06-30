@@ -88,6 +88,41 @@ const globalErrorHandler = (error, req, res, next) => {
           },
         ]
       : [];
+  } else if (error.name === "MulterError") {
+    statusCode = 400;
+    if (error.code === "LIMIT_FILE_SIZE") {
+      message = "El archivo es demasiado grande. El límite es de 5 MB.";
+    } else if (error.code === "LIMIT_FILE_COUNT") {
+      message = "Has superado el límite de archivos permitidos.";
+    } else if (error.code === "LIMIT_UNEXPECTED_FILE") {
+      message = `Campo de archivo inesperado: ${error.field || ""}`;
+    } else {
+      message = `Error de subida de archivos: ${error.message}`;
+    }
+    errorMessages = [
+      {
+        path: error.field || "",
+        message: message,
+      },
+    ];
+  } else if (error.message === "Invalid file type") {
+    statusCode = 400;
+    message = "Tipo de archivo no válido. Solo se admiten imágenes (JPEG, JPG, PNG, WEBP) o videos (MP4).";
+    errorMessages = [
+      {
+        path: "",
+        message: message,
+      },
+    ];
+  } else if (error.message === "Invalid fieldname") {
+    statusCode = 400;
+    message = "Nombre de campo de archivo no válido.";
+    errorMessages = [
+      {
+        path: "",
+        message: message,
+      },
+    ];
   }
 
   res.status(statusCode).json({
