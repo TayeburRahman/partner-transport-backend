@@ -110,14 +110,14 @@ const registrationAccount = async (req) => {
   }
 
   // --- File Upload Validation ---
-  const validateFile = (file, folder, allowedTypes = ["image/jpeg", "image/png", "image/jpg"]) => {
+  const validateFile = (file, folder, allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"]) => {
     if (!file || !file[0]) return null;
 
     const { filename, mimetype } = file[0];
 
     // check mime type
     if (!allowedTypes.includes(mimetype)) {
-      throw new ApiError(400, `Invalid file type for ${folder}. Only jpg, jpeg, png allowed.`);
+      throw new ApiError(400, `Tipo de archivo no válido para ${folder}. Solo se admiten imágenes JPG, JPEG, PNG y WEBP.`);
     }
 
     // // check file exists

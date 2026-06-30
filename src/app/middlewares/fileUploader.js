@@ -1,5 +1,6 @@
 const multer = require("multer");
 const fs = require("fs");
+const ApiError = require("../../errors/ApiError");
 
 const uploadFile = () => {
   const storage = multer.diskStorage({
@@ -44,11 +45,17 @@ const uploadFile = () => {
         file.mimetype === "image/jpeg" ||
         file.mimetype === "image/png" ||
         file.mimetype === "image/jpg" ||
+        file.mimetype === "image/webp" ||
         file.mimetype === "video/mp4"
       ) {
         cb(null, uploadPath);
       } else {
-        cb(new Error("Invalid file type"));
+        cb(
+          new ApiError(
+            400,
+            "Tipo de archivo no válido. Solo se admiten imágenes (JPEG, JPG, PNG, WEBP) o videos (MP4)."
+          )
+        );
       }
     },
     filename: function (req, file, cb) {
@@ -81,14 +88,20 @@ const uploadFile = () => {
         file.mimetype === "image/jpeg" ||
         file.mimetype === "image/png" ||
         file.mimetype === "image/jpg" ||
-        file.mimetype === "image/webp"
+        file.mimetype === "image/webp" ||
+        file.mimetype === "video/mp4"
       ) {
         cb(null, true);
       } else {
-        cb(new Error("Invalid file type"));
+        cb(
+          new ApiError(
+            400,
+            "Tipo de archivo no válido. Solo se admiten imágenes (JPEG, JPG, PNG, WEBP) o videos (MP4)."
+          )
+        );
       }
     } else {
-      cb(new Error("Invalid fieldname"));
+      cb(new ApiError(400, "Nombre de campo de archivo no válido."));
     }
   };
 
