@@ -1481,6 +1481,8 @@ const uploadStatusImage = async (req) => {
     console.log("service.unloadingAddress=================================", status, service.unloadingAddress)
     if (!service.unloadingAddress) {
       console.log('==========IN===========')
+      service.partner_status = "delivered";
+      await service.save();
       await updateServicesStatus("delivery-confirmed", serviceId)
       console.log('==========DONE===========')
       return;

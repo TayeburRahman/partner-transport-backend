@@ -75,7 +75,12 @@ const partnerBidPost = async (req) => {
     }
 
   } else if (foundService.mainService === "sell") {
-    if (price < foundService.minPrice) {
+    const variableData = await Variable.findOne();
+    const surcharge = Number(variableData?.surcharge || 0);
+    const price2 = Number(foundService.minPrice) + (Number(foundService.minPrice) * Number(surcharge) / 100);
+    console.log('price2', price2)
+    console.log('price', price)
+    if (price <= price2) {
       throw new ApiError(400, 'offer_to_low');
     }
   } else {
