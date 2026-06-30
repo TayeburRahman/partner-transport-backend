@@ -598,7 +598,6 @@ const updateStripeAccount = async (req, res) => {
     const bank_info = account.external_accounts?.data[0] || {};
     const business_name = `${individual?.first_name} ${individual?.last_name}`
 
-
     const newStripeAccount = await StripeAccount.findOneAndUpdate(
       { user: userId, stripeAccountId: accountId },
       {

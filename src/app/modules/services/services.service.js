@@ -301,9 +301,9 @@ const createPostDB = async (req) => {
         throw new ApiError(400, 'Price too low for move service');
       }
     } else if (data.mainService === "sell") {
-      if (data.price < data.minPrice) {
-        throw new ApiError(400, 'Price cannot be less than minimum price');
-      }
+      // if (data.price < data.minPrice) {
+      //   throw new ApiError(400, 'Price cannot be less than minimum price');
+      // }
     }
 
     const serviceData = {
