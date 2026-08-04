@@ -211,17 +211,6 @@ src/
 └── server.js               # Server entry point
 ```
 
-## Scripts
-
-```bash
-npm start           # Start production server
-npm run dev         # Start development server (nodemon)
-npm run lint:check  # Run ESLint checks
-npm run lint:fix    # Auto-fix lint issues
-npm run prettier:fix    # Format code with Prettier
-npm run prettier:check  # Check code formatting
-```
-
 ## Author
 
 **Tayeb Rayhan**
