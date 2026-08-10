@@ -6,16 +6,22 @@ const ticketSchema = new mongoose.Schema(
     userType: {
       type: String,
       enum: ["User", "Partner"],  
-      required: true,
+      required: false,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "userType", 
-      required: true,
+      required: false,
     },
     description: {
       type: String,
-      required: true,
+      required: false,
+    },
+    reasons: {
+      type: String,
+    },
+    details: {
+      type: String,
     },
     email: {
       type: String, 

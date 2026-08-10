@@ -53,6 +53,43 @@ const createTicket = async (req) => {
 
     return ticket;
   };
+
+  const createAppTicket = async (req) => {
+    const { email, resons, reasons, details } = req.body;
+    const reasonContent = reasons || resons;
+
+    if (!email || !details) {
+      throw new ApiError(400, "Email and details are required.");
+    }
+
+    const ticketData = {
+      email,
+      reasons: reasonContent,
+      details,
+      description: details || reasonContent,
+    };
+
+    const ticket = await Tickets.create(ticketData);
+    if (!ticket) {
+      throw new ApiError(400, "Failed to create ticket");
+    }
+
+    await Notification.create({
+      title: {
+        eng: "New Support Ticket",
+        span: "Nuevo Ticket de Soporte",
+      },
+      message: {
+        eng: `Public app support ticket created with email ${email}.`,
+        span: `Ticket de soporte público creado con correo electrónico ${email}.`,
+      },
+      userType: "Admin",
+      types: "none",
+      admin: true,
+    });
+
+    return ticket;
+  };
   
   const repliedTicket = async (req) => {
     const { reply } = req.body;
@@ -80,21 +117,23 @@ const createTicket = async (req) => {
         throw new ApiError(404, "Ticket update failed.");
       }
   
-      // Send notification to the user
-      await NotificationService.sendNotification({
-        title: {
-          eng: "Ticket Reply Notification",
-          span: "Notificación de Respuesta al Ticket"
-        },
-        message: {
-          eng: "Your ticket has been replied to. Please review the response at your earliest convenience.",
-          span: "Tu ticket ha recibido una respuesta. Por favor, revisa la respuesta a la brevedad."
-        },
-        user: ticketDb.user,
-        userType: ticketDb.userType,
-        getId: ticket._id,
-        types: "ticket",
-      });
+      // Send notification to the user if user exists
+      if (ticketDb.user && ticketDb.userType) {
+        await NotificationService.sendNotification({
+          title: {
+            eng: "Ticket Reply Notification",
+            span: "Notificación de Respuesta al Ticket"
+          },
+          message: {
+            eng: "Your ticket has been replied to. Please review the response at your earliest convenience.",
+            span: "Tu ticket ha recibido una respuesta. Por favor, revisa la respuesta a la brevedad."
+          },
+          user: ticketDb.user,
+          userType: ticketDb.userType,
+          getId: ticket._id,
+          types: "ticket",
+        });
+      }
   
       // Log success
       const newTask = {
@@ -199,6 +238,7 @@ const createTicket = async (req) => {
   
   const SupportService = { 
     createTicket,
+    createAppTicket,
     repliedTicket,
     getTicketDb,
     getTicketDetails

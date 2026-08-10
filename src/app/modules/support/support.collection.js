@@ -51,8 +51,20 @@ const createTicket = catchAsync(async (req, res) => {
    
 
 
+const createAppTicket = catchAsync(async (req, res) => {
+    const result = await SupportService.createAppTicket(req);
+     
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Create app ticket successfully!",
+      data: result,
+    })
+  }) 
+
   const SupportController = { 
     createTicket,
+    createAppTicket,
     repliedTicket,
     getTicketDb,
     getTicketDetails
