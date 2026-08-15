@@ -70,9 +70,12 @@ const config = {
     }
   },
   twilio:{
-    account_sid: process.env.ACCOUNT_NUMBER,
+    account_sid: process.env.TWILIO_ACCOUNT_SID || process.env.ACCOUNT_NUMBER,
     auth_token: process.env.AUTH_TOKEN,
-    phone_number: process.env.PHONE_NUMBER, 
+    phone_number: process.env.PHONE_NUMBER,
+    api_key_sid: process.env.TWILIO_API_KEY_SID,
+    api_key_secret: process.env.TWILIO_API_KEY_SECRET,
+    verify_service_sid: process.env.TWILIO_VERIFY_SERVICE_SID,
   }
 };
 

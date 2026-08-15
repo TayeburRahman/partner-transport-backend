@@ -5,7 +5,12 @@ const ApiError = require('../../../errors/ApiError');
 const User = require('../user/user.model');
 const { ENUM_USER_ROLE } = require('../../../utils/enums');
 const Partner = require('../partner/partner.model');
-const client = twilio(config.twilio.account_sid, config.twilio.auth_token);
+let client;
+if (config.twilio.api_key_sid && config.twilio.api_key_secret) {
+    client = twilio(config.twilio.api_key_sid, config.twilio.api_key_secret, { accountSid: config.twilio.account_sid });
+} else {
+    client = twilio(config.twilio.account_sid, config.twilio.auth_token);
+}
 
 const isValidPhoneNumber = (phone) => /^\+\d{10,15}$/.test(phone);
 
@@ -42,12 +47,20 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
         console.log(`[OTP GENERATED] Phone: ${formattedPhoneNumber} | OTP: ${verifyOtp}`);
         console.log(`========================================\n`);
 
-        // Send SMS via Twilio
-        await client.messages.create({
-            body: message,
-            from: config.twilio.phone_number,
-            to: formattedPhoneNumber
-        });
+        if (config.twilio.verify_service_sid) {
+            // Send SMS via Twilio Verify Service (VA...) - no FROM phone number needed!
+            await client.verify.v2
+                .services(config.twilio.verify_service_sid)
+                .verifications
+                .create({ to: formattedPhoneNumber, channel: 'sms' });
+        } else {
+            // Fallback to Programmable SMS with from phone_number
+            await client.messages.create({
+                body: message,
+                from: config.twilio.phone_number,
+                to: formattedPhoneNumber
+            });
+        }
 
         return {
             invalid: false,

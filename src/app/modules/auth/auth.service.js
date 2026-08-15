@@ -827,7 +827,35 @@ const phoneOTPVerifications = async (payload, user) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Auth account not found.");
   }
 
-  if (String(findUser?.verifyOtp) !== String(payload?.otp)) {
+  let isOtpValid = String(findUser?.verifyOtp) === String(payload?.otp);
+
+  if (!isOtpValid && config.twilio.verify_service_sid) {
+    try {
+      const twilio = require('twilio');
+      let twilioClient;
+      if (config.twilio.api_key_sid && config.twilio.api_key_secret) {
+          twilioClient = twilio(config.twilio.api_key_sid, config.twilio.api_key_secret, { accountSid: config.twilio.account_sid });
+      } else {
+          twilioClient = twilio(config.twilio.account_sid, config.twilio.auth_token);
+      }
+      const cleanCC = payload.phone_c_code.startsWith('+') ? payload.phone_c_code : `+${payload.phone_c_code}`;
+      const cleanPhone = payload.phone_number.toString().replace(/^0/, '');
+      const fullPhone = `${cleanCC}${cleanPhone}`;
+
+      const check = await twilioClient.verify.v2
+        .services(config.twilio.verify_service_sid)
+        .verificationChecks
+        .create({ to: fullPhone, code: String(payload.otp) });
+
+      if (check.status === 'approved') {
+        isOtpValid = true;
+      }
+    } catch (err) {
+      console.log("Twilio verification check error:", err.message);
+    }
+  }
+
+  if (!isOtpValid) {
     throw new ApiError(httpStatus.FORBIDDEN, "Invalid your OTP.");
   }
 
