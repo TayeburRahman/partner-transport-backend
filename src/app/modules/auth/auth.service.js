@@ -815,7 +815,10 @@ const phoneOTPVerifications = async (payload, user) => {
     userDb = await User.findById(userId);
   }
 
-  if (!payload.phone_number || !payload.phone_c_code) {
+  const phoneNumber = payload?.phone_number || payload?.phone || userDb?.phone_number;
+  const countryCode = payload?.phone_c_code || payload?.countryCode || userDb?.phone_c_code;
+
+  if (!phoneNumber || !countryCode) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Phone number and country code are required.");
   }
 
@@ -838,8 +841,8 @@ const phoneOTPVerifications = async (payload, user) => {
       } else {
           twilioClient = twilio(config.twilio.account_sid, config.twilio.auth_token);
       }
-      const cleanCC = payload.phone_c_code.startsWith('+') ? payload.phone_c_code : `+${payload.phone_c_code}`;
-      const cleanPhone = payload.phone_number.toString().replace(/^0/, '');
+      const cleanCC = countryCode.toString().startsWith('+') ? countryCode.toString() : `+${countryCode}`;
+      const cleanPhone = phoneNumber.toString().replace(/^0/, '');
       const fullPhone = `${cleanCC}${cleanPhone}`;
 
       const check = await twilioClient.verify.v2
@@ -862,9 +865,9 @@ const phoneOTPVerifications = async (payload, user) => {
   findUser.verifyOtp = null;
   findUser.otpVerify = true;
   await findUser.save();
-  userDb.phone_number = payload.phone_number.toString();
+  userDb.phone_number = phoneNumber.toString();
   userDb.isPhoneNumberVerified = true;
-  userDb.phone_c_code = payload.phone_c_code;
+  userDb.phone_c_code = countryCode.toString();
   await userDb.save();
   return findUser;
 };

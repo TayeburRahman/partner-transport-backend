@@ -48,11 +48,19 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
         console.log(`========================================\n`);
 
         if (config.twilio.verify_service_sid) {
-            // Send SMS via Twilio Verify Service (VA...) - no FROM phone number needed!
-            await client.verify.v2
-                .services(config.twilio.verify_service_sid)
-                .verifications
-                .create({ to: formattedPhoneNumber, channel: 'sms' });
+            // Send SMS via Twilio Verify Service (VA...) - try using backend verifyOtp as customCode
+            try {
+                await client.verify.v2
+                    .services(config.twilio.verify_service_sid)
+                    .verifications
+                    .create({ to: formattedPhoneNumber, channel: 'sms', customCode: verifyOtp });
+            } catch (vErr) {
+                console.log("Twilio Verify customCode fallback:", vErr.message);
+                await client.verify.v2
+                    .services(config.twilio.verify_service_sid)
+                    .verifications
+                    .create({ to: formattedPhoneNumber, channel: 'sms' });
+            }
         } else {
             // Fallback to Programmable SMS with from phone_number
             await client.messages.create({
