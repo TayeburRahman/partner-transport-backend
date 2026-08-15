@@ -44,7 +44,7 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
         }
 
         console.log(`\n========================================`);
-        console.log(`[OTP GENERATED] Phone: ${formattedPhoneNumber} | OTP: ${verifyOtp}`);
+        console.log(`🔑 [OTP GENERATED] Phone: ${formattedPhoneNumber} | Code: ${verifyOtp}`);
         console.log(`========================================\n`);
 
         if (config.twilio.verify_service_sid) {

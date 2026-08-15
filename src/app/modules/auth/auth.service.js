@@ -830,6 +830,10 @@ const phoneOTPVerifications = async (payload, user) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Auth account not found.");
   }
 
+  console.log(`\n========================================`);
+  console.log(`🔍 [VERIFYING OTP] Received Code: ${payload?.otp} | DB Code: ${findUser?.verifyOtp}`);
+  console.log(`========================================\n`);
+
   let isOtpValid = String(findUser?.verifyOtp) === String(payload?.otp);
 
   if (!isOtpValid && config.twilio.verify_service_sid) {
