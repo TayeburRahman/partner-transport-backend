@@ -806,38 +806,38 @@ const generateRandomPassword = () => {
 
 const phoneOTPVerifications = async (payload, user) => {
   const { authId, userId, role } = user;
-  const findUser = await Auth.findById(authId)
-  // console.log("userId", userId)
+  const findUser = await Auth.findById(authId);
+  
   let userDb;
   if (role === ENUM_USER_ROLE.PARTNER) {
-    userDb = await Partner.findById(userId)
+    userDb = await Partner.findById(userId);
   } else if (role === ENUM_USER_ROLE.USER) {
-    userDb = await User.findById(userId)
+    userDb = await User.findById(userId);
   }
 
   if (!payload.phone_number || !payload.phone_c_code) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Phone number and country code are require.");
+    throw new ApiError(httpStatus.BAD_REQUEST, "Phone number and country code are required.");
   }
 
   if (!userDb) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "User not found.");
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found.");
   }
 
   if (!findUser) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "User not found.");
+    throw new ApiError(httpStatus.NOT_FOUND, "Auth account not found.");
   }
 
-  if (findUser?.verifyOtp !== payload?.otp) {
+  if (String(findUser?.verifyOtp) !== String(payload?.otp)) {
     throw new ApiError(httpStatus.FORBIDDEN, "Invalid your OTP.");
   }
 
   findUser.verifyOtp = null;
   findUser.otpVerify = true;
-  await findUser.save()
-  userDb.phone_number = payload.phone_number.toString()
+  await findUser.save();
+  userDb.phone_number = payload.phone_number.toString();
   userDb.isPhoneNumberVerified = true;
-  userDb.phone_c_code = payload.phone_c_code
-  await userDb.save()
+  userDb.phone_c_code = payload.phone_c_code;
+  await userDb.save();
   return findUser;
 };
 

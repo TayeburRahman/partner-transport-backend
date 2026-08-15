@@ -10,9 +10,15 @@ const client = twilio(config.twilio.account_sid, config.twilio.auth_token);
 const isValidPhoneNumber = (phone) => /^\+\d{10,15}$/.test(phone);
 
 const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, user, countryCode, phone) => {
-    // console.log("message", message, phoneNumber )
+    // If phone number doesn't start with +, format with countryCode to ensure E.164 format
+    let formattedPhoneNumber = phoneNumber;
+    if (typeof phoneNumber === 'string' && !phoneNumber.startsWith('+') && countryCode) {
+        const cleanCC = countryCode.startsWith('+') ? countryCode : `+${countryCode}`;
+        const cleanPhone = phoneNumber.replace(/^0/, '');
+        formattedPhoneNumber = `${cleanCC}${cleanPhone}`;
+    }
 
-    if (!isValidPhoneNumber(phoneNumber)) {
+    if (!isValidPhoneNumber(formattedPhoneNumber)) {
         return {
             invalid: true,
             message: "Invalid phone number format. Use E.164 format (e.g., +1234567890)."
@@ -20,38 +26,36 @@ const sendPhoneVerificationsMessage = async (message, phoneNumber, verifyOtp, us
     }
 
     try {
-        const result = await client.messages.create({
+        // Save OTP to Auth database first so user can test even if SMS service fails
+        const update = await Auth.findByIdAndUpdate(user.authId, { verifyOtp });
+        if (!update) {
+            throw new ApiError(404, "Error updating verify code in the database. Please try again!");
+        }
+
+        if (user.role === ENUM_USER_ROLE.USER) {
+            await User.findByIdAndUpdate(user.userId, { phone_number: phone, phone_c_code: countryCode });
+        } else if (user.role === ENUM_USER_ROLE.PARTNER) {
+            await Partner.findByIdAndUpdate(user.userId, { phone_number: phone, phone_c_code: countryCode });
+        }
+
+        console.log(`\n========================================`);
+        console.log(`[OTP GENERATED] Phone: ${formattedPhoneNumber} | OTP: ${verifyOtp}`);
+        console.log(`========================================\n`);
+
+        // Send SMS via Twilio
+        await client.messages.create({
             body: message,
             from: config.twilio.phone_number,
-            to: phoneNumber
-        });  
-
-        if (result) {
-            const update = await Auth.findByIdAndUpdate(user.authId, { verifyOtp })
-            if (!update) {
-                throw new ApiError(404, "Error updating verify code in the database. Please try again!")
-            }
-            // console.log('update', update);
-            // console.log('verifyOtp', verifyOtp);
-            let result
-            if (user.role === ENUM_USER_ROLE.USER) {
-                result = await User.findByIdAndUpdate(user.userId, { phone_number: phone, phone_c_code: countryCode })
-            } else if (user.role === ENUM_USER_ROLE.PARTNER) {
-                result = await Partner.findByIdAndUpdate(user.userId, { phone_number: phone, phone_c_code: countryCode })
-            }
-
-            if (!result) {
-                throw new ApiError(404, "Error updating verify code in the database. Please try again!")
-            }
-
-        } 
+            to: formattedPhoneNumber
+        });
 
         return {
             invalid: false,
-            message: `Message sent successfully to ${phoneNumber}`
+            message: `Message sent successfully to ${formattedPhoneNumber}`
         };
     } catch (error) {
-        throw new ApiError(404, error.message)
+        console.error("Twilio SMS sending error:", error.message);
+        throw new ApiError(400, error.message);
     }
 };
 
