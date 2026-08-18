@@ -12,7 +12,7 @@ Xmoveit Backend powers a logistics platform that connects users with transport p
 - **Partner Application System** - Partner registration with vehicle documentation and verification
 - **Admin Approval System** - Admin dashboard for managing users, partners, and services
 - **Service Auction & Bidding** - Users post services; partners place competitive bids
-- **Real-time Messaging** - Socket.IO powered chat between users, partners, and admins
+- **Real-time Messaging** - Socket. powered chat between users, partners, and admins
 - **Payment Processing** - Stripe and PayPal integration with refund support
 - **Email Notifications** - Transactional emails via SendGrid
 - **Push Notifications** - Mobile push notifications via OneSignal
